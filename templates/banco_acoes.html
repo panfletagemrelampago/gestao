@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banco de Ações</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    {% include 'navbar.html' %}
+
+    <div class="container mt-4">
+        <h2 class="mb-4 text-center" style="color: var(--vinho-escuro);">Banco de Ações</h2>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <form>
+                            <div class="input-group">
+                                <input type="text" class="form-control" placeholder="Pesquisar ações...">
+                                <button class="btn btn-outline-secondary" type="submit">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="col-md-6 text-end mt-3 mt-md-0">
+                        <a href="{{ url_for('cadastrar_acao') }}" class="btn" style="background-color: var(--laranja-destaque); color: white;">
+                            <i class="bi bi-plus-circle"></i> Cadastrar Nova Ação
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome da Ação</th>
+                                <th>Tipo</th>
+                                <th>Data Início</th>
+                                <th>Data Término</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for acao in acoes %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>{{ acao.nome }}</td>
+                                <td>
+                                    <span class="badge" style="background-color: var(--vinho-medio);">
+                                        {{ acao.tipo }}
+                                    </span>
+                                </td>
+                                <td>{{ acao.data_inicio.strftime('%d/%m/%Y') if acao.data_inicio else 'N/A' }}</td>
+                                <td>{{ acao.data_termino.strftime('%d/%m/%Y') if acao.data_termino else 'N/A' }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if acao.ativa else 'secondary' }}">
+                                        {{ 'Ativa' if acao.ativa else 'Inativa' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('detalhes_acao', acao_id=loop.index0) }}" class="btn btn-sm btn-outline-info me-1" title="Detalhes">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('editar_acao', acao_id=loop.index0) }}" class="btn btn-sm btn-outline-warning me-1" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button class="btn btn-sm btn-outline-danger" title="Excluir" onclick="confirmarExclusao({{ loop.index0 }})">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center">Nenhuma ação cadastrada ainda.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmação -->
+    <div class="modal fade" id="confirmarExclusaoModal" tabindex="-1" aria-labelledby="confirmarExclusaoModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmarExclusaoModalLabel">Confirmar Exclusão</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    Tem certeza que deseja excluir esta ação? Esta operação não pode ser desfeita.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <a id="btnConfirmarExclusao" href="#" class="btn btn-danger">Excluir</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function confirmarExclusao(acaoId) {
+            const btnConfirmar = document.getElementById('btnConfirmarExclusao');
+            btnConfirmar.href = "{{ url_for('excluir_acao', acao_id=0) }}".replace('0', acaoId);
+            const modal = new bootstrap.Modal(document.getElementById('confirmarExclusaoModal'));
+            modal.show();
+        }
+    </script>
+</body>
+</html>

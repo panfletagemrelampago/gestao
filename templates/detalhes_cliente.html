@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalhes do Cliente - Relâmpago</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet">
+</head>
+<body>
+  {% include 'navbar.html' %}
+
+  <div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 style="color: var(--vinho-escuro);">Detalhes do Cliente</h2>
+      <div>
+        <a href="{{ url_for('editar_cliente', cliente_id=cliente.id) }}" class="btn btn-warning me-2">
+          <i class="bi bi-pencil"></i> Editar
+        </a>
+        <form action="{{ url_for('excluir_cliente', cliente_id=cliente.id) }}" method="POST" style="display: inline;">
+          <button type="submit" class="btn btn-danger" onclick="return confirm('Tem certeza que deseja excluir este cliente?')">
+            <i class="bi bi-trash"></i> Excluir
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <h5 class="text-danger">Informações Básicas</h5>
+            <p><strong>Nome:</strong> {{ cliente.nome }}</p>
+            <p><strong>Empresa:</strong> {{ cliente.empresa }}</p>
+            <p><strong>Segmento:</strong> {{ cliente.segmento }}</p>
+          </div>
+          <div class="col-md-6">
+            <h5 class="text-danger">Contato</h5>
+            <p><strong>Telefone:</strong> {{ cliente.telefone }}</p>
+            <p><strong>E-mail:</strong> {{ cliente.email }}</p>
+            <p><strong>CPF/CNPJ:</strong> {{ cliente.cpf_cnpj }}</p>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <h5 class="text-danger">Informações Adicionais</h5>
+          <p><strong>Data de Cadastro:</strong> {{ cliente.data_cadastro.strftime('%d/%m/%Y %H:%M') }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="text-center mt-4">
+      <a href="{{ url_for('banco_clientes') }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar para Banco de Clientes
+      </a>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

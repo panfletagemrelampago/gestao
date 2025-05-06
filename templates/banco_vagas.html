@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Banco de Vagas - Relâmpago</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet"/>
+  <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet"/>
+</head>
+<body>
+  {% include 'navbar.html' %}
+
+  <div class="container mt-4">
+    <h2 class="mb-4 text-center" style="color: var(--vinho-escuro);">Banco de Vagas</h2>
+
+    {% if vagas %}
+      {% for vaga in vagas %}
+        <div class="card shadow-sm mb-4 border-start border-4 border-warning">
+          <div class="card-body">
+            <div class="d-flex justify-content-between border-bottom pb-2 mb-3">
+              <h5 class="card-title text-danger">{{ vaga.dados_pessoais.nome_completo }}</h5>
+              <small class="text-muted">Cadastrado em: {{ vaga.data_cadastro.strftime('%d/%m/%Y %H:%M') }}</small>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <h6 class="text-danger">Dados Pessoais</h6>
+                <p><strong>CPF:</strong> {{ vaga.dados_pessoais.cpf }}</p>
+                <p><strong>Nascimento:</strong> {{ vaga.dados_pessoais.data_nascimento }}</p>
+                <p><strong>Estado Civil:</strong> {{ vaga.dados_pessoais.estado_civil or 'Não informado' }}</p>
+                <p><strong>Dependentes:</strong> {{ vaga.dados_pessoais.dependentes }}</p>
+              </div>
+              <div class="col-md-6">
+                <h6 class="text-danger">Contato</h6>
+                <p><strong>Telefone:</strong> {{ vaga.dados_contato.telefone }}</p>
+                <p><strong>E-mail:</strong> {{ vaga.dados_contato.email }}</p>
+                <p><strong>Endereço:</strong> {{ vaga.dados_contato.cidade }}/{{ vaga.dados_contato.estado }} - CEP: {{ vaga.dados_contato.cep }}</p>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <h6 class="text-danger">Dados Profissionais</h6>
+              <div class="row">
+                <div class="col-md-6">
+                  <p><strong>Área de Atuação:</strong> {{ vaga.dados_profissionais.area_atuacao }}</p>
+                  <p><strong>Tipo de Interesse:</strong> {{ vaga.dados_profissionais.tipo_interesse }}</p>
+                </div>
+                <div class="col-md-6">
+                  <p><strong>Disponibilidade:</strong> {{ vaga.dados_profissionais.disponibilidade }}</p>
+                </div>
+              </div>
+              <p><strong>Experiência:</strong> {{ vaga.dados_profissionais.experiencia }}</p>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <h6 class="text-danger">Dados Bancários</h6>
+                <p><strong>Banco:</strong> {{ vaga.dados_bancarios.banco }}</p>
+                <p><strong>Agência:</strong> {{ vaga.dados_bancarios.agencia }}</p>
+                <p><strong>Conta:</strong> {{ vaga.dados_bancarios.conta }}</p>
+                {% if vaga.dados_bancarios.pix %}
+                <p><strong>PIX:</strong> {{ vaga.dados_bancarios.pix }}</p>
+                {% endif %}
+              </div>
+
+              <div class="col-md-6">
+                <h6 class="text-danger">Documentos</h6>
+                <ul class="list-unstyled">
+                  {% if vaga.arquivos.rg %}
+                  <li><i class="bi bi-file-earmark-text"></i> <a href="{{ url_for('static', filename='uploads/' + vaga.arquivos.rg) }}" target="_blank">RG</a></li>
+                  {% endif %}
+                  {% if vaga.arquivos.cpf_doc %}
+                  <li><i class="bi bi-file-earmark-text"></i> <a href="{{ url_for('static', filename='uploads/' + vaga.arquivos.cpf_doc) }}" target="_blank">CPF</a></li>
+                  {% endif %}
+                  {% if vaga.arquivos.titulo_eleitor %}
+                  <li><i class="bi bi-file-earmark-text"></i> <a href="{{ url_for('static', filename='uploads/' + vaga.arquivos.titulo_eleitor) }}" target="_blank">Título de Eleitor</a></li>
+                  {% endif %}
+                  {% if vaga.arquivos.ctps %}
+                  <li><i class="bi bi-file-earmark-text"></i> <a href="{{ url_for('static', filename='uploads/' + vaga.arquivos.ctps) }}" target="_blank">CTPS</a></li>
+                  {% endif %}
+                  {% if vaga.arquivos.certificacoes %}
+                  <li><i class="bi bi-file-earmark-text"></i> <a href="{{ url_for('static', filename='uploads/' + vaga.arquivos.certificacoes) }}" target="_blank">Certificações</a></li>
+                  {% endif %}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="text-center text-muted py-5">
+        <p class="mb-3">Nenhuma vaga cadastrada no momento.</p>
+        <a href="{{ url_for('cadastrar_vaga') }}" class="btn btn-primary mb-3">
+          <i class="bi bi-plus-circle"></i> Cadastrar Primeira Vaga
+        </a>
+        <br>
+        <button id="exportExcel" class="btn btn-success">
+          <i class="bi bi-file-earmark-excel"></i> Exportar para Excel
+        </button>
+      </div>
+    {% endif %}
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script>
+    document.getElementById('exportExcel')?.addEventListener('click', function () {const headers = ["Nome Completo", "CPF", "Data Nascimento", "Estado Civil", "Dependentes", "Telefone", "E-mail", "CEP", "Cidade", "Estado", "Área Atuação", "Tipo Interesse", "Disponibilidade", "Experiência", "Banco", "Agência", "Conta", "PIX", "Data Cadastro"];
+      const dados = [headers];
+
+      {% for vaga in vagas %}
+      dados.push([
+        '{{ vaga.dados_pessoais.nome_completo }}',
+        '{{ vaga.dados_pessoais.cpf }}',
+        '{{ vaga.dados_pessoais.data_nascimento }}',
+        '{{ vaga.dados_pessoais.estado_civil }}',
+        '{{ vaga.dados_pessoais.dependentes }}',
+        '{{ vaga.dados_contato.telefone }}',
+        '{{ vaga.dados_contato.email }}',
+        '{{ vaga.dados_contato.cep }}',
+        '{{ vaga.dados_contato.cidade }}',
+        '{{ vaga.dados_contato.estado }}',
+        '{{ vaga.dados_profissionais.area_atuacao }}',
+        '{{ vaga.dados_profissionais.tipo_interesse }}',
+        '{{ vaga.dados_profissionais.disponibilidade }}',
+        '{{ vaga.dados_profissionais.experiencia.replace("\n", " ") }}',
+        '{{ vaga.dados_bancarios.banco }}',
+        '{{ vaga.dados_bancarios.agencia }}',
+        '{{ vaga.dados_bancarios.conta }}',
+        '{{ vaga.dados_bancarios.pix }}',
+        '{{ vaga.data_cadastro.strftime("%d/%m/%Y %H:%M") }}'
+      ]);
+      {% endfor %}
+
+      const ws = XLSX.utils.aoa_to_sheet(dados);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Vagas");
+      const date = new Date().toISOString().slice(0, 10);
+      XLSX.writeFile(wb, `banco_de_vagas_${date}.xlsx`);
+    });
+  </script>
+</body>
+</html>

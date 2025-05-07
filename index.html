@@ -168,13 +168,6 @@
     <!-- Hero Section -->
     <section class="hero-section">
         <div class="container">
-            {% if 'usuario' in session %}
-            <div class="user-info">
-                Olá, {{ session['usuario'] }}
-                <a href="{{ url_for('logout') }}" class="logout-btn">(Sair)</a>
-            </div>
-            {% endif %}
-
             <h1 class="display-4 fw-bold">RELÂMPAGO</h1>
             <p class="lead">Sistema Integrado de Gerenciamento de Promotores</p>
         </div>

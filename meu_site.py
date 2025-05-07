@@ -37,7 +37,7 @@ def salvar_vaga(dados_pessoais, dados_contato, dados_profissionais, dados_bancar
 
 @app.route('/')
 def index():
-    return render_template('homepage.html')
+    return render_template('index.html')
 
 
 @app.route('/cadastrar-material', methods=['GET', 'POST'])

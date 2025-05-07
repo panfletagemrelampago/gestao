@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Banco de Vagas - Relâmpago</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet"/>
-  <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet">
 </head>
 <body>
   {% include 'navbar.html' %}
@@ -18,9 +18,18 @@
       {% for vaga in vagas %}
         <div class="card shadow-sm mb-4 border-start border-4 border-warning">
           <div class="card-body">
-            <div class="d-flex justify-content-between border-bottom pb-2 mb-3">
-              <h5 class="card-title text-danger">{{ vaga.dados_pessoais.nome_completo }}</h5>
-              <small class="text-muted">Cadastrado em: {{ vaga.data_cadastro.strftime('%d/%m/%Y %H:%M') }}</small>
+            <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+              <h5 class="card-title text-danger mb-0">{{ vaga.dados_pessoais.nome_completo }}</h5>
+              <div class="d-flex align-items-center">
+                <small class="text-muted me-3">Cadastrado em: {{ vaga.data_cadastro.strftime('%d/%m/%Y %H:%M') }}</small>
+                <a href="{{ url_for('editar_vaga', vaga_id=loop.index0) }}" class="btn btn-sm btn-outline-primary me-1">
+                  <i class="bi bi-pencil"></i> Editar
+                </a>
+                <a href="{{ url_for('excluir_vaga', vaga_id=loop.index0) }}" class="btn btn-sm btn-outline-danger" 
+                   onclick="return confirm('Tem certeza que deseja excluir esta vaga?')">
+                  <i class="bi bi-trash"></i> Excluir
+                </a>
+              </div>
             </div>
 
             <div class="row mb-3">
@@ -94,18 +103,22 @@
         <a href="{{ url_for('cadastrar_vaga') }}" class="btn btn-primary mb-3">
           <i class="bi bi-plus-circle"></i> Cadastrar Primeira Vaga
         </a>
-        <br>
-        <button id="exportExcel" class="btn btn-success">
-          <i class="bi bi-file-earmark-excel"></i> Exportar para Excel
-        </button>
       </div>
     {% endif %}
+
+    <div class="text-center mt-3">
+      <button id="exportExcelBtn" class="btn btn-success" {{ 'disabled' if not vagas else '' }}>
+
+        <i class="bi bi-file-earmark-excel"></i> Exportar para Excel
+      </button>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
-    document.getElementById('exportExcel')?.addEventListener('click', function () {const headers = ["Nome Completo", "CPF", "Data Nascimento", "Estado Civil", "Dependentes", "Telefone", "E-mail", "CEP", "Cidade", "Estado", "Área Atuação", "Tipo Interesse", "Disponibilidade", "Experiência", "Banco", "Agência", "Conta", "PIX", "Data Cadastro"];
+    document.getElementById('exportExcelBtn')?.addEventListener('click', function() {
+      const headers = ["Nome Completo", "CPF", "Data Nascimento", "Estado Civil", "Dependentes", "Telefone", "E-mail", "CEP", "Cidade", "Estado", "Área Atuação", "Tipo Interesse", "Disponibilidade", "Experiência", "Banco", "Agência", "Conta", "PIX", "Data Cadastro"];
       const dados = [headers];
 
       {% for vaga in vagas %}
@@ -136,7 +149,7 @@
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Vagas");
       const date = new Date().toISOString().slice(0, 10);
-      XLSX.writeFile(wb, `banco_de_vagas_${date}.xlsx`);
+      XLSX.writeFile(wb, banco_de_vagas_${date}.xlsx);
     });
   </script>
 </body>

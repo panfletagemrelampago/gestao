@@ -43,8 +43,10 @@
                         <thead class="table-dark">
                             <tr>
                                 <th>ID</th>
-                                <th>Nome da Ação</th>
+                                <th>Cliente</th>
+                                <th>Empresa</th>
                                 <th>Tipo</th>
+                                <th>Categoria</th>
                                 <th>Data Início</th>
                                 <th>Data Término</th>
                                 <th>Status</th>
@@ -55,12 +57,14 @@
                             {% for acao in acoes %}
                             <tr>
                                 <td>{{ loop.index }}</td>
-                                <td>{{ acao.nome }}</td>
+                                <td>{{ acao.nome_cliente }}</td>
+                                <td>{{ acao.empresa }}</td>
                                 <td>
                                     <span class="badge" style="background-color: var(--vinho-medio);">
-                                        {{ acao.tipo }}
+                                        {{ acao.tipo_acao }}
                                     </span>
                                 </td>
+                                <td>{{ acao.categoria }}</td>
                                 <td>{{ acao.data_inicio.strftime('%d/%m/%Y') if acao.data_inicio else 'N/A' }}</td>
                                 <td>{{ acao.data_termino.strftime('%d/%m/%Y') if acao.data_termino else 'N/A' }}</td>
                                 <td>
@@ -82,7 +86,7 @@
                             </tr>
                             {% else %}
                             <tr>
-                                <td colspan="7" class="text-center">Nenhuma ação cadastrada ainda.</td>
+                                <td colspan="9" class="text-center">Nenhuma ação cadastrada ainda.</td>
                             </tr>
                             {% endfor %}
                         </tbody>

@@ -60,26 +60,36 @@
                                 <td>{{ cliente.email }}</td>
                                 <td>{{ cliente.cpf_cnpj }}</td>
                                 <td>
-                                    <a href="{{ url_for('detalhes_cliente', cliente_id=cliente.id) }}" class="btn btn-sm btn-outline-info me-1" title="Detalhes">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
                                     <a href="{{ url_for('editar_cliente', cliente_id=cliente.id) }}" class="btn btn-sm btn-outline-warning me-1" title="Editar">
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                    <form action="{{ url_for('excluir_cliente', cliente_id=cliente.id) }}" method="POST" style="display: inline;">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Excluir" onclick="return confirm('Tem certeza que deseja excluir este cliente?')">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
+                                    <button class="btn btn-sm btn-outline-danger" title="Excluir" onclick="confirmarExclusao({{ cliente.id }})">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
                                 </td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="7" class="text-center">Nenhum cliente cadastrado ainda.</td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmação -->
+    <div class="modal fade" id="confirmarExclusaoModal" tabindex="-1" aria-labelledby="confirmarExclusaoModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmarExclusaoModalLabel">Confirmar Exclusão</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    Tem certeza que deseja excluir este cliente? Esta operação não pode ser desfeita.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <a id="btnConfirmarExclusao" href="#" class="btn btn-danger">Excluir</a>
                 </div>
             </div>
         </div>
@@ -103,6 +113,14 @@
                 table.search($('#searchInput').val()).draw();
             });
         });
+
+        function confirmarExclusao(clienteId) {
+            const btnConfirmar = document.getElementById('btnConfirmarExclusao');
+            btnConfirmar.href = "{{ url_for('excluir_acao', acao_id=0) }}".replace('0', clienteId);
+
+            const modal = new bootstrap.Modal(document.getElementById('confirmarExclusaoModal'));
+            modal.show();
+        }
     </script>
 </body>
 </html>

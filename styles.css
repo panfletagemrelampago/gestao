@@ -1,0 +1,109 @@
+/* Global Styles */
+:root {
+  --vinho-escuro: #8E0000;
+  --vinho-medio: #A50C0D;
+  --laranja-destaque: #FF9E0C;
+  --fundo-claro: #f8f9fa;
+  --branco: #ffffff;
+  --texto-escuro: #333333;
+  --cinza-borda: #dee2e6;
+  --sombra-card: 0 2px 4px rgba(142, 0, 0, 0.1);
+  --sombra-card-hover: 0 5px 15px rgba(165, 12, 13, 0.1);
+}
+
+/* Login Page Styles */
+body {
+  background-color: var(--fundo-claro);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.login-container {
+  background-color: var(--branco);
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: var(--sombra-card);
+  width: 100%;
+  max-width: 360px;
+  border-top: 4px solid var(--vinho-escuro);
+  margin: 2rem auto;
+}
+
+.login-title {
+  text-align: center;
+  color: var(--vinho-escuro);
+  font-weight: 600;
+}
+
+/* Homepage Styles */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.menu-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-top: 30px;
+}
+
+.menu-card {
+  background-color: var(--branco);
+  border-radius: 8px;
+  padding: 25px;
+  box-shadow: var(--sombra-card);
+  transition: all 0.3s ease;
+}
+
+.menu-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--sombra-card-hover);
+}
+
+/* Form Styles */
+.form-control {
+  border: 1px solid var(--cinza-borda);
+  border-radius: 4px;
+}
+
+.form-control:focus {
+  border-color: var(--laranja-destaque);
+  box-shadow: 0 0 0 0.2rem rgba(255, 158, 12, 0.2);
+}
+
+/* Utility Classes */
+.alert {
+  padding: 0.75rem 1.25rem;
+  margin-bottom: 1rem;
+  border-radius: 0.25rem;
+}
+
+.alert-success {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.alert-danger {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.user-info {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  color: var(--vinho-escuro);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .menu-container {
+    grid-template-columns: 1fr;
+  }
+
+  .login-container {
+    margin: 1rem;
+    padding: 1.5rem;
+  }
+}

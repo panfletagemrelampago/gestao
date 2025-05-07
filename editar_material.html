@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Editar Material - Relâmpago</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet"/>
+  <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet"/>
+</head>
+<body>
+  {% include 'navbar.html' %}
+
+  <div class="container mt-4">
+    <h2 class="mb-4 text-center" style="color: var(--vinho-escuro);">Editar Material</h2>
+
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <form method="POST" enctype="multipart/form-data">
+          <div class="mb-3">
+            <label for="campanha" class="form-label">Nome da Campanha</label>
+            <input type="text" class="form-control" id="campanha" name="campanha" value="{{ material.nome }}" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="tipo_acao" class="form-label">Tipo de Ação</label>
+            <input type="text" class="form-control" id="tipo_acao" name="tipo_acao" value="{{ material.tipo }}" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="quantidade" class="form-label">Quantidade de Material</label>
+            <input type="number" class="form-control" id="quantidade" name="quantidade" value="{{ material.quantidade }}" required>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="validade_inicio" class="form-label">Data de Início da Validade</label>
+              <input type="date" class="form-control" id="validade_inicio" name="validade_inicio" value="{{ material.data_inicio }}" required>
+            </div>
+            <div class="col-md-6">
+              <label for="validade_fim" class="form-label">Data de Término da Validade</label>
+              <input type="date" class="form-control" id="validade_fim" name="validade_fim" value="{{ material.data_termino }}" required>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="nome_cliente" class="form-label">Nome do Cliente</label>
+            <input type="text" class="form-control" id="nome_cliente" name="nome_cliente" value="{{ material.nome_cliente }}" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="empresa" class="form-label">Nome da Empresa</label>
+            <input type="text" class="form-control" id="empresa" name="empresa" value="{{ material.empresa }}" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="locais" class="form-label">Locais da Ação</label>
+            <textarea class="form-control" id="locais" name="locais" rows="3" required>{{ material.locais }}</textarea>
+          </div>
+
+          <div class="mb-3">
+            <label for="quantidade_pessoas" class="form-label">Quantidade de Pessoas para a Ação</label>
+            <input type="number" class="form-control" id="quantidade_pessoas" name="quantidade_pessoas" value="{{ material.quantidade_pessoas }}" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="encarregado" class="form-label">Nome do Encarregado de Receber/Coletar o Material</label>
+            <input type="text" class="form-control" id="encarregado" name="encarregado" value="{{ material.responsavel }}" required>
+          </div>
+
+          <div class="text-center mt-4">
+            <button type="submit" class="btn" style="background-color: var(--laranja-destaque); color: white;">
+              <i class="bi bi-check-circle"></i> Salvar Alterações
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="text-center">
+      <a href="{{ url_for('detalhes_material', material_id=material.id) }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar para Detalhes
+      </a>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

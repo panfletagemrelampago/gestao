@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RELÂMPAGO - Sistema de Gerenciamento</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --vinho-escuro: #8E0000;
+            --vinho-medio: #A50C0D;
+            --laranja-destaque: #FF9E0C;
+            --fundo-claro: #f8f9fa;
+            --branco: #ffffff;
+            --texto-escuro: #333333;
+            --sombra-card: 0 2px 4px rgba(142, 0, 0, 0.1);
+            --sombra-card-hover: 0 5px 15px rgba(165, 12, 13, 0.2);
+        }
+
+        body {
+            background-color: var(--fundo-claro);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--texto-escuro);
+        }
+
+        .container {
+            max-width: 960px;
+            margin-top: 50px;
+            padding: 20px;
+        }
+
+        .user-info {
+            text-align: right;
+            padding: 10px 20px 0 0;
+            font-size: 0.95rem;
+            color: var(--vinho-medio);
+        }
+
+        .user-info .logout-btn {
+            color: var(--laranja-destaque);
+            text-decoration: none;
+            margin-left: 10px;
+            font-weight: 500;
+        }
+
+        .user-info .logout-btn:hover {
+            text-decoration: underline;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--vinho-escuro);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            color: var(--vinho-medio);
+        }
+
+        .menu-container {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .menu-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 45%;
+            min-width: 300px;
+        }
+
+        .menu-card {
+            background-color: var(--branco);
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: var(--sombra-card);
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            min-height: 100px;
+        }
+
+        .menu-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--sombra-card-hover);
+            border-left: 4px solid var(--laranja-destaque);
+        }
+
+        .menu-card h3 {
+            font-size: 1.25rem;
+            margin: 0;
+            color: var(--vinho-escuro);
+            font-weight: 600;
+        }
+
+        .menu-link {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        @media (max-width: 768px) {
+            .menu-column {
+                width: 100%;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .header p {
+                font-size: 1rem;
+            }
+
+            .menu-card h3 {
+                font-size: 1.1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    {% if 'usuario' in session %}
+    <div class="user-info">
+        Olá, {{ session['usuario'] }}
+        <a href="{{ url_for('logout') }}" class="logout-btn">(Sair)</a>
+    </div>
+    {% endif %}
+
+    <div class="container">
+        <div class="header">
+            <h1>RELÂMPAGO</h1>
+            <p>Selecione uma opção abaixo</p>
+        </div>
+
+        <div class="menu-container">
+            <!-- Coluna 1 - Cadastros -->
+            <div class="menu-column">
+                <a href="{{ url_for('cadastrar_material') }}" class="menu-link">
+                    <div class="menu-card"><h3>Cadastrar Material</h3></div>
+                </a>
+                <a href="{{ url_for('cadastrar_acao') }}" class="menu-link">
+                    <div class="menu-card"><h3>Cadastrar Ação</h3></div>
+                </a>
+                <a href="{{ url_for('cadastrar_cliente') }}" class="menu-link">
+                    <div class="menu-card"><h3>Cadastrar Cliente</h3></div>
+                </a>
+                <a href="{{ url_for('cadastrar_vaga') }}" class="menu-link">
+                    <div class="menu-card"><h3>Cadastrar Vaga</h3></div>
+                </a>
+            </div>
+
+            <!-- Coluna 2 - Bancos -->
+            <div class="menu-column">
+                <a href="{{ url_for('banco_materiais') }}" class="menu-link">
+                    <div class="menu-card"><h3>Banco de Materiais</h3></div>
+                </a>
+                <a href="{{ url_for('banco_acoes') }}" class="menu-link">
+                    <div class="menu-card"><h3>Banco de Ações</h3></div>
+                </a>
+                <a href="{{ url_for('banco_clientes') }}" class="menu-link">
+                    <div class="menu-card"><h3>Banco de Clientes</h3></div>
+                </a>
+                <a href="{{ url_for('banco_vagas') }}" class="menu-link">
+                    <div class="menu-card"><h3>Banco de Vagas</h3></div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

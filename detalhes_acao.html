@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalhes da Ação</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .action-header {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+        }
+        .detail-card {
+            margin-bottom: 20px;
+            border-left: 4px solid #0d6efd;
+        }
+        .action-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <!-- Cabeçalho com nome da ação -->
+        <div class="action-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1>{{ acao.nome }}</h1>
+                <div>
+                    <a href="{{ url_for('banco_acoes') }}" class="btn btn-outline-secondary me-2">
+                        <i class="bi bi-arrow-left"></i> Voltar
+                    </a>
+                    <form action="{{ url_for('excluir_acao', acao_id=acao_id) }}" method="POST" style="display: inline;">
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('Tem certeza que deseja excluir esta ação?')">
+                            <i class="bi bi-trash"></i> Excluir
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <p class="text-muted mb-0">Cadastrada em: {{ acao.data_cadastro.strftime('%d/%m/%Y %H:%M') if acao.data_cadastro else 'Data não disponível' }}</p>
+        </div>
+
+        <!-- Linha principal com detalhes -->
+        <div class="row">
+            <!-- Coluna de informações -->
+            <div class="col-md-8">
+                <!-- Card de Descrição -->
+                <div class="card detail-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Descrição</h5>
+                        <p class="card-text">{{ acao.descricao or 'Nenhuma descrição fornecida' }}</p>
+                    </div>
+                </div>
+
+                <!-- Card de Período -->
+                <div class="card detail-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Período</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Início:</strong> {{ acao.data_inicio or 'Não definido' }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Término:</strong> {{ acao.data_fim or 'Não definido' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card de Responsáveis -->
+                <div class="card detail-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Responsável</h5>
+                        <p class="card-text">{{ acao.responsavel or 'Não informado' }}</p>
+                    </div>
+                </div>
+
+                <!-- Card de Local -->
+                <div class="card detail-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Local</h5>
+                        <p class="card-text">{{ acao.local or 'Não informado' }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coluna de imagem/recursos -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Recursos</h5>
+                        <div class="text-center mb-3">
+                            <img src="https://via.placeholder.com/300x200?text=Imagem+da+Ação" alt="Imagem da ação" class="action-image img-thumbnail">
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-primary">
+                                <i class="bi bi-download"></i> Baixar Materiais
+                            </button>
+                            <button class="btn btn-outline-success">
+                                <i class="bi bi-people-fill"></i> Lista de Participantes
+                            </button>
+                            <button class="btn btn-outline-info">
+                                <i class="bi bi-images"></i> Fotos do Evento
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção de Anexos -->
+        <div class="mt-4">
+            <h4>Anexos</h4>
+            <div class="list-group">
+                <a href="#" class="list-group-item list-group-item-action">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">Planejamento da Ação.pdf</h5>
+                        <small>1.2 MB</small>
+                    </div>
+                    <small>Adicionado em 15/06/2023</small>
+                </a>
+                <a href="#" class="list-group-item list-group-item-action">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">Lista de Materiais.xlsx</h5>
+                        <small>350 KB</small>
+                    </div>
+                    <small>Adicionado em 10/06/2023</small>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

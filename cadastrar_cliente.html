@@ -16,34 +16,34 @@
 
     <div class="card shadow-sm mb-4">
       <div class="card-body">
-        <form method="POST">
+        <form method="POST" action="{{ url_for('cadastrar_cliente') }}">
           <div class="mb-3">
-            <label for="nome_cliente" class="form-label">Nome do Cliente</label>
+            <label for="nome_cliente" class="form-label">Nome do Cliente*</label>
             <input type="text" class="form-control" id="nome_cliente" name="nome_cliente" required>
           </div>
 
           <div class="mb-3">
-            <label for="empresa" class="form-label">Nome da Empresa</label>
+            <label for="empresa" class="form-label">Nome da Empresa*</label>
             <input type="text" class="form-control" id="empresa" name="empresa" required>
           </div>
 
           <div class="mb-3">
-            <label for="segmento" class="form-label">Segmento de Atuação</label>
+            <label for="segmento" class="form-label">Segmento de Atuação*</label>
             <input type="text" class="form-control" id="segmento" name="segmento" required>
           </div>
 
           <div class="mb-3">
-            <label for="telefone" class="form-label">Telefone de Contato</label>
+            <label for="telefone" class="form-label">Telefone de Contato*</label>
             <input type="tel" class="form-control" id="telefone" name="telefone" required>
           </div>
 
           <div class="mb-3">
-            <label for="email" class="form-label">E-mail de Contato</label>
+            <label for="email" class="form-label">E-mail de Contato*</label>
             <input type="email" class="form-control" id="email" name="email" required>
           </div>
 
           <div class="mb-3">
-            <label for="cpf_cnpj" class="form-label">CPF/CNPJ</label>
+            <label for="cpf_cnpj" class="form-label">CPF/CNPJ*</label>
             <input type="text" class="form-control" id="cpf_cnpj" name="cpf_cnpj" required>
           </div>
 

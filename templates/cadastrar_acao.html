@@ -16,76 +16,71 @@
 
     <div class="card shadow-sm mb-4">
       <div class="card-body">
-        <form method="POST" enctype="multipart/form-data">
+        <form method="POST" enctype="multipart/form-data" action="{{ url_for('cadastrar_acao') }}">
           <div class="mb-3">
-            <label for="nome_cliente" class="form-label">Nome do Cliente</label>
+            <label for="nome_cliente" class="form-label">Nome do Cliente*</label>
             <input type="text" class="form-control" id="nome_cliente" name="nome_cliente" required>
           </div>
 
           <div class="mb-3">
-            <label for="empresa" class="form-label">Nome da Empresa</label>
+            <label for="empresa" class="form-label">Nome da Empresa*</label>
             <input type="text" class="form-control" id="empresa" name="empresa" required>
           </div>
 
           <div class="mb-3">
-            <label for="tipo_acao" class="form-label">Tipo de Ação</label>
+            <label for="tipo_acao" class="form-label">Tipo de Ação*</label>
             <input type="text" class="form-control" id="tipo_acao" name="tipo_acao" required>
           </div>
 
           <div class="mb-3">
-            <label for="categoria_acao" class="form-label">Categoria da Ação</label>
-            <input type="text" class="form-control" id="categoria_acao" name="categoria" required>
-          </div>
-
-          <div class="mb-3">
-            <label for="quantidade" class="form-label">Quantidade de Material</label>
+            <label for="quantidade" class="form-label">Quantidade de Material*</label>
             <input type="number" class="form-control" id="quantidade" name="quantidade" required>
           </div>
 
           <div class="row mb-3">
             <div class="col-md-6">
-              <label for="data_inicio" class="form-label">Data de Início</label>
+              <label for="data_inicio" class="form-label">Data de Início*</label>
               <input type="date" class="form-control" id="data_inicio" name="data_inicio" required>
             </div>
             <div class="col-md-6">
-              <label for="data_termino" class="form-label">Data de Término</label>
+              <label for="data_termino" class="form-label">Data de Término*</label>
               <input type="date" class="form-control" id="data_termino" name="data_termino" required>
             </div>
           </div>
 
           <div class="row mb-3">
             <div class="col-md-6">
-              <label for="hora_inicio" class="form-label">Horário de Início</label>
+              <label for="hora_inicio" class="form-label">Horário de Início*</label>
               <input type="time" class="form-control" id="hora_inicio" name="hora_inicio" required>
             </div>
             <div class="col-md-6">
-              <label for="hora_termino" class="form-label">Horário de Término</label>
+              <label for="hora_termino" class="form-label">Horário de Término*</label>
               <input type="time" class="form-control" id="hora_termino" name="hora_termino" required>
             </div>
           </div>
 
           <div class="mb-3">
-            <label for="locais" class="form-label">Locais da Ação</label>
+            <label for="locais" class="form-label">Locais da Ação*</label>
             <textarea class="form-control" id="locais" name="locais" rows="3" required></textarea>
           </div>
 
           <div class="mb-3">
-            <label for="quantidade_pessoas" class="form-label">Quantidade de Pessoas para a Ação</label>
+            <label for="quantidade_pessoas" class="form-label">Quantidade de Pessoas para a Ação*</label>
             <input type="number" class="form-control" id="quantidade_pessoas" name="quantidade_pessoas" required>
           </div>
 
           <div class="mb-3">
-            <label for="responsavel" class="form-label">Responsável pela Equipe</label>
+            <label for="responsavel" class="form-label">Responsável pela Equipe*</label>
             <input type="text" class="form-control" id="responsavel" name="responsavel" required>
           </div>
 
           <div class="mb-3">
-            <label for="material_acao" class="form-label">Upload do Material da Ação</label>
+            <label for="material_acao" class="form-label">Upload do Material da Ação*</label>
             <input type="file" class="form-control" id="material_acao" name="material_acao" required>
           </div>
 
           <div class="mb-3">
-            <label for="foto_equipe" class="form-label">Upload da Foto da Equipe</label>
+            <label for="foto_equipe" class="form-label">Upload da Foto da Equipe*</label>
             <input type="file" class="form-control" id="foto_equipe" name="foto_equipe" required>
           </div>
 

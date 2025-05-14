@@ -5,60 +5,113 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editar Ação - Relâmpago</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet">
 </head>
 <body>
-    <div class="container mt-5">
-        <h2 class="mb-4">Editar Ação: {{ acao.nome }}</h2>
+  {% include 'navbar.html' %}
 
-        <form method="POST">
-            <div class="mb-3">
-                <label for="nome" class="form-label">Nome da Ação</label>
-                <input type="text" class="form-control" id="nome" name="nome"
-                       value="{{ acao.nome }}" required>
-            </div>
+  <div class="container mt-5">
+      <h2 class="mb-4">Editar Ação: {{ acao.nome_cliente }}</h2>
 
-            <div class="mb-3">
-                <label for="tipo" class="form-label">Tipo de Ação</label>
-                <input type="text" class="form-control" id="tipo" name="tipo"
-                       value="{{ acao.tipo }}" required>
-            </div>
+      <form method="POST" enctype="multipart/form-data">
+          <div class="mb-3">
+              <label for="nome_cliente" class="form-label">Nome do Cliente</label>
+              <input type="text" class="form-control" id="nome_cliente" name="nome_cliente"
+                     value="{{ acao.nome_cliente }}" required>
+          </div>
 
-            <div class="mb-3">
-                <label for="descricao" class="form-label">Descrição</label>
-                <textarea class="form-control" id="descricao" name="descricao"
-                          rows="3" required>{{ acao.descricao }}</textarea>
-            </div>
+          <div class="mb-3">
+              <label for="empresa" class="form-label">Empresa</label>
+              <input type="text" class="form-control" id="empresa" name="empresa"
+                     value="{{ acao.empresa }}" required>
+          </div>
 
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <label for="data_inicio" class="form-label">Data de Início</label>
-                    <input type="date" class="form-control" id="data_inicio" name="data_inicio"
-                           value="{{ acao.data_inicio }}" required>
-                </div>
-                <div class="col-md-6">
-                    <label for="data_fim" class="form-label">Data de Término</label>
-                    <input type="date" class="form-control" id="data_fim" name="data_fim"
-                           value="{{ acao.data_fim }}" required>
-                </div>
-            </div>
+          <div class="mb-3">
+              <label for="tipo_acao" class="form-label">Tipo de Ação</label>
+              <input type="text" class="form-control" id="tipo_acao" name="tipo_acao"
+                     value="{{ acao.tipo_acao }}" required>
+          </div>
 
-            <div class="mb-3">
-                <label for="responsavel" class="form-label">Responsável</label>
-                <input type="text" class="form-control" id="responsavel" name="responsavel"
-                       value="{{ acao.responsavel }}" required>
-            </div>
+          <div class="mb-3">
+              <label for="quantidade" class="form-label">Quantidade de Material</label>
+              <input type="number" class="form-control" id="quantidade" name="quantidade"
+                     value="{{ acao.quantidade_material }}" required>
+          </div>
 
-            <div class="mb-3">
-                <label for="local" class="form-label">Local</label>
-                <input type="text" class="form-control" id="local" name="local"
-                       value="{{ acao.local }}" required>
-            </div>
+          <div class="row mb-3">
+              <div class="col-md-6">
+                  <label for="data_inicio" class="form-label">Data de Início</label>
+                  <input type="date" class="form-control" id="data_inicio" name="data_inicio"
+                         value="{{ acao.data_inicio if acao.data_inicio and not acao.data_inicio is string else '' }}" required>
+              </div>
+              <div class="col-md-6">
+                  <label for="data_termino" class="form-label">Data de Término</label>
+                  <input type="date" class="form-control" id="data_termino" name="data_termino"
+                         value="{{ acao.data_termino if acao.data_termino and not acao.data_termino is string else '' }}" required>
+              </div>
+          </div>
 
-            <div class="d-flex justify-content-between mt-4">
-                <a href="{{ url_for('banco_acoes') }}" class="btn btn-secondary">Cancelar</a>
-                <button type="submit" class="btn btn-primary">Salvar Alterações</button>
-            </div>
-        </form>
-    </div>
+          <div class="row mb-3">
+              <div class="col-md-6">
+                  <label for="hora_inicio" class="form-label">Horário de Início</label>
+                  <input type="time" class="form-control" id="hora_inicio" name="hora_inicio"
+                         value="{{ acao.hora_inicio }}" required>
+              </div>
+              <div class="col-md-6">
+                  <label for="hora_termino" class="form-label">Horário de Término</label>
+                  <input type="time" class="form-control" id="hora_termino" name="hora_termino"
+                         value="{{ acao.hora_termino }}" required>
+              </div>
+          </div>
+
+          <div class="mb-3">
+              <label for="locais" class="form-label">Locais</label>
+              <textarea class="form-control" id="locais" name="locais"
+                        rows="3" required>{{ acao.locais }}</textarea>
+          </div>
+
+          <div class="mb-3">
+              <label for="quantidade_pessoas" class="form-label">Quantidade de Pessoas</label>
+              <input type="text" class="form-control" id="quantidade_pessoas" name="quantidade_pessoas"
+                     value="{{ acao.quantidade_pessoas }}" required>
+          </div>
+
+          <div class="mb-3">
+              <label for="responsavel" class="form-label">Responsável</label>
+              <input type="text" class="form-control" id="responsavel" name="responsavel"
+                     value="{{ acao.responsavel }}" required>
+          </div>
+
+          <!-- Campo de Status Corrigido -->
+          <div class="mb-3">
+              <label for="status" class="form-label">Status</label>
+              <select class="form-select" id="status" name="status" required>
+                  {% for status in ['ativo', 'inativo', 'concluido', 'cancelado'] %}
+                      <option value="{{ status }}"
+                          {% if acao.status.value == status %}selected{% endif %}>
+                          {{ status|capitalize }}
+                      </option>
+                  {% endfor %}
+              </select>
+          </div>
+
+          <div class="mb-3">
+              <label for="material_acao" class="form-label">Material da Ação (Atual: {{ acao.material_acao if acao.material_acao else 'Nenhum arquivo' }})</label>
+              <input type="file" class="form-control" id="material_acao" name="material_acao">
+          </div>
+
+          <div class="mb-3">
+              <label for="foto_equipe" class="form-label">Foto da Equipe (Atual: {{ acao.foto_equipe if acao.foto_equipe else 'Nenhum arquivo' }})</label>
+              <input type="file" class="form-control" id="foto_equipe" name="foto_equipe">
+          </div>
+
+          <div class="d-flex justify-content-between mt-4">
+              <a href="{{ url_for('banco_acoes') }}" class="btn btn-secondary">Cancelar</a>
+              <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+          </div>
+      </form>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

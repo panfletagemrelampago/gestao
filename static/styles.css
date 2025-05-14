@@ -140,3 +140,17 @@
   margin-right: 10px;
   color: var(--laranja-destaque);
 }
+
+/* Layout para Menu em Linhas e Colunas */
+.menu-row {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.menu-column {
+  width: 45%;
+  min-width: 300px;
+}

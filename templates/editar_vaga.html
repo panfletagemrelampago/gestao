@@ -98,7 +98,8 @@
             <div class="row">
               <div class="col-md-6 mb-3">
                 <label for="banco" class="form-label">Banco</label>
-                <input type="text" class="form-control" id="banco" name="banco" value="{{ vaga.dados_bancarios.banco }}">
+                <input type="text" class="form-control" id="banco" name="banco"
+       value="{{ vaga.dados_bancarios.banco if vaga.dados_bancarios else '' }}">
               </div>
               <div class="col-md-3 mb-3">
                 <label for="agencia" class="form-label">Agência</label>

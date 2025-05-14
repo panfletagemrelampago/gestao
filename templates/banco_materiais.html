@@ -25,8 +25,9 @@
 
     /* Estilo dos modais */
     .custom-modal .modal-content {
-      background: transparent;
+      transition: all 0.3s ease-out;
       border: none;
+      background: transparent;
     }
 
     .custom-modal .modal-body {
@@ -34,34 +35,52 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 80vh;
     }
 
     .custom-modal .modal-dialog {
-      max-width: 90vw;
-      max-height: 90vh;
-      margin: 0 auto;
+      max-width: 90%;
+      margin: 2rem auto;
+      border-radius: 12px;
+      overflow: hidden;
     }
 
-    .custom-modal .modal-backdrop {
+    .custom-modal .modal-backdrop.show {
       backdrop-filter: blur(8px);
-      background-color: rgba(0, 0, 0, 0.7);
+      background-color: rgba(0, 0, 0, 0.7) !important;
     }
 
-    .modal-image, .modal-iframe {
-      max-height: 80vh;
-      max-width: 90vw;
+    .modal-image {
+      max-height: 85vh;
+      width: auto;
+      max-width: 90%;
       object-fit: contain;
       background: white;
-      padding: 10px;
-      border-radius: 5px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 4px 30px rgba(0,0,0,0.15);
+      margin: 0 auto;
+      display: block;
     }
 
     .modal-iframe {
-      width: 100%;
-      height: 100%;
+      width: 80vw;
+      height: 80vh;
+      max-width: 900px;
+      min-height: 500px;
       border: none;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      background: white;
+      margin: 0 auto;
+      display: block;
+    }
+
+    .custom-modal .modal-dialog {
+      max-width: none;
+      margin: 1rem auto;
+      display: flex;
+      align-items: center;
+      min-height: calc(100vh - 2rem);
     }
 
     .custom-modal .btn-close {
@@ -71,6 +90,8 @@
       z-index: 1000;
       filter: invert(1);
       opacity: 0.8;
+      background: none;
+      font-size: 1.5rem;
     }
 
     .pdf-icon {
@@ -105,6 +126,15 @@
       border: 1px solid #ddd;
       border-radius: 4px;
     }
+
+    /* Adicionado para melhorar a visualização de PDF */
+    .pdf-viewer-container {
+      width: 100%;
+      height: 80vh;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+    }
   </style>
 </head>
 <body>
@@ -112,10 +142,10 @@
 
   <!-- Modal para visualização de imagem -->
   <div class="modal fade custom-modal" id="imageModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content">
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        <div class="modal-body">
+        <div class="modal-body p-0">
           <img id="modalImage" src="" class="modal-image" alt="Imagem do material">
         </div>
       </div>
@@ -124,11 +154,13 @@
 
   <!-- Modal para visualização de documento -->
   <div class="modal fade custom-modal" id="documentModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
       <div class="modal-content">
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        <div class="modal-body">
-          <iframe id="modalDocument" src="" class="modal-iframe" frameborder="0"></iframe>
+        <div class="modal-body p-0">
+          <div id="documentContent" class="d-flex justify-content-center align-items-center w-100 h-100">
+            <!-- Conteúdo será inserido dinamicamente via JavaScript -->
+          </div>
         </div>
       </div>
     </div>
@@ -174,54 +206,53 @@
 
     <div class="card shadow-sm">
       <div class="card-body">
-        <div class="table-responsive">
+        <div class="table-responsive mx-auto" style="max-width: 95%;">
           <table id="materiaisTable" class="table table-striped table-hover align-middle">
-            <thead class="table-dark">
+          <thead class="table-dark">
               <tr>
-                <th>ID</th>
-                <th>Empresa</th>
-                <th>Campanha</th>
-                <th>Quantidade</th>
-                <th>Início</th>
-                <th>Término</th>
-                <th>Responsável</th>
-                <th>Documento</th>
-                <th>Amostra</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
+                  <th style="text-align: center;">ID</th>
+                  <th style="text-align: center;">Empresa</th>
+                  <th style="text-align: center;">Nome da Campanha</th>
+                  <th style="text-align: center;">Quantidade</th>
+                  <th style="text-align: center;">Início</th>
+                  <th style="text-align: center;">Término</th>
+                  <th style="text-align: center;">Responsável</th>
+                  <th style="text-align: center;">Documento</th>
+                  <th style="text-align: center;">Amostra</th>
+                  <th style="text-align: center;">Ações</th>
+          </thead>
+          <tbody>
               {% for material in materiais %}
               <tr>
-                <td>{{ material.id }}</td>
-                <td>{{ material.empresa }}</td>
-                <td>{{ material.nome_campanha or 'N/A' }}</td>
-                <td class="text-center">{{ material.quantidade }}</td>
-                <td>{{ material.data_inicio.strftime('%d/%m/%Y') if material.data_inicio else 'N/A' }}</td>
-                <td>{{ material.data_termino.strftime('%d/%m/%Y') if material.data_termino else 'N/A' }}</td>
-                <td>{{ material.responsavel }}</td>
-                <td class="text-center">
-                  {% if material.documento_url %}
-                    <div class="file-thumbnail">
+            <td class="text-center">{{ material.id }}</td>
+            <td style="text-align: center;">{{ material.empresa }}</td>
+            <td style="text-align: center;">{{ material.nome_campanha or 'N/A' }}</td>
+            <td style="text-align: center;">{{ material.quantidade }}</td>
+            <td style="text-align: center;">{{ material.data_inicio.strftime('%d/%m/%Y') if material.data_inicio else 'N/A' }}</td>
+            <td style="text-align: center;">{{ material.data_termino.strftime('%d/%m/%Y') if material.data_termino else 'N/A' }}</td>
+            <td style="text-align: center;"> {{ material.responsavel }}</td>
+            <td style="text-align: center;">
+                    {% if material.documento_url %}
                       {% if material.documento_url.lower().endswith('.pdf') %}
-                        <img src="{{ url_for('static', filename='images/pdf-thumbnail.png') }}"
-                             class="table-img"
-                             alt="Documento PDF"
-                             onclick="openDocumentModal('{{ url_for('static', filename='uploads/' + material.documento_url) }}')">
-                        <div class="pdf-icon">
-                          <i class="bi bi-file-earmark-pdf"></i>
+                        <div class="thumbnail-container">
+                          <img src="{{ url_for('static', filename='uploads/' + material.documento_url) }}"
+                               class="table-img"
+                               alt="Documento PDF"
+                               onclick="openDocumentModal('{{ url_for('static', filename='uploads/' + material.documento_url) }}', 'pdf')">
+                          <div class="pdf-icon">
+                            <i class="bi bi-file-earmark-pdf"></i>
+                          </div>
                         </div>
                       {% else %}
                         <img src="{{ url_for('static', filename='uploads/' + material.documento_url) }}"
                              class="table-img"
                              alt="Documento"
-                             onclick="openImageModal('{{ url_for('static', filename='uploads/' + material.documento_url) }}')">
+                             onclick="openDocumentModal('{{ url_for('static', filename='uploads/' + material.documento_url) }}', 'image')">
                       {% endif %}
-                    </div>
-                  {% else %}
-                    <span class="text-muted">N/A</span>
-                  {% endif %}
-                </td>
+                    {% else %}
+                      <span class="text-muted">N/A</span>
+                    {% endif %}
+                  </td>
                 <td class="text-center">
                   {% if material.imagem_url %}
                     <img src="{{ url_for('static', filename='uploads/' + material.imagem_url) }}"
@@ -233,12 +264,15 @@
                   {% endif %}
                 </td>
                 <td class="text-nowrap">
-                  <a href="{{ url_for('editar_material', material_id=material.id) }}" class="btn btn-sm btn-outline-warning me-1">
-                    <i class="bi bi-pencil"></i>
-                  </a>
-                  <button class="btn btn-sm btn-outline-danger" onclick="confirmarExclusao({{ material.id }})">
-                    <i class="bi bi-trash"></i>
-                  </button>
+                    <a href="{{ url_for('editar_material', material_id=material.id) }}" class="btn btn-sm btn-outline-warning me-1">
+                        <i class="bi bi-pencil"></i> Editar
+                    </a>
+                    <form action="{{ url_for('excluir_material', material_id=material.id) }}" method="POST" style="display: inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Tem certeza que deseja excluir este material?');">
+                            <i class="bi bi-trash"></i> Excluir
+                        </button>
+                    </form>
                 </td>
               </tr>
               {% else %}
@@ -270,7 +304,8 @@
           { className: "text-center", targets: [3, 7, 8, 9] },
           { className: "text-nowrap", targets: [4, 5] }
         ],
-        order: [[0, 'desc']]
+        order: [[0, 'desc']],
+        searching: false
       });
 
       $('#searchBtn').click(function () {
@@ -281,17 +316,44 @@
 
     function openImageModal(imageUrl) {
       const modal = new bootstrap.Modal(document.getElementById('imageModal'), {
-        backdrop: true
+        backdrop: 'static',
+        keyboard: true
       });
-      document.getElementById('modalImage').src = imageUrl;
+
+      // Limpa e carrega a nova imagem
+      const imgElement = document.getElementById('modalImage');
+      imgElement.src = '';
+      imgElement.src = imageUrl;
+
       modal.show();
     }
 
-    function openDocumentModal(documentUrl) {
+    function openDocumentModal(documentUrl, type) {
       const modal = new bootstrap.Modal(document.getElementById('documentModal'), {
-        backdrop: true
+        backdrop: 'static',
+        keyboard: true
       });
-      document.getElementById('modalDocument').src = documentUrl + '#view=fitH';
+
+      const contentDiv = document.getElementById('documentContent');
+      contentDiv.innerHTML = '';
+
+      if (type === 'pdf') {
+        // Cria um iframe para visualização de PDF
+        const iframe = document.createElement('iframe');
+        iframe.className = 'modal-iframe';
+        iframe.src = 'https://docs.google.com/viewer?url=' +
+                     encodeURIComponent(window.location.origin + documentUrl) +
+                     '&embedded=true';
+        contentDiv.appendChild(iframe);
+      } else {
+        // Para imagens, cria um elemento img
+        const img = document.createElement('img');
+        img.className = 'modal-image';
+        img.src = documentUrl;
+        img.alt = 'Documento do material';
+        contentDiv.appendChild(img);
+      }
+
       modal.show();
     }
 

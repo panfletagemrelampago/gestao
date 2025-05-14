@@ -12,6 +12,14 @@
       content: " *";
       color: red;
     }
+    .file-preview {
+      max-width: 100px;
+      max-height: 100px;
+      margin-top: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 5px;
+    }
   </style>
 </head>
 <body>
@@ -23,6 +31,8 @@
     <div class="card shadow-sm mb-4">
       <div class="card-body">
         <form method="POST" enctype="multipart/form-data">
+          <input type="hidden" name="material_id" value="{{ material.id }}">
+
           <div class="row">
             <div class="col-md-6">
               <div class="mb-3">
@@ -32,7 +42,8 @@
 
               <div class="mb-3">
                 <label for="campanha" class="form-label required-field">Nome da Campanha</label>
-                <input type="text" class="form-control" id="campanha" name="campanha" value="{{ material.nome_campanha }}" required>
+                <input type="text" id="campanha" name="nome_campanha" value="{{ material.nome_campanha }}" required>
+
               </div>
 
               <div class="mb-3">
@@ -44,12 +55,12 @@
                 <div class="col-md-6">
                   <label for="data_inicio" class="form-label required-field">Início da Validade</label>
                   <input type="date" class="form-control" id="data_inicio" name="data_inicio"
-                         value="{{ material.data_inicio.strftime('%Y-%m-%d') if material.data_inicio else '' }}" required>
+                         value="{{ material.data_inicio }}" required>
                 </div>
                 <div class="col-md-6">
                   <label for="data_termino" class="form-label required-field">Término da Validade</label>
                   <input type="date" class="form-control" id="data_termino" name="data_termino"
-                         value="{{ material.data_termino.strftime('%Y-%m-%d') if material.data_termino else '' }}" required>
+                         value="{{ material.data_termino }}" required>
                 </div>
               </div>
             </div>
@@ -64,6 +75,14 @@
                 <label for="documento" class="form-label">Documento (PDF, Word, JPG, PNG)</label>
                 <input type="file" class="form-control" id="documento" name="documento"
                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                {% if material.documento_url %}
+                  <div class="mt-2">
+                    <span>Documento atual:</span>
+                    <a href="{{ url_for('static', filename='uploads/' + material.documento_url) }}" target="_blank">
+                      {{ material.documento_url }}
+                    </a>
+                  </div>
+                {% endif %}
                 <div class="form-text">Deixe em branco para manter o arquivo atual</div>
               </div>
 
@@ -71,6 +90,14 @@
                 <label for="amostra" class="form-label">Amostra do Material</label>
                 <input type="file" class="form-control" id="amostra" name="amostra"
                        accept="image/*">
+                {% if material.imagem_url %}
+                  <div class="mt-2">
+                    <span>Imagem atual:</span>
+                    <img src="{{ url_for('static', filename='uploads/' + material.imagem_url) }}"
+                         class="file-preview"
+                         alt="Amostra atual">
+                  </div>
+                {% endif %}
                 <div class="form-text">Deixe em branco para manter a imagem atual</div>
               </div>
             </div>
@@ -87,7 +114,7 @@
 
     <div class="text-center mb-4">
       <a href="{{ url_for('banco_materiais') }}" class="btn btn-secondary">
-        <i class="bi bi-arrow-left"></i> Voltar para Detalhes
+        <i class="bi bi-arrow-left"></i> Voltar para Banco de Materiais
       </a>
     </div>
   </div>

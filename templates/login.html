@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    :root {
+        --vinho-escuro: #8E0000;
+        --vinho-medio: #A50C0D;
+        --laranja-destaque: #FF9E0C;
+        --fundo-claro: #f8f9fa;
+        --branco: #ffffff;
+        --texto-escuro: #333333;
+    }
+
+    body {
+        background-color: var(--fundo-claro);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Header ultra compacto */
+    .navbar-relampago {
+        background: linear-gradient(135deg, var(--vinho-escuro), var(--vinho-medio));
+        padding: 0.3rem 1rem;
+        width: 100%;
+        min-height: 50px;
+    }
+
+    .navbar-brand {
+        font-size: 1.1rem;
+    }
+
+    .navbar-nav .nav-link {
+        padding: 0.3rem 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .dropdown-menu {
+        font-size: 0.9rem;
+    }
+
+    .user-area {
+        font-size: 0.9rem;
+    }
+
+    .login-wrapper {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0rem 0;
+    }
+
+    /* Container principal reduzido */
+    .main-container {
+        max-width: 380px;
+        width: 100%;
+        padding: 0 15px;
+    }
+
+    .login-container {
+        width: 100%;
+        padding: 1.8rem;
+        background-color: var(--branco);
+        border-radius: 12px;
+        box-shadow: 0 15px 30px rgba(142, 0, 0, 0.1);
+        position: relative;
+        overflow: hidden;
+        transform: translateY(0);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border-top: 4px solid var(--vinho-escuro);
+    }
+
+    .login-container:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 40px rgba(165, 12, 13, 0.15);
+    }
+
+    .login-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%238E0000' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        z-index: 0;
+    }
+
+    .login-content {
+        position: relative;
+        z-index: 1;
+    }
+
+    .login-title {
+        text-align: center;
+        margin-bottom: 0.8rem;
+        color: var(--vinho-escuro);
+        font-weight: 700;
+        font-size: 1.8rem;
+        position: relative;
+        display: inline-block;
+        width: 100%;
+    }
+
+    .login-title::after {
+        content: '';
+        position: absolute;
+        width: 50px;
+        height: 3px;
+        background: var(--laranja-destaque);
+        bottom: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        border-radius: 3px;
+    }
+
+    .login-subtitle {
+        display: block;
+        text-align: center;
+        margin-bottom: 0.5rem;
+        color: var(--vinho-medio);
+        font-weight: 400;
+        font-size: 1rem;
+    }
+
+    .form-label {
+        font-weight: 500;
+        color: var(--vinho-escuro);
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    /* Inputs com bordas escuras */
+    .form-control {
+        border: 2px solid var(--texto-escuro) !important;
+        border-radius: 6px !important;
+        padding: 0.75rem 1rem !important;
+        transition: all 0.3s ease;
+        box-shadow: none !important;
+    }
+
+    .form-control:focus {
+        border-color: var(--vinho-medio) !important;
+        box-shadow: 0 0 0 0.25rem rgba(142, 0, 0, 0.15) !important;
+    }
+
+    .input-group {
+        position: relative;
+        margin-bottom: 0.5rem;
+    }
+
+    .input-icon {
+        position: absolute;
+        top: 50%;
+        left: 15px;
+        transform: translateY(-50%);
+        color: var(--vinho-medio);
+        z-index: 2;
+    }
+
+    .form-control.with-icon {
+        padding-left: 45px !important;
+    }
+
+    .btn-login {
+        background-color: var(--vinho-escuro);
+        border: none;
+        width: 100%;
+        padding: 0.75rem;
+        font-weight: 600;
+        border-radius: 6px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-login:hover {
+        background-color: var(--vinho-medio);
+        transform: translateY(-2px);
+    }
+
+    .btn-login::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: 0.5s;
+    }
+
+    .btn-login:hover::before {
+        left: 100%;
+    }
+
+    .lightning-icon {
+        display: block;
+        text-align: center;
+        margin-bottom: 0rem;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% {
+            transform: scale(1);
+            opacity: 1;
+        }
+        50% {
+            transform: scale(1.1);
+            opacity: 0.8;
+        }
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    .floating {
+        animation: floating 3s ease-in-out infinite;
+    }
+
+    @keyframes floating {
+        0% {
+            transform: translateY(0px);
+        }
+        50% {
+            transform: translateY(-10px);
+        }
+        100% {
+            transform: translateY(0px);
+        }
+    }
+
+    /* Efeito de onda ao clicar no botão */
+    .wave {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 10px;
+        height: 10px;
+        background-color: rgba(255, 255, 255, 0.5);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        animation: wave 0.5s linear;
+        opacity: 0;
+    }
+
+    @keyframes wave {
+        0% {
+            width: 10px;
+            height: 10px;
+            opacity: 0.5;
+        }
+        100% {
+            width: 200px;
+            height: 200px;
+            opacity: 0;
+        }
+    }
+
+    footer {
+        background: linear-gradient(135deg, var(--vinho-escuro), var(--vinho-medio));
+        color: white;
+        padding: 1.5rem 0;
+        width: 100%;
+        margin-top: 0rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    footer .container {
+        position: relative;
+        z-index: 1;
+    }
+
+    /* Responsividade */
+    @media (max-width: 576px) {
+        .login-container {
+            padding: 1.5rem;
+        }
+
+        .login-title {
+            font-size: 1.6rem;
+        }
+
+        .navbar-relampago {
+            padding: 0.3rem;
+        }
+
+        .navbar-brand {
+            font-size: 1rem;
+        }
+    }
+</style>
+
+<div class="login-wrapper">
+    <div class="main-container">
+        <div class="login-container floating">
+            <div class="login-content">
+                <div class="lightning-icon">
+                    <i class="bi bi-lightning-charge-fill" style="font-size: 2.5rem; color: var(--laranja-destaque);"></i>
+                </div>
+                <h1 class="login-title">RELÂMPAGO</h1>
+                <span class="login-subtitle">Sistema de Gerenciamento</span>
+
+                <form method="POST" action="{{ url_for('login') }}">
+                    <div class="mb-3 input-group">
+                        <i class="bi bi-person-fill input-icon"></i>
+                        <input type="text" class="form-control with-icon" id="username" name="username" placeholder="Digite seu login" required>
+                    </div>
+
+                    <div class="mb-3 input-group">
+                        <i class="bi bi-lock-fill input-icon"></i>
+                        <input type="password" class="form-control with-icon" id="password" name="password" placeholder="Digite sua senha" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-login" id="loginButton">
+                        <span id="buttonText">Entrar</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Adiciona efeito de onda ao clicar no botão
+    document.getElementById('loginButton').addEventListener('click', function(e) {
+        // Cria elemento de onda
+        const wave = document.createElement('span');
+        wave.className = 'wave';
+        this.appendChild(wave);
+
+        // Posiciona a onda onde foi clicado
+        const rect = this.getBoundingClientRect();
+        wave.style.left = (e.clientX - rect.left) + 'px';
+        wave.style.top = (e.clientY - rect.top) + 'px';
+
+        // Remove a onda após a animação
+        setTimeout(() => {
+            wave.remove();
+        }, 500);
+    });
+</script>
+{% endblock %}

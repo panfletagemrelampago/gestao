@@ -6,7 +6,7 @@
     <title>RELÂMPAGO - Sistema de Gerenciamento</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="styles.css">
     <style>
         :root {
             --vinho-escuro: #8E0000;
@@ -26,6 +26,8 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            margin: 0;
+            padding: 0;
         }
 
         /* Video Section */
@@ -42,6 +44,15 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+        }
+
+        /* Fallback para vídeo */
+        .hero-fallback {
+            display: none;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background-color: var(--vinho-escuro);
         }
 
         /* Main Content */
@@ -89,6 +100,7 @@
             justify-content: center;
             text-align: center;
             min-height: 100px;
+            cursor: pointer;
         }
 
         .menu-card:hover {
@@ -392,11 +404,12 @@
         </div>
     </nav>
 
-    <!-- Video Hero em tela cheia -->
+    <!-- Video Hero com fallback -->
     <section class="video-hero">
-        <video class="hero-video" autoplay muted loop>
-            <source src="/static/videos/demo.mp4" type="video/mp4">
-            <source src="/static/videos/demo.webm" type="video/webm">
+        <img src="static/images/hero-fallback.jpg" alt="Hero image" class="hero-fallback">
+        <video class="hero-video" autoplay muted loop playsinline>
+            <source src="static/videos/demo.mp4" type="video/mp4">
+            <source src="static/videos/demo.webm" type="video/webm">
             Seu navegador não suporta o elemento de vídeo.
         </video>
     </section>
@@ -510,11 +523,31 @@
             <div class="footer-content">
                 <p>&copy; Relâmpago Distribuições</p>
                 <p>2025 - Todos os direitos reservados</p>
-                <p>Desenvolvido com <i class="bi bi-heart-fill text-danger"></i> para otimizar seu negócio</p>
+                <p>Desenvolvido para otimizar seu negócio</p>
             </div>
         </div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Verifica se o vídeo pode ser reproduzido
+        document.addEventListener('DOMContentLoaded', function() {
+            const video = document.querySelector('.hero-video');
+            const fallback = document.querySelector('.hero-fallback');
+            
+            video.addEventListener('error', function() {
+                video.style.display = 'none';
+                fallback.style.display = 'block';
+            });
+            
+            // Força o fallback se o vídeo não carregar em 3 segundos
+            setTimeout(function() {
+                if (video.readyState < 3) { // 0-2 significa não carregou
+                    video.style.display = 'none';
+                    fallback.style.display = 'block';
+                }
+            }, 3000);
+        });
+    </script>
 </body>
 </html>

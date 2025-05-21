@@ -17,65 +17,83 @@
     <div class="card shadow-sm mb-4">
       <div class="card-body">
         <form method="POST" enctype="multipart/form-data">
-
+          <!-- Nome do Cliente -->
           <div class="mb-3">
             <label for="nome_cliente" class="form-label">Nome do Cliente</label>
-            <input type="text" class="form-control" id="nome_cliente" name="nome_cliente" required>
+            <input type="text" class="form-control" id="nome_cliente" name="nome_cliente"
+                   value="{{ request.form.nome_cliente if request.form.nome_cliente else '' }}" required>
           </div>
 
+          <!-- Nome da Empresa -->
           <div class="mb-3">
             <label for="empresa" class="form-label">Nome da Empresa</label>
-            <input type="text" class="form-control" id="empresa" name="empresa" required>
+            <input type="text" class="form-control" id="empresa" name="empresa"
+                   value="{{ request.form.empresa if request.form.empresa else '' }}" required>
           </div>
 
+          <!-- Tipo de Ação -->
           <div class="mb-3">
             <label for="tipo_acao" class="form-label">Tipo de Ação</label>
-            <input type="text" class="form-control" id="tipo_acao" name="tipo_acao" required>
+            <input type="text" class="form-control" id="tipo_acao" name="tipo_acao"
+                   value="{{ request.form.tipo_acao if request.form.tipo_acao else '' }}" required>
           </div>
 
+          <!-- Quantidade de Material -->
           <div class="mb-3">
             <label for="quantidade" class="form-label">Quantidade de Material</label>
             <input type="number" class="form-control" id="quantidade" name="quantidade"
-       value="{{ acao.quantidade if acao else '' }}" required>
+                   value="{{ request.form.quantidade if request.form.quantidade else '' }}" required>
           </div>
 
+          <!-- Datas -->
           <div class="row mb-3">
             <div class="col-md-6">
               <label for="data_inicio" class="form-label">Data de Início</label>
-              <input type="date" class="form-control" id="data_inicio" name="data_inicio" required>
+              <input type="date" class="form-control" id="data_inicio" name="data_inicio"
+                     value="{{ request.form.data_inicio if request.form.data_inicio else '' }}" required>
             </div>
             <div class="col-md-6">
               <label for="data_termino" class="form-label">Data de Término</label>
-              <input type="date" class="form-control" id="data_termino" name="data_termino" required>
+              <input type="date" class="form-control" id="data_termino" name="data_termino"
+                     value="{{ request.form.data_termino if request.form.data_termino else '' }}" required>
             </div>
           </div>
 
+          <!-- Horários -->
           <div class="row mb-3">
             <div class="col-md-6">
               <label for="hora_inicio" class="form-label">Horário de Início</label>
-              <input type="time" class="form-control" id="hora_inicio" name="hora_inicio" required>
+              <input type="time" class="form-control" id="hora_inicio" name="hora_inicio"
+                     value="{{ request.form.hora_inicio if request.form.hora_inicio else '' }}" required>
             </div>
             <div class="col-md-6">
               <label for="hora_termino" class="form-label">Horário de Término</label>
-              <input type="time" class="form-control" id="hora_termino" name="hora_termino" required>
+              <input type="time" class="form-control" id="hora_termino" name="hora_termino"
+                     value="{{ request.form.hora_termino if request.form.hora_termino else '' }}" required>
             </div>
           </div>
 
+          <!-- Locais -->
           <div class="mb-3">
             <label for="locais" class="form-label">Locais da Ação</label>
-            <textarea class="form-control" id="locais" name="locais" rows="3" required></textarea>
+            <textarea class="form-control" id="locais" name="locais" rows="3" required>{{ request.form.locais if request.form.locais else '' }}</textarea>
           </div>
 
+          <!-- Quantidade de Pessoas -->
           <div class="mb-3">
             <label for="quantidade_pessoas" class="form-label">Quantidade de Pessoas para a Ação</label>
-            <input type="number" class="form-control" id="quantidade_pessoas" name="quantidade_pessoas" required>
+            <input type="number" class="form-control" id="quantidade_pessoas" name="quantidade_pessoas"
+                   value="{{ request.form.quantidade_pessoas if request.form.quantidade_pessoas else '' }}" required>
           </div>
 
+          <!-- Responsável -->
           <div class="mb-3">
             <label for="responsavel" class="form-label">Responsável pela Equipe</label>
-            <input type="text" class="form-control" id="responsavel" name="responsavel" required>
+            <input type="text" class="form-control" id="responsavel" name="responsavel"
+                   value="{{ request.form.responsavel if request.form.responsavel else '' }}" required>
           </div>
 
+          <!-- Uploads -->
           <div class="mb-3">
             <label for="material_acao" class="form-label">Upload do Material da Ação</label>
             <input type="file" class="form-control" id="material_acao" name="material_acao">
@@ -86,6 +104,7 @@
             <input type="file" class="form-control" id="foto_equipe" name="foto_equipe">
           </div>
 
+          <!-- Botão de Submit -->
           <div class="text-center mt-4">
             <button type="submit" class="btn" style="background-color: var(--laranja-destaque); color: white;">
               <i class="bi bi-check-circle"></i> Cadastrar

@@ -78,7 +78,7 @@
                 <input type="file" class="form-control" id="documento" name="documento"
                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required
                        onchange="updateFileInfo(this, 'docInfo')">
-                <div class="form-text">Ordem de Serviço ou Protocolo (obrigatório)</div>
+                <div class="form-text">(Obrigatório)</div>
                 <div id="docInfo" class="file-info"></div>
               </div>
 
@@ -87,7 +87,7 @@
                 <input type="file" class="form-control" id="amostra" name="amostra"
                        accept="image/*" required
                        onchange="previewImage(this, 'imagePreview')">
-                <div class="form-text">Imagem do material (obrigatório)</div>
+                <div class="form-text">(Obrigatório)</div>
                 <div class="preview-container">
                   <img id="imagePreview" class="preview-image" src="#" alt="Pré-visualização">
                 </div>
@@ -145,7 +145,7 @@
       const k = 1024;
       const sizes = ['Bytes', 'KB', 'MB', 'GB'];
       const i = Math.floor(Math.log(bytes) / Math.log(k));
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
     document.getElementById('data_inicio').addEventListener('change', function() {

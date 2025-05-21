@@ -7,6 +7,15 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet"/>
   <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet"/>
+  <style>
+    .invalid-feedback {
+      display: none;
+      color: #dc3545;
+    }
+    .is-invalid ~ .invalid-feedback {
+      display: block;
+    }
+  </style>
 </head>
 <body>
   {% include 'navbar.html' %}
@@ -17,40 +26,73 @@
     <div class="card shadow-sm mb-4">
       <div class="card-body">
         <form method="POST">
-          <div class="mb-3">
-            <label for="nome_cliente" class="form-label">Nome do Cliente</label>
-            <input type="text" class="form-control" id="nome_cliente" name="nome_cliente" value="{{ cliente.nome }}" required>
-          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="nome_cliente" class="form-label">Nome do Cliente</label>
+              <input type="text" class="form-control" id="nome_cliente" name="nome_cliente" value="{{ cliente.nome }}" required>
+            </div>
 
-          <div class="mb-3">
-            <label for="empresa" class="form-label">Nome da Empresa</label>
-            <input type="text" class="form-control" id="empresa" name="empresa" value="{{ cliente.empresa }}" required>
-          </div>
+            <div class="col-md-6 mb-3">
+              <label for="empresa" class="form-label">Nome da Empresa</label>
+              <input type="text" class="form-control" id="empresa" name="empresa" value="{{ cliente.empresa }}" required>
+            </div>
 
-          <div class="mb-3">
-            <label for="segmento" class="form-label">Segmento de Atuação</label>
-            <input type="text" class="form-control" id="segmento" name="segmento" value="{{ cliente.segmento }}" required>
-          </div>
+            <div class="col-md-6 mb-3">
+              <label for="segmento" class="form-label">Segmento de Atuação</label>
+              <select class="form-select" id="segmento" name="segmento" required>
+                <option value="" disabled>Selecione o segmento</option>
+                <option value="Alimentos e Bebidas" {% if cliente.segmento =='Alimentos e Bebidas' %}selected{% endif %}>Alimentos e Bebidas</option>
+                <option value="Automotivo" {% if cliente.segmento =='Automotivo' %}selected{% endif %}>Automotivo</option>
+                <option value="Comércio Varejista" {% if cliente.segmento =='Comércio Varejista' %}selected{% endif %}>Comércio Varejista</option>
+                <option value="Construção Civil" {% if cliente.segmento =='Construção Civil' %}selected{% endif %}>Construção Civil</option>
+                <option value="Consultoria" {% if cliente.segmento =='Consultoria' %}selected{% endif %}>Consultoria</option>
+                <option value="Educação" {% if cliente.segmento =='Educação' %}selected{% endif %}>Educação</option>
+                <option value="Energia" {% if cliente.segmento =='Energia' %}selected{% endif %}>Energia</option>
+                <option value="Financeiro" {% if cliente.segmento =='Financeiro' %}selected{% endif %}>Financeiro</option>
+                <option value="Hospitalar" {% if cliente.segmento =='Hospitalar' %}selected{% endif %}>Hospitalar</option>
+                <option value="Hotelaria e Turismo" {% if cliente.segmento =='Hotelaria e Turismo' %}selected{% endif %}>Hotelaria e Turismo</option>
+                <option value="Indústria" {% if cliente.segmento =='Indústria' %}selected{% endif %}>Indústria</option>
+                <option value="Logística e Transportes" {% if cliente.segmento =='Logística e Transportes' %}selected{% endif %}>Logística e Transportes</option>
+                <option value="Meio Ambiente" {% if cliente.segmento =='Meio Ambiente' %}selected{% endif %}>Meio Ambiente</option>
+                <option value="Publicidade e Marketing" {% if cliente.segmento =='Publicidade e Marketing' %}selected{% endif %}>Publicidade e Marketing</option>
+                <option value="Saúde e Bem-estar" {% if cliente.segmento =='Saúde e Bem-estar' %}selected{% endif %}>Saúde e Bem-estar</option>
+                <option value="Serviços" {% if cliente.segmento =='Serviços' %}selected{% endif %}>Serviços</option>
+                <option value="Tecnologia da Informação" {% if cliente.segmento =='Tecnologia da Informação' %}selected{% endif %}>Tecnologia da Informação</option>
+                <option value="Telecomunicações" {% if cliente.segmento =='Telecomunicações' %}selected{% endif %}>Telecomunicações</option>
+                <option value="Varejo Eletrônico" {% if cliente.segmento =='Varejo Eletrônico' %}selected{% endif %}>Varejo Eletrônico</option>
+                <option value="Outros" {% if cliente.segmento =='Outros' %}selected{% endif %}>Outros</option>
+              </select>
+              <div id="outros_segmento_container" class="mt-2" style="display: none;">
+                <label for="outros_segmento" class="form-label">Especifique o segmento</label>
+                <input type="text" class="form-control" id="outros_segmento" name="outros_segmento" value="{% if cliente.segmento not in ['Alimentos e Bebidas', 'Automotivo', 'Comércio Varejista', 'Construção Civil', 'Consultoria', 'Educação', 'Energia', 'Financeiro', 'Hospitalar', 'Hotelaria e Turismo', 'Indústria', 'Logística e Transportes', 'Meio Ambiente', 'Publicidade e Marketing', 'Saúde e Bem-estar', 'Serviços', 'Tecnologia da Informação', 'Telecomunicações', 'Varejo Eletrônico'] %}{{ cliente.segmento }}{% endif %}">
+              </div>
+            </div>
 
-          <div class="mb-3">
-            <label for="telefone" class="form-label">Telefone de Contato</label>
-            <input type="tel" class="form-control" id="telefone" name="telefone" value="{{ cliente.telefone }}" required>
-          </div>
+            <div class="col-md-6 mb-3">
+              <label for="telefone" class="form-label">Telefone de Contato</label>
+              <input type="tel" class="form-control" id="telefone" name="telefone" value="{{ cliente.telefone }}" placeholder="+55 (00) 00000-0000" required>
+              <div class="invalid-feedback">Por favor, insira um telefone válido. Celulares: 11 dígitos (com DDD) começando com 9. Fixos: 10 dígitos (com DDD).</div>
+            </div>
 
-          <div class="mb-3">
-            <label for="email" class="form-label">E-mail de Contato</label>
-            <input type="email" class="form-control" id="email" name="email" value="{{ cliente.email }}" required>
-          </div>
+            <div class="col-md-6 mb-3">
+              <label for="email" class="form-label">E-mail de Contato</label>
+              <input type="email" class="form-control" id="email" name="email" value="{{ cliente.email }}" required>
+            </div>
 
-          <div class="mb-3">
-            <label for="cpf_cnpj" class="form-label">CPF/CNPJ</label>
-            <input type="text" class="form-control" id="cpf_cnpj" name="cpf_cnpj" value="{{ cliente.cpf_cnpj }}" required>
+            <div class="col-md-6 mb-3">
+              <label for="cpf_cnpj" class="form-label">CPF/CNPJ</label>
+              <input type="text" class="form-control" id="cpf_cnpj" name="cpf_cnpj" value="{{ cliente.cpf_cnpj }}" required>
+              <div class="invalid-feedback">Por favor, insira um CPF ou CNPJ válido.</div>
+            </div>
           </div>
 
           <div class="text-center mt-4">
             <button type="submit" class="btn" style="background-color: var(--laranja-destaque); color: white;">
               <i class="bi bi-check-circle"></i> Atualizar
             </button>
+            <a href="{{ url_for('banco_clientes') }}" class="btn btn-secondary">
+              <i class="bi bi-x-circle"></i> Cancelar
+            </a>
           </div>
         </form>
       </div>
@@ -58,5 +100,206 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Validador e formatador de CPF/CNPJ
+    document.getElementById('cpf_cnpj').addEventListener('input', function(e) {
+      let value = e.target.value.replace(/\D/g, '');
+
+      // Formatação enquanto digita
+      if (value.length <= 11) { // CPF
+        if (value.length > 3 && value.length <= 6) {
+          value = value.replace(/(\d{3})(\d)/, '$1.$2');
+        } else if (value.length > 6 && value.length <= 9) {
+          value = value.replace(/(\d{3})(\d{3})(\d)/, '$1.$2.$3');
+        } else if (value.length > 9) {
+          value = value.replace(/(\d{3})(\d{3})(\d{3})(\d)/, '$1.$2.$3-$4');
+        }
+      } else { // CNPJ
+        if (value.length > 2 && value.length <= 5) {
+          value = value.replace(/(\d{2})(\d)/, '$1.$2');
+        } else if (value.length > 5 && value.length <= 8) {
+          value = value.replace(/(\d{2})(\d{3})(\d)/, '$1.$2.$3');
+        } else if (value.length > 8 && value.length <= 12) {
+          value = value.replace(/(\d{2})(\d{3})(\d{3})(\d)/, '$1.$2.$3/$4');
+        } else if (value.length > 12) {
+          value = value.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d)/, '$1.$2.$3/$4-$5');
+        }
+      }
+
+      e.target.value = value;
+
+      // Validação quando estiver completo
+      if ((value.length === 14 && !validarCPF(value.replace(/\D/g, ''))) ||
+          (value.length === 18 && !validarCNPJ(value.replace(/\D/g, '')))) {
+        e.target.classList.add('is-invalid');
+        e.target.setCustomValidity('CPF/CNPJ inválido');
+      } else {
+        e.target.classList.remove('is-invalid');
+        e.target.setCustomValidity('');
+      }
+    });
+
+    // Função para validar CPF
+    function validarCPF(cpf) {
+      cpf = cpf.replace(/[^\d]+/g, '');
+
+      if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+
+      let soma = 0;
+      let resto;
+
+      for (let i = 1; i <= 9; i++) {
+        soma += parseInt(cpf.substring(i-1, i)) * (11 - i);
+      }
+
+      resto = (soma * 10) % 11;
+      if ((resto === 10) || (resto === 11)) resto = 0;
+      if (resto !== parseInt(cpf.substring(9, 10))) return false;
+
+      soma = 0;
+      for (let i = 1; i <= 10; i++) {
+        soma += parseInt(cpf.substring(i-1, i)) * (12 - i);
+      }
+
+      resto = (soma * 10) % 11;
+      if ((resto === 10) || (resto === 11)) resto = 0;
+      if (resto !== parseInt(cpf.substring(10, 11))) return false;
+
+      return true;
+    }
+
+    // Função para validar CNPJ
+    function validarCNPJ(cnpj) {
+      cnpj = cnpj.replace(/[^\d]+/g, '');
+
+      if (cnpj.length !== 14 || /^(\d)\1{13}$/.test(cnpj)) return false;
+
+      let tamanho = cnpj.length - 2;
+      let numeros = cnpj.substring(0, tamanho);
+      let digitos = cnpj.substring(tamanho);
+      let soma = 0;
+      let pos = tamanho - 7;
+
+      for (let i = tamanho; i >= 1; i--) {
+        soma += numeros.charAt(tamanho - i) * pos--;
+        if (pos < 2) pos = 9;
+      }
+
+      let resultado = soma % 11 < 2 ? 0 : 11 - soma % 11;
+      if (resultado !== parseInt(digitos.charAt(0))) return false;
+
+      tamanho = tamanho + 1;
+      numeros = cnpj.substring(0, tamanho);
+      soma = 0;
+      pos = tamanho - 7;
+
+      for (let i = tamanho; i >= 1; i--) {
+        soma += numeros.charAt(tamanho - i) * pos--;
+        if (pos < 2) pos = 9;
+      }
+
+      resultado = soma % 11 < 2 ? 0 : 11 - soma % 11;
+      if (resultado !== parseInt(digitos.charAt(1))) return false;
+
+      return true;
+    }
+
+    // Validador e formatador de Telefone
+    document.getElementById('telefone').addEventListener('input', function(e) {
+      let telefone = e.target.value.replace(/\D/g, '');
+
+      // Adiciona o código do país se não estiver presente
+      if (!telefone.startsWith('55') && telefone.length > 0) {
+        telefone = '55' + telefone;
+      }
+
+      // Formata o telefone
+      let formatted = '+55 ';
+
+      if (telefone.length > 2) {
+        const ddd = telefone.substring(2, 4);
+        formatted += `(${ddd}) `;
+
+        if (telefone.length > 4) {
+          const nextDigit = telefone.substring(4, 5);
+
+          // Verifica se é celular (começa com 9)
+          if (nextDigit === '9') {
+            formatted += nextDigit;
+
+            if (telefone.length > 5) {
+              const parte1 = telefone.substring(5, 9);
+              formatted += ` ${parte1}`;
+
+              if (telefone.length > 9) {
+                const parte2 = telefone.substring(9, 13);
+                formatted += `-${parte2}`;
+              }
+            }
+          } else {
+            // Telefone fixo
+            const parte1 = telefone.substring(4, 8);
+            formatted += parte1;
+
+            if (telefone.length > 8) {
+              const parte2 = telefone.substring(8, 12);
+              formatted += `-${parte2}`;
+            }
+          }
+        }
+      }
+
+      e.target.value = formatted;
+    });
+
+    // Validador de telefone
+    document.getElementById('telefone').addEventListener('blur', function(e) {
+      const telefone = e.target.value.replace(/\D/g, '');
+
+      // Remove o código do país para validação
+      const numero = telefone.substring(2);
+
+      // Verifica se é um celular válido (11 dígitos com DDD) ou fixo válido (10 dígitos com DDD)
+      const isCelularValido = numero.length === 11 && numero.substring(2, 3) === '9'; // DDD + 9XXXXXXXX
+      const isFixoValido = numero.length === 10 && numero.substring(2, 3) !== '9';    // DDD + XXXX-XXXX
+
+      if (numero.length === 0) {
+        // Campo vazio (não é obrigatório pelo HTML)
+        e.target.setCustomValidity('');
+        e.target.classList.remove('is-invalid');
+      } else if (isCelularValido || isFixoValido) {
+        // Número válido
+        e.target.setCustomValidity('');
+        e.target.classList.remove('is-invalid');
+      } else {
+        // Número inválido
+        e.target.setCustomValidity('Telefone inválido. Celulares devem ter 11 dígitos (com DDD) e começar com 9. Fixos devem ter 10 dígitos (com DDD).');
+        e.target.classList.add('is-invalid');
+      }
+    });
+
+    // Mostrar campo "Outros" quando selecionado no segmento
+    document.getElementById('segmento').addEventListener('change', function() {
+      const outrosContainer = document.getElementById('outros_segmento_container');
+      if (this.value === 'Outros') {
+        outrosContainer.style.display = 'block';
+        document.getElementById('outros_segmento').required = true;
+      } else {
+        outrosContainer.style.display = 'none';
+        document.getElementById('outros_segmento').required = false;
+      }
+    });
+
+    // Verificar se precisa mostrar o campo "Outros" ao carregar a página
+    document.addEventListener('DOMContentLoaded', function() {
+      const segmentoSelect = document.getElementById('segmento');
+      const outrosContainer = document.getElementById('outros_segmento_container');
+
+      if (segmentoSelect.value === 'Outros') {
+        outrosContainer.style.display = 'block';
+        document.getElementById('outros_segmento').required = true;
+      }
+    });
+  </script>
 </body>
 </html>

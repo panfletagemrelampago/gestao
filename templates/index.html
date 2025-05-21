@@ -28,39 +28,23 @@
             flex-direction: column;
         }
 
-        /* Hero Section - MODIFICADO */
-        .hero-section {
-            background: linear-gradient(rgba(142, 0, 0, 0.8), rgba(165, 12, 13, 0.8)),
-                        url('/static/images/background.jpg') no-repeat center center;
-            background-size: cover;
-            color: white;
-            padding: 4rem 0 3rem; /* Reduzido o padding vertical */
-            text-align: center;
+        /* Video Section */
+        .video-hero {
             position: relative;
-            margin-bottom: 2rem; /* Adicionado espaçamento abaixo */
+            width: 100%;
+            height: 30vh;
+            overflow: hidden;
+            margin-bottom: 4rem;
+            background-color: #000;
         }
 
-        .hero-content {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 0 20px;
+        .hero-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
-        .hero-title {
-            font-size: 2.5rem; /* Reduzido o tamanho da fonte */
-            font-weight: 700;
-            margin-bottom: 1rem; /* Reduzido o espaçamento */
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-        }
-
-        .hero-subtitle {
-            font-size: 1.25rem; /* Reduzido o tamanho da fonte */
-            opacity: 0.9;
-            margin-bottom: 0;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
-        }
-
-        /* Main Content - MODIFICADO */
+        /* Main Content */
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -70,8 +54,8 @@
 
         .header {
             text-align: center;
-            margin-bottom: 3rem; /* Aumentado o espaçamento abaixo */
-            margin-top: 1rem; /* Adicionado espaçamento acima */
+            margin-bottom: 3rem;
+            margin-top: 1rem;
         }
 
         .header h2 {
@@ -91,14 +75,6 @@
             justify-content: center;
             gap: 30px;
             flex-wrap: wrap;
-        }
-
-        .menu-column {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            width: 45%;
-            min-width: 300px;
         }
 
         .menu-card {
@@ -135,63 +111,200 @@
 
         /* Features Section */
         .features {
-            padding: 4rem 0;
+            padding: 5rem 0;
             background-color: var(--branco);
-            border-top: 1px solid rgba(0, 0, 0, 0.1);
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .features::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(142, 0, 0, 0.03) 0%, rgba(255, 158, 12, 0.03) 100%);
+            z-index: 0;
+        }
+
+        .features .container {
+            position: relative;
+            z-index: 1;
         }
 
         .feature-icon {
             font-size: 2.5rem;
             color: var(--laranja-destaque);
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.4s ease;
+            position: relative;
+            display: inline-block;
+        }
+
+        .feature-icon::after {
+            content: '';
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background-color: rgba(255, 158, 12, 0.1);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            transition: transform 0.4s ease;
+            z-index: -1;
         }
 
         .feature-box {
-            padding: 2rem;
+            padding: 2.5rem 1.5rem;
             text-align: center;
-            transition: all 0.3s ease;
+            transition: all 0.4s ease;
+            background-color: var(--branco);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .feature-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, var(--vinho-escuro), var(--laranja-destaque));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s ease;
+            z-index: 2;
         }
 
         .feature-box:hover {
-            transform: translateY(-5px);
+            transform: translateY(-10px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature-box:hover::before {
+            transform: scaleX(1);
+        }
+
+        .feature-box:hover .feature-icon {
+            animation: bounce 0.8s ease;
+        }
+
+        .feature-box:hover .feature-icon::after {
+            transform: translate(-50%, -50%) scale(1);
         }
 
         .feature-box h3 {
             color: var(--vinho-escuro);
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            transition: color 0.3s ease;
         }
 
-        /* Footer */
+        .feature-box p {
+            color: var(--texto-escuro);
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 0;
+            opacity: 0.9;
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        /* Footer - Centralizado */
         footer {
-            background-color: var(--vinho-escuro);
+            background: linear-gradient(135deg, var(--vinho-escuro), var(--vinho-medio));
             color: white;
-            padding: 2rem 0;
+            padding: 3rem 0;
             margin-top: auto;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+        }
+
+        footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            z-index: 0;
+        }
+
+        footer .container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+        }
+
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        footer p {
+            margin: 0.5rem 0;
+            font-size: 1.1rem;
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        footer p::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            background-color: var(--laranja-destaque);
+            bottom: -5px;
+            left: 0;
+            transition: width 0.4s ease;
+        }
+
+        footer:hover p::after {
+            width: 100%;
         }
 
         /* Responsividade */
         @media (max-width: 992px) {
-            .hero-title {
-                font-size: 2.2rem;
+            .video-hero {
+                height: 50vh;
             }
 
-            .hero-subtitle {
-                font-size: 1.1rem;
+            .features {
+                padding: 3rem 0;
             }
         }
 
         @media (max-width: 768px) {
+            .video-hero {
+                height: 40vh;
+            }
+
             .menu-column {
                 width: 100%;
-            }
-
-            .hero-title {
-                font-size: 2rem;
-            }
-
-            .hero-subtitle {
-                font-size: 1rem;
             }
 
             .header h2 {
@@ -205,15 +318,19 @@
             .menu-card h3 {
                 font-size: 1.1rem;
             }
+
+            .feature-box {
+                padding: 2rem 1rem;
+            }
         }
 
         @media (max-width: 576px) {
-            .hero-title {
-                font-size: 1.8rem;
+            .video-hero {
+                height: 30vh;
             }
 
-            .hero-section {
-                padding: 3rem 0 2rem;
+            .features {
+                padding: 2rem 0;
             }
         }
     </style>
@@ -262,116 +379,107 @@
 
                 <!-- Área do Usuário -->
                 <div class="user-area d-flex">
-
                     <div class="user-info-box d-flex align-items-center me-2 text-white bg-transparent">
                         <i class="bi bi-person-circle me-1"></i>
-                        <span class="d-none d-md-inline">Relam01</span>
+                        <span class="d-none d-md-inline">Relam</span>
                     </div>
                     <a href="/logout" class="logout-btn d-flex align-items-center text-white text-decoration-none">
                         <i class="bi bi-box-arrow-right me-1"></i>
                         <span class="d-none d-md-inline">Sair</span>
                     </a>
-
                 </div>
             </div>
         </div>
     </nav>
 
-    <!-- Hero Section - MODIFICADO -->
-    <section class="hero-section">
-        <div class="hero-content">
-            <h1 class="hero-title">Relâmpago Distribuições</h1>
-            <p class="hero-subtitle">Sistema Integrado de Gerenciamento</p>
-        </div>
+    <!-- Video Hero em tela cheia -->
+    <section class="video-hero">
+        <video class="hero-video" autoplay muted loop>
+            <source src="/static/videos/demo.mp4" type="video/mp4">
+            <source src="/static/videos/demo.webm" type="video/webm">
+            Seu navegador não suporta o elemento de vídeo.
+        </video>
     </section>
 
-    <div class="menu-container">
+    <div class="container">
+        <div class="row g-3">
+            <!-- Linha 1 -->
+            <div class="col-12 col-sm-6">
+                <a href="/clientes/cadastrar" class="menu-link">
+                    <div class="menu-card">
+                        <h3><i class="bi bi-people me-2"></i> Cadastrar Cliente</h3>
+                    </div>
+                </a>
+            </div>
+            <div class="col-12 col-sm-6">
+                <a href="/clientes" class="menu-link">
+                    <div class="menu-card">
+                        <h3><i class="bi bi-building me-2"></i> Banco de Clientes</h3>
+                    </div>
+                </a>
+            </div>
 
-    <!-- Linha 1 -->
-    <div class="menu-row">
-        <div class="menu-column">
-            <a href="/clientes/cadastrar" class="menu-link">
-                <div class="menu-card">
-                    <h3><i class="bi bi-people me-2"></i> Cadastrar Cliente</h3>
-                </div>
-            </a>
-        </div>
-        <div class="menu-column">
-            <a href="/clientes" class="menu-link">
-                <div class="menu-card">
-                    <h3><i class="bi bi-building me-2"></i> Banco de Clientes</h3>
-                </div>
-            </a>
+            <!-- Linha 2 -->
+            <div class="col-12 col-sm-6">
+                <a href="/materiais/cadastrar" class="menu-link">
+                    <div class="menu-card">
+                        <h3><i class="bi bi-box-seam me-2"></i> Cadastrar Material</h3>
+                    </div>
+                </a>
+            </div>
+            <div class="col-12 col-sm-6">
+                <a href="/materiais" class="menu-link">
+                    <div class="menu-card">
+                        <h3><i class="bi bi-boxes me-2"></i> Banco de Materiais</h3>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Linha 3 -->
+            <div class="col-12 col-sm-6">
+                <a href="/vagas/cadastrar" class="menu-link">
+                    <div class="menu-card">
+                        <h3><i class="bi bi-person-plus me-2"></i> Cadastrar Vaga</h3>
+                    </div>
+                </a>
+            </div>
+            <div class="col-12 col-sm-6">
+                <a href="/vagas" class="menu-link">
+                    <div class="menu-card">
+                        <h3><i class="bi bi-person-lines-fill me-2"></i> Banco de Vagas</h3>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Linha 4 -->
+            <div class="col-12 col-sm-6">
+                <a href="/acoes/cadastrar" class="menu-link">
+                    <div class="menu-card">
+                        <h3><i class="bi bi-calendar-event me-2"></i> Cadastrar Ação</h3>
+                    </div>
+                </a>
+            </div>
+            <div class="col-12 col-sm-6">
+                <a href="/acoes" class="menu-link">
+                    <div class="menu-card">
+                        <h3><i class="bi bi-clipboard-data me-2"></i> Banco de Ações</h3>
+                    </div>
+                </a>
+            </div>
         </div>
     </div>
-
-    <!-- Linha 2 -->
-    <div class="menu-row">
-        <div class="menu-column">
-            <a href="/materiais/cadastrar" class="menu-link">
-                <div class="menu-card">
-                    <h3><i class="bi bi-box-seam me-2"></i> Cadastrar Material</h3>
-                </div>
-            </a>
-        </div>
-        <div class="menu-column">
-            <a href="/materiais" class="menu-link">
-                <div class="menu-card">
-                    <h3><i class="bi bi-boxes me-2"></i> Banco de Materiais</h3>
-                </div>
-            </a>
-        </div>
-    </div>
-
-    <!-- Linha 3 -->
-    <div class="menu-row">
-        <div class="menu-column">
-            <a href="/vagas/cadastrar" class="menu-link">
-                <div class="menu-card">
-                    <h3><i class="bi bi-person-plus me-2"></i> Cadastrar Vaga</h3>
-                </div>
-            </a>
-        </div>
-        <div class="menu-column">
-            <a href="/vagas" class="menu-link">
-                <div class="menu-card">
-                    <h3><i class="bi bi-person-lines-fill me-2"></i> Banco de Vagas</h3>
-                </div>
-            </a>
-        </div>
-    </div>
-
-    <!-- Linha 4 -->
-    <div class="menu-row">
-        <div class="menu-column">
-            <a href="/acoes/cadastrar" class="menu-link">
-                <div class="menu-card">
-                    <h3><i class="bi bi-calendar-event me-2"></i> Cadastrar Ação</h3>
-                </div>
-            </a>
-        </div>
-        <div class="menu-column">
-            <a href="/acoes" class="menu-link">
-                <div class="menu-card">
-                    <h3><i class="bi bi-clipboard-data me-2"></i> Banco de Ações</h3>
-                </div>
-            </a>
-        </div>
-    </div>
-
-</div>
 
     <!-- Features Section -->
     <section class="features">
         <div class="container">
-            <div class="row text-center">
+            <div class="row text-center justify-content-center">
                 <div class="col-md-4 mb-4">
                     <div class="feature-box">
                         <div class="feature-icon">
                             <i class="bi bi-speedometer2"></i>
                         </div>
                         <h3>Ágil</h3>
-                        <p>Processos otimizados para máxima eficiência operacional</p>
+                        <p>Processos otimizados para máxima eficiência operacional com tecnologia de ponta que acelera suas operações.</p>
                     </div>
                 </div>
                 <div class="col-md-4 mb-4">
@@ -380,7 +488,7 @@
                             <i class="bi bi-shield-check"></i>
                         </div>
                         <h3>Seguro</h3>
-                        <p>Proteção de dados e informações confidenciais</p>
+                        <p>Proteção avançada de dados com criptografia de última geração para garantir a confidencialidade das informações.</p>
                     </div>
                 </div>
                 <div class="col-md-4 mb-4">
@@ -389,18 +497,21 @@
                             <i class="bi bi-graph-up"></i>
                         </div>
                         <h3>Intuitivo</h3>
-                        <p>Interface amigável para melhor experiência do usuário</p>
+                        <p>Interface moderna e amigável projetada para proporcionar a melhor experiência do usuário e máxima produtividade.</p>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Footer -->
+    <!-- Footer Centralizado -->
     <footer>
-        <div class="container text-center">
-            <p class="mb-0">&copy; Relâmpago Distribuições</p>
-            <p class="mb-0">2025 - Todos os direitos reservados</p>
+        <div class="container">
+            <div class="footer-content">
+                <p>&copy; Relâmpago Distribuições</p>
+                <p>2025 - Todos os direitos reservados</p>
+                <p>Desenvolvido com <i class="bi bi-heart-fill text-danger"></i> para otimizar seu negócio</p>
+            </div>
         </div>
     </footer>
 

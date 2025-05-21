@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cadastrar Vaga - Relâmpago</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet"/>
-  <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet">
   <style>
     .equal-height-col {
       display: flex;
@@ -29,6 +29,21 @@
     .textarea-container textarea {
       height: 100%;
       min-height: 200px;
+    }
+    .form-section-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--vinho-escuro);
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #dee2e6;
+      margin-bottom: 1rem;
+    }
+    .invalid-feedback {
+      display: none;
+      color: #dc3545;
+    }
+    .is-invalid ~ .invalid-feedback {
+      display: block;
     }
   </style>
 </head>
@@ -54,19 +69,20 @@
               </div>
               <div class="col-md-6 mb-3">
                 <label for="cpf" class="form-label">CPF</label>
-                <input type="text" class="form-control" id="cpf" name="cpf" required>
+                <input type="text" class="form-control" id="cpf" name="cpf" required maxlength="14">
+                <div class="invalid-feedback">Por favor, insira um CPF válido.</div>
               </div>
               <div class="col-md-6 mb-3">
-                  <label for="estado_civil" class="form-label">Estado Civil</label>
-                  <select class="form-select" id="estado_civil" name="estado_civil">
-                      <option value="" selected disabled>Selecione...</option>
-                      <option value="solteiro">Solteiro(a)</option>
-                      <option value="casado">Casado(a)</option>
-                      <option value="divorciado">Divorciado(a)</option>
-                      <option value="viuvo">Viúvo(a)</option>
-                      <option value="separado">Separado(a)</option>
-                      <option value="uniao_estavel">União Estável</option>
-                  </select>
+                <label for="estado_civil" class="form-label">Estado Civil</label>
+                <select class="form-select" id="estado_civil" name="estado_civil">
+                  <option value="" selected disabled>Selecione...</option>
+                  <option value="solteiro">Solteiro(a)</option>
+                  <option value="casado">Casado(a)</option>
+                  <option value="divorciado">Divorciado(a)</option>
+                  <option value="viuvo">Viúvo(a)</option>
+                  <option value="separado">Separado(a)</option>
+                  <option value="uniao_estavel">União Estável</option>
+                </select>
               </div>
               <div class="col-md-6 mb-3">
                 <label for="dependentes" class="form-label">Dependentes</label>
@@ -76,184 +92,195 @@
           </fieldset>
 
           <fieldset class="mb-4">
-              <legend class="form-section-title">Contato</legend>
-              <div class="row">
-                  <div class="col-md-6 mb-3">
-                      <label for="telefone" class="form-label">Telefone</label>
-                      <input type="tel" class="form-control" id="telefone" name="telefone">
-                  </div>
-                  <div class="col-md-6 mb-3">
-                      <label for="email" class="form-label">E-mail</label>
-                      <input type="email" class="form-control" id="email" name="email">
-                  </div>
-                  <div class="col-md-6 mb-3">
-                      <label for="estado" class="form-label">Estado (UF)</label>
-                      <select class="form-select" id="estado" name="estado">
-                          <option value="" selected disabled>Selecione seu estado</option>
-                          <option value="AC">Acre (AC)</option>
-                          <option value="AL">Alagoas (AL)</option>
-                          <option value="AP">Amapá (AP)</option>
-                          <option value="AM">Amazonas (AM)</option>
-                          <option value="BA">Bahia (BA)</option>
-                          <option value="CE">Ceará (CE)</option>
-                          <option value="DF">Distrito Federal (DF)</option>
-                          <option value="ES">Espírito Santo (ES)</option>
-                          <option value="GO">Goiás (GO)</option>
-                          <option value="MA">Maranhão (MA)</option>
-                          <option value="MT">Mato Grosso (MT)</option>
-                          <option value="MS">Mato Grosso do Sul (MS)</option>
-                          <option value="MG">Minas Gerais (MG)</option>
-                          <option value="PA">Pará (PA)</option>
-                          <option value="PB">Paraíba (PB)</option>
-                          <option value="PR">Paraná (PR)</option>
-                          <option value="PE">Pernambuco (PE)</option>
-                          <option value="PI">Piauí (PI)</option>
-                          <option value="RJ">Rio de Janeiro (RJ)</option>
-                          <option value="RN">Rio Grande do Norte (RN)</option>
-                          <option value="RS">Rio Grande do Sul (RS)</option>
-                          <option value="RO">Rondônia (RO)</option>
-                          <option value="RR">Roraima (RR)</option>
-                          <option value="SC">Santa Catarina (SC)</option>
-                          <option value="SP">São Paulo (SP)</option>
-                          <option value="SE">Sergipe (SE)</option>
-                          <option value="TO">Tocantins (TO)</option>
-                      </select>
-                  </div>
-                  <div class="col-md-6 mb-3">
-                      <label for="cidade" class="form-label">Cidade</label>
-                      <select class="form-select" id="cidade" name="cidade" disabled>
-                          <option value="" selected disabled>Selecione primeiro o estado</option>
-                      </select>
-                  </div>
-                  <div class="col-md-6 mb-3">
-                      <label for="cep" class="form-label">CEP</label>
-                      <input type="text" class="form-control" id="cep" name="cep">
-                  </div>
-                  <div class="col-md-6 mb-3">
-                      <label for="bairro" class="form-label">Bairro</label>
-                      <input type="text" class="form-control" id="bairro" name="bairro">
-                  </div>
+            <legend class="form-section-title">Contato</legend>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="telefone" class="form-label">Telefone</label>
+                <input type="tel" class="form-control" id="telefone" name="telefone" placeholder="+55 (00) 00000-0000">
+                <div class="invalid-feedback">Por favor, insira um telefone válido. Celulares: 11 dígitos (com DDD) começando com 9. Fixos: 10 dígitos (com DDD).</div>
               </div>
+              <div class="col-md-6 mb-3">
+                <label for="email" class="form-label">E-mail</label>
+                <input type="email" class="form-control" id="email" name="email">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="estado" class="form-label">Estado (UF)</label>
+                <select class="form-select" id="estado" name="estado">
+                  <option value="" selected disabled>Selecione seu estado</option>
+                  <option value="AC">Acre (AC)</option>
+                  <option value="AL">Alagoas (AL)</option>
+                  <option value="AP">Amapá (AP)</option>
+                  <option value="AM">Amazonas (AM)</option>
+                  <option value="BA">Bahia (BA)</option>
+                  <option value="CE">Ceará (CE)</option>
+                  <option value="DF">Distrito Federal (DF)</option>
+                  <option value="ES">Espírito Santo (ES)</option>
+                  <option value="GO">Goiás (GO)</option>
+                  <option value="MA">Maranhão (MA)</option>
+                  <option value="MT">Mato Grosso (MT)</option>
+                  <option value="MS">Mato Grosso do Sul (MS)</option>
+                  <option value="MG">Minas Gerais (MG)</option>
+                  <option value="PA">Pará (PA)</option>
+                  <option value="PB">Paraíba (PB)</option>
+                  <option value="PR">Paraná (PR)</option>
+                  <option value="PE">Pernambuco (PE)</option>
+                  <option value="PI">Piauí (PI)</option>
+                  <option value="RJ">Rio de Janeiro (RJ)</option>
+                  <option value="RN">Rio Grande do Norte (RN)</option>
+                  <option value="RS">Rio Grande do Sul (RS)</option>
+                  <option value="RO">Rondônia (RO)</option>
+                  <option value="RR">Roraima (RR)</option>
+                  <option value="SC">Santa Catarina (SC)</option>
+                  <option value="SP">São Paulo (SP)</option>
+                  <option value="SE">Sergipe (SE)</option>
+                  <option value="TO">Tocantins (TO)</option>
+                </select>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="cidade" class="form-label">Cidade</label>
+                <select class="form-select" id="cidade" name="cidade" disabled>
+                  <option value="" selected disabled>Selecione primeiro o estado</option>
+                </select>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="cep" class="form-label">CEP</label>
+                <input type="text" class="form-control" id="cep" name="cep">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="bairro" class="form-label">Bairro</label>
+                <input type="text" class="form-control" id="bairro" name="bairro">
+              </div>
+            </div>
           </fieldset>
 
           <fieldset class="mb-4">
-              <legend class="form-section-title">Informações Profissionais</legend>
-              <div class="row">
-                  <div class="col-md-6 mb-3">
-                      <label for="formacao" class="form-label">Formação Acadêmica</label>
-                      <select class="form-select" id="formacao" name="formacao" required>
-                          <option value="" selected disabled>Selecione sua formação...</option>
-                          <option value="fundamental_incompleto">Fundamental Incompleto</option>
-                          <option value="fundamental_completo">Fundamental Completo</option>
-                          <option value="medio_incompleto">Médio Incompleto</option>
-                          <option value="medio_completo">Médio Completo</option>
-                          <option value="tecnico_incompleto">Técnico Incompleto</option>
-                          <option value="tecnico_completo">Técnico Completo</option>
-                          <option value="superior_incompleto">Superior Incompleto</option>
-                          <option value="tecnologo">Tecnólogo</option>
-                          <option value="bacharel">Bacharelado</option>
-                          <option value="licenciatura">Licenciatura</option>
-                          <option value="especializacao">Especialização</option>
-                          <option value="mestrado">Mestrado</option>
-                          <option value="doutorado">Doutorado</option>
-                      </select>
-                  </div>
-                  <div class="col-md-6 mb-3">
-                      <label for="tipo_interesse" class="form-label">Tipo de Interesse</label>
-                      <select class="form-select" id="tipo_interesse" name="tipo_interesse">
-                          <option value="" selected disabled>Selecione...</option>
-                          <option value="clt">CLT</option>
-                          <option value="pj">PJ</option>
-                          <option value="freelancer">Freelancer</option>
-                          <option value="estagio">Estágio</option>
-                      </select>
-                  </div>
-                  <div class="col-md-6 mb-3 equal-height-col">
-                      <label class="form-label">Disponibilidade</label>
-                      <div class="form-control p-3 equal-height-box">
-                          <div class="checkbox-container">
-                              <div class="form-check">
-                                  <input class="form-check-input" type="checkbox" id="segunda" name="disponibilidade[]" value="segunda">
-                                  <label class="form-check-label" for="segunda">Segunda-feira</label>
-                              </div>
-                              <div class="form-check">
-                                  <input class="form-check-input" type="checkbox" id="terca" name="disponibilidade[]" value="terca">
-                                  <label class="form-check-label" for="terca">Terça-feira</label>
-                              </div>
-                              <div class="form-check">
-                                  <input class="form-check-input" type="checkbox" id="quarta" name="disponibilidade[]" value="quarta">
-                                  <label class="form-check-label" for="quarta">Quarta-feira</label>
-                              </div>
-                              <div class="form-check">
-                                  <input class="form-check-input" type="checkbox" id="quinta" name="disponibilidade[]" value="quinta">
-                                  <label class="form-check-label" for="quinta">Quinta-feira</label>
-                              </div>
-                              <div class="form-check">
-                                  <input class="form-check-input" type="checkbox" id="sexta" name="disponibilidade[]" value="sexta">
-                                  <label class="form-check-label" for="sexta">Sexta-feira</label>
-                              </div>
-                              <div class="form-check">
-                                  <input class="form-check-input" type="checkbox" id="sabado" name="disponibilidade[]" value="sabado">
-                                  <label class="form-check-label" for="sabado">Sábado</label>
-                              </div>
-                              <div class="form-check">
-                                  <input class="form-check-input" type="checkbox" id="domingo" name="disponibilidade[]" value="domingo">
-                                  <label class="form-check-label" for="domingo">Domingo</label>
-                              </div>
-                          </div>
-                      </div>
-                  </div>
-                  <div class="col-md-6 mb-3 equal-height-col">
-                      <label for="experiencia" class="form-label">Experiência Profissional</label>
-                      <div class="textarea-container">
-                          <textarea class="form-control" id="experiencia" name="experiencia"></textarea>
-                      </div>
-                  </div>
+            <legend class="form-section-title">Informações Profissionais</legend>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="area_atuacao" class="form-label">Área de Atuação</label>
+                <select class="form-select" id="area_atuacao" name="area_atuacao" required>
+                  <option value="" selected disabled>Selecione sua área de atuação</option>
+                  <option value="Administrativo">Administrativo</option>
+                  <option value="Atendimento ao Cliente">Atendimento ao Cliente</option>
+                  <option value="Comercial/Vendas">Comercial/Vendas</option>
+                  <option value="Comunicação/Marketing">Comunicação/Marketing</option>
+                  <option value="Construção Civil">Construção Civil</option>
+                  <option value="Contabilidade/Finanças">Contabilidade/Finanças</option>
+                  <option value="Design">Design</option>
+                  <option value="Educação">Educação</option>
+                  <option value="Engenharia">Engenharia</option>
+                  <option value="Gastronomia">Gastronomia</option>
+                  <option value="Hotelaria/Turismo">Hotelaria/Turismo</option>
+                  <option value="Informática/TI">Informática/TI</option>
+                  <option value="Jurídico">Jurídico</option>
+                  <option value="Logística/Transportes">Logística/Transportes</option>
+                  <option value="Manutenção">Manutenção</option>
+                  <option value="Meio Ambiente">Meio Ambiente</option>
+                  <option value="Produção Industrial">Produção Industrial</option>
+                  <option value="Recursos Humanos">Recursos Humanos</option>
+                  <option value="Saúde">Saúde</option>
+                  <option value="Segurança">Segurança</option>
+                  <option value="Serviços Gerais">Serviços Gerais</option>
+                  <option value="Telemarketing">Telemarketing</option>
+                  <option value="Outros">Outros</option>
+                </select>
               </div>
+              <div class="col-md-6 mb-3">
+                <label for="tipo_interesse" class="form-label">Tipo de Interesse</label>
+                <select class="form-select" id="tipo_interesse" name="tipo_interesse">
+                  <option value="" selected disabled>Selecione...</option>
+                  <option value="CLT">CLT</option>
+                  <option value="PJ">PJ</option>
+                  <option value="Freelancer">Freelancer</option>
+                  <option value="Estagio">Estágio</option>
+                </select>
+              </div>
+              <div class="col-md-6 mb-3 equal-height-col">
+                <label class="form-label">Disponibilidade</label>
+                <div class="form-control p-3 equal-height-box">
+                  <div class="checkbox-container">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" id="Seg" name="disponibilidade[]" value="Seg">
+                      <label class="form-check-label" for="Seg">Segunda-feira</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" id="Ter" name="disponibilidade[]" value="Ter">
+                      <label class="form-check-label" for="Ter">Terça-feira</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" id="Qua" name="disponibilidade[]" value="Qua">
+                      <label class="form-check-label" for="Qua">Quarta-feira</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" id="Qui" name="disponibilidade[]" value="Qui">
+                      <label class="form-check-label" for="Qui">Quinta-feira</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" id="Sex" name="disponibilidade[]" value="Sex">
+                      <label class="form-check-label" for="Sex">Sexta-feira</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" id="Sáb" name="disponibilidade[]" value="Sáb">
+                      <label class="form-check-label" for="Sáb">Sábado</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" id="Dom" name="disponibilidade[]" value="Dom">
+                      <label class="form-check-label" for="Dom">Domingo</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 mb-3 equal-height-col">
+                <label for="experiencia" class="form-label">Experiência Profissional</label>
+                <div class="textarea-container">
+                  <textarea class="form-control" id="experiencia" name="experiencia"></textarea>
+                </div>
+              </div>
+            </div>
           </fieldset>
 
           <fieldset class="mb-4">
-              <legend class="form-section-title">Dados Bancários</legend>
-              <div class="row">
-                  <div class="col-md-6 mb-3">
-                      <label for="banco" class="form-label">Banco</label>
-                      <input type="text" class="form-control" id="banco" name="banco">
-                  </div>
-                  <div class="col-md-3 mb-3">
-                      <label for="agencia" class="form-label">Agência</label>
-                      <input type="text" class="form-control" id="agencia" name="agencia">
-                  </div>
-                  <div class="col-md-3 mb-3">
-                      <label for="conta" class="form-label">Conta</label>
-                      <input type="text" class="form-control" id="conta" name="conta">
-                  </div>
-                  <div class="col-md-6 mb-3">
-                      <label for="pix" class="form-label">Chave PIX</label>
-                      <input type="text" class="form-control" id="pix" name="pix">
-                  </div>
+            <legend class="form-section-title">Dados Bancários</legend>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="banco" class="form-label">Banco</label>
+                <input type="text" class="form-control" id="banco" name="banco">
               </div>
+              <div class="col-md-3 mb-3">
+                <label for="agencia" class="form-label">Agência</label>
+                <input type="text" class="form-control" id="agencia" name="agencia">
+              </div>
+              <div class="col-md-3 mb-3">
+                <label for="conta" class="form-label">Conta</label>
+                <input type="text" class="form-control" id="conta" name="conta">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="pix" class="form-label">Chave PIX</label>
+                <input type="text" class="form-control" id="pix" name="pix">
+              </div>
+            </div>
           </fieldset>
 
           <fieldset class="mb-4">
-              <legend class="form-section-title">Documentos</legend>
-              <div class="row">
-                  <div class="col-md-6 mb-3">
-                      <label for="rg" class="form-label">RG</label>
-                      <input type="file" class="form-control" id="rg" name="rg" accept=".pdf,.jpg,.jpeg,.png">
-                  </div>
-                  <div class="col-md-6 mb-3">
-                      <label for="cpf_doc" class="form-label">CPF</label>
-                      <input type="file" class="form-control" id="cpf_doc" name="cpf_doc" accept=".pdf,.jpg,.jpeg,.png">
-                  </div>
-                  <div class="col-md-6 mb-3">
-                      <label for="titulo_eleitor" class="form-label">Título de Eleitor</label>
-                      <input type="file" class="form-control" id="titulo_eleitor" name="titulo_eleitor" accept=".pdf,.jpg,.jpeg,.png">
-                  </div>
-                  <div class="col-md-6 mb-3">
-                      <label for="ctps" class="form-label">CTPS</label>
-                      <input type="file" class="form-control" id="ctps" name="ctps" accept=".pdf,.jpg,.jpeg,.png">
-                  </div>
+            <legend class="form-section-title">Documentos</legend>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="rg" class="form-label">RG</label>
+                <input type="file" class="form-control" id="rg" name="rg" accept=".pdf,.jpg,.jpeg,.png">
               </div>
+              <div class="col-md-6 mb-3">
+                <label for="cpf_doc" class="form-label">CPF</label>
+                <input type="file" class="form-control" id="cpf_doc" name="cpf_doc" accept=".pdf,.jpg,.jpeg,.png">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="titulo_eleitor" class="form-label">Título de Eleitor</label>
+                <input type="file" class="form-control" id="titulo_eleitor" name="titulo_eleitor" accept=".pdf,.jpg,.jpeg,.png">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="ctps" class="form-label">CTPS</label>
+                <input type="file" class="form-control" id="ctps" name="ctps" accept=".pdf,.jpg,.jpeg,.png">
+              </div>
+            </div>
           </fieldset>
 
           <div class="text-center mt-4">
@@ -270,9 +297,157 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
   <script>
-  document.getElementById('estado').addEventListener('change', async function() {
+    // Validador e formatador de CPF
+    document.getElementById('cpf').addEventListener('input', function(e) {
+      let cpf = e.target.value.replace(/\D/g, '');
+
+      // Formata o CPF enquanto digita
+      if (cpf.length > 3 && cpf.length <= 6) {
+        cpf = cpf.replace(/(\d{3})(\d)/, '$1.$2');
+      } else if (cpf.length > 6 && cpf.length <= 9) {
+        cpf = cpf.replace(/(\d{3})(\d{3})(\d)/, '$1.$2.$3');
+      } else if (cpf.length > 9) {
+        cpf = cpf.replace(/(\d{3})(\d{3})(\d{3})(\d)/, '$1.$2.$3-$4');
+      }
+
+      e.target.value = cpf.substring(0, 14);
+
+      // Valida o CPF quando estiver completo
+      if (cpf.length === 14) {
+        if (!validarCPF(cpf)) {
+          e.target.classList.add('is-invalid');
+          e.target.setCustomValidity('CPF inválido');
+        } else {
+          e.target.classList.remove('is-invalid');
+          e.target.setCustomValidity('');
+        }
+      } else {
+        e.target.classList.remove('is-invalid');
+        e.target.setCustomValidity('');
+      }
+    });
+
+    // Função para validar CPF
+    function validarCPF(cpf) {
+      cpf = cpf.replace(/[^\d]+/g, '');
+
+      if (cpf.length !== 11 ||
+          /^(\d)\1{10}$/.test(cpf)) {
+        return false;
+      }
+
+      let soma = 0;
+      let resto;
+
+      for (let i = 1; i <= 9; i++) {
+        soma += parseInt(cpf.substring(i-1, i)) * (11 - i);
+      }
+
+      resto = (soma * 10) % 11;
+
+      if ((resto === 10) || (resto === 11)) {
+        resto = 0;
+      }
+
+      if (resto !== parseInt(cpf.substring(9, 10))) {
+        return false;
+      }
+
+      soma = 0;
+
+      for (let i = 1; i <= 10; i++) {
+        soma += parseInt(cpf.substring(i-1, i)) * (12 - i);
+      }
+
+      resto = (soma * 10) % 11;
+
+      if ((resto === 10) || (resto === 11)) {
+        resto = 0;
+      }
+
+      if (resto !== parseInt(cpf.substring(10, 11))) {
+        return false;
+      }
+
+      return true;
+    }
+
+    // Validador e formatador de Telefone
+    document.getElementById('telefone').addEventListener('input', function(e) {
+        let telefone = e.target.value.replace(/\D/g, '');
+
+        // Adiciona o código do país se não estiver presente
+        if (!telefone.startsWith('55') && telefone.length > 0) {
+            telefone = '55' + telefone;
+        }
+
+        // Formata o telefone
+        let formatted = '+55 ';
+
+        if (telefone.length > 2) {
+            const ddd = telefone.substring(2, 4);
+            formatted += `(${ddd}) `;
+
+            if (telefone.length > 4) {
+                const nextDigit = telefone.substring(4, 5);
+
+                // Verifica se é celular (começa com 9)
+                if (nextDigit === '9') {
+                    formatted += nextDigit;
+
+                    if (telefone.length > 5) {
+                        const parte1 = telefone.substring(5, 9);
+                        formatted += ` ${parte1}`;
+
+                        if (telefone.length > 9) {
+                            const parte2 = telefone.substring(9, 13);
+                            formatted += `-${parte2}`;
+                        }
+                    }
+                } else {
+                    // Telefone fixo
+                    const parte1 = telefone.substring(4, 8);
+                    formatted += parte1;
+
+                    if (telefone.length > 8) {
+                        const parte2 = telefone.substring(8, 12);
+                        formatted += `-${parte2}`;
+                    }
+                }
+            }
+        }
+
+        e.target.value = formatted;
+    });
+
+    // Validador de telefone corrigido
+    document.getElementById('telefone').addEventListener('blur', function(e) {
+        const telefone = e.target.value.replace(/\D/g, '');
+
+        // Remove o código do país para validação
+        const numero = telefone.substring(2);
+
+        // Verifica se é um celular válido (11 dígitos com DDD) ou fixo válido (10 dígitos com DDD)
+        const isCelularValido = numero.length === 11 && numero.substring(2, 3) === '9'; // DDD + 9XXXXXXXX
+        const isFixoValido = numero.length === 10 && numero.substring(2, 3) !== '9';    // DDD + XXXX-XXXX
+
+        if (numero.length === 0) {
+            // Campo vazio (não é obrigatório pelo HTML)
+            e.target.setCustomValidity('');
+            e.target.classList.remove('is-invalid');
+        } else if (isCelularValido || isFixoValido) {
+            // Número válido
+            e.target.setCustomValidity('');
+            e.target.classList.remove('is-invalid');
+        } else {
+            // Número inválido
+            e.target.setCustomValidity('Telefone inválido. Celulares devem ter 11 dígitos (com DDD) e começar com 9. Fixos devem ter 10 dígitos (com DDD).');
+            e.target.classList.add('is-invalid');
+        }
+    });
+
+    document.getElementById('estado').addEventListener('change', async function() {
       const uf = this.value;
       const cidadeSelect = document.getElementById('cidade');
 
@@ -282,22 +457,41 @@
       if (!uf) return;
 
       try {
-          const response = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`);
-          const cidades = await response.json();
+        const response = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`);
+        const cidades = await response.json();
 
-          cidadeSelect.innerHTML = '<option value="" disabled selected>Selecione sua cidade</option>';
+        cidadeSelect.innerHTML = '<option value="" selected disabled>Selecione sua cidade</option>';
 
-          cidades.forEach(municipio => {
-              const option = new Option(municipio.nome, municipio.nome);
-              cidadeSelect.add(option);
-          });
+        cidades.forEach(municipio => {
+          const option = new Option(municipio.nome, municipio.nome);
+          cidadeSelect.add(option);
+        });
 
-          cidadeSelect.disabled = false;
+        cidadeSelect.disabled = false;
       } catch (error) {
-          cidadeSelect.innerHTML = '<option value="" disabled selected>Erro ao carregar cidades</option>';
-          console.error("Falha ao buscar cidades:", error);
+        cidadeSelect.innerHTML = '<option value="" disabled selected>Erro ao carregar cidades</option>';
+        console.error("Falha ao buscar cidades:", error);
       }
-  });
+    });
+
+    // Adiciona campo para "Outros" quando selecionado na área de atuação
+    document.getElementById('area_atuacao').addEventListener('change', function() {
+      const outrosContainer = document.getElementById('outros_area_container');
+      if (this.value === 'Outros') {
+        if (!outrosContainer) {
+          const container = document.createElement('div');
+          container.id = 'outros_area_container';
+          container.className = 'mt-2';
+          container.innerHTML = `
+            <label for="outros_area" class="form-label">Especifique a área de atuação</label>
+            <input type="text" class="form-control" id="outros_area" name="outros_area">
+          `;
+          this.parentNode.appendChild(container);
+        }
+      } else if (outrosContainer) {
+        outrosContainer.remove();
+      }
+    });
   </script>
 </body>
 </html>

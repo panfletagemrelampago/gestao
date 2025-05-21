@@ -1,12 +1,51 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Editar Vaga - Relâmpago</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet"/>
-  <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet">
+  <style>
+    .equal-height-col {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    .equal-height-box {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .checkbox-container {
+      flex: 1;
+      overflow-y: auto;
+    }
+    .textarea-container {
+      flex: 1;
+      min-height: 200px;
+    }
+    .textarea-container textarea {
+      height: 100%;
+      min-height: 200px;
+    }
+    .form-section-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--vinho-escuro);
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #dee2e6;
+      margin-bottom: 1rem;
+    }
+    .invalid-feedback {
+      display: none;
+      color: #dc3545;
+    }
+    .is-invalid ~ .invalid-feedback {
+      display: block;
+    }
+  </style>
 </head>
 <body>
   {% include 'navbar.html' %}
@@ -16,7 +55,7 @@
 
     <div class="card shadow-sm mb-4">
       <div class="card-body">
-        <form method="POST" enctype="multipart/form-data">
+        <form method="POST" action="{{ url_for('editar_vaga', vaga_id=vaga_id) }}" enctype="multipart/form-data">
           <input type="hidden" name="vaga_id" value="{{ vaga_id }}">
 
           <fieldset class="mb-4">
@@ -29,14 +68,24 @@
               <div class="col-md-4 mb-3">
                 <label for="data_nascimento" class="form-label">Data de Nascimento*</label>
                 <input type="date" class="form-control" id="data_nascimento" name="data_nascimento" value="{{ vaga.dados_pessoais.data_nascimento }}" required>
+                <small class="text-muted">Idade: {{ calcular_idade(vaga.dados_pessoais.data_nascimento) }} anos</small>
               </div>
               <div class="col-md-6 mb-3">
                 <label for="cpf" class="form-label">CPF*</label>
-                <input type="text" class="form-control" id="cpf" name="cpf" value="{{ vaga.dados_pessoais.cpf }}" required>
+                <input type="text" class="form-control" id="cpf" name="cpf" value="{{ vaga.dados_pessoais.cpf }}" required maxlength="14">
+                <div class="invalid-feedback">Por favor, insira um CPF válido.</div>
               </div>
               <div class="col-md-6 mb-3">
                 <label for="estado_civil" class="form-label">Estado Civil</label>
-                <input type="text" class="form-control" id="estado_civil" name="estado_civil" value="{{ vaga.dados_pessoais.estado_civil }}">
+                <select class="form-select" id="estado_civil" name="estado_civil">
+                  <option value="" disabled>Selecione...</option>
+                  <option value="solteiro" {% if vaga.dados_pessoais.estado_civil =='solteiro' %}selected{% endif %}>Solteiro(a)</option>
+                  <option value="casado" {% if vaga.dados_pessoais.estado_civil =='casado' %}selected{% endif %}>Casado(a)</option>
+                  <option value="divorciado" {% if vaga.dados_pessoais.estado_civil =='divorciado' %}selected{% endif %}>Divorciado(a)</option>
+                  <option value="viuvo" {% if vaga.dados_pessoais.estado_civil =='viuvo' %}selected{% endif %}>Viúvo(a)</option>
+                  <option value="separado" {% if vaga.dados_pessoais.estado_civil =='separado' %}selected{% endif %}>Separado(a)</option>
+                  <option value="uniao_estavel" {% if vaga.dados_pessoais.estado_civil =='uniao_estavel' %}selected{% endif %}>União Estável</option>
+                </select>
               </div>
               <div class="col-md-6 mb-3">
                 <label for="dependentes" class="form-label">Dependentes</label>
@@ -50,23 +99,59 @@
             <div class="row">
               <div class="col-md-6 mb-3">
                 <label for="telefone" class="form-label">Telefone</label>
-                <input type="tel" class="form-control" id="telefone" name="telefone" value="{{ vaga.dados_contato.telefone }}">
+                <input type="tel" class="form-control" id="telefone" name="telefone" value="{{ vaga.dados_contato.telefone }}" placeholder="+55 (00) 00000-0000">
+                <div class="invalid-feedback">Por favor, insira um telefone válido. Celulares: 11 dígitos (com DDD) começando com 9. Fixos: 10 dígitos (com DDD).</div>
               </div>
               <div class="col-md-6 mb-3">
                 <label for="email" class="form-label">E-mail</label>
                 <input type="email" class="form-control" id="email" name="email" value="{{ vaga.dados_contato.email }}">
               </div>
               <div class="col-md-6 mb-3">
-                <label for="cep" class="form-label">CEP</label>
-                <input type="text" class="form-control" id="cep" name="cep" value="{{ vaga.dados_contato.cep }}">
+                <label for="estado" class="form-label">Estado (UF)</label>
+                <select class="form-select" id="estado" name="estado">
+                  <option value="" disabled>Selecione seu estado</option>
+                  <option value="AC" {% if vaga.dados_contato.estado =='AC' %}selected{% endif %}>Acre (AC)</option>
+                  <option value="AL" {% if vaga.dados_contato.estado =='AL' %}selected{% endif %}>Alagoas (AL)</option>
+                  <option value="AP" {% if vaga.dados_contato.estado =='AP' %}selected{% endif %}>Amapá (AP)</option>
+                  <option value="AM" {% if vaga.dados_contato.estado =='AM' %}selected{% endif %}>Amazonas (AM)</option>
+                  <option value="BA" {% if vaga.dados_contato.estado =='BA' %}selected{% endif %}>Bahia (BA)</option>
+                  <option value="CE" {% if vaga.dados_contato.estado =='CE' %}selected{% endif %}>Ceará (CE)</option>
+                  <option value="DF" {% if vaga.dados_contato.estado =='DF' %}selected{% endif %}>Distrito Federal (DF)</option>
+                  <option value="ES" {% if vaga.dados_contato.estado =='ES' %}selected{% endif %}>Espírito Santo (ES)</option>
+                  <option value="GO" {% if vaga.dados_contato.estado =='GO' %}selected{% endif %}>Goiás (GO)</option>
+                  <option value="MA" {% if vaga.dados_contato.estado =='MA' %}selected{% endif %}>Maranhão (MA)</option>
+                  <option value="MT" {% if vaga.dados_contato.estado =='MT' %}selected{% endif %}>Mato Grosso (MT)</option>
+                  <option value="MS" {% if vaga.dados_contato.estado =='MS' %}selected{% endif %}>Mato Grosso do Sul (MS)</option>
+                  <option value="MG" {% if vaga.dados_contato.estado =='MG' %}selected{% endif %}>Minas Gerais (MG)</option>
+                  <option value="PA" {% if vaga.dados_contato.estado =='PA' %}selected{% endif %}>Pará (PA)</option>
+                  <option value="PB" {% if vaga.dados_contato.estado =='PB' %}selected{% endif %}>Paraíba (PB)</option>
+                  <option value="PR" {% if vaga.dados_contato.estado =='PR' %}selected{% endif %}>Paraná (PR)</option>
+                  <option value="PE" {% if vaga.dados_contato.estado =='PE' %}selected{% endif %}>Pernambuco (PE)</option>
+                  <option value="PI" {% if vaga.dados_contato.estado =='PI' %}selected{% endif %}>Piauí (PI)</option>
+                  <option value="RJ" {% if vaga.dados_contato.estado =='RJ' %}selected{% endif %}>Rio de Janeiro (RJ)</option>
+                  <option value="RN" {% if vaga.dados_contato.estado =='RN' %}selected{% endif %}>Rio Grande do Norte (RN)</option>
+                  <option value="RS" {% if vaga.dados_contato.estado =='RS' %}selected{% endif %}>Rio Grande do Sul (RS)</option>
+                  <option value="RO" {% if vaga.dados_contato.estado =='RO' %}selected{% endif %}>Rondônia (RO)</option>
+                  <option value="RR" {% if vaga.dados_contato.estado =='RR' %}selected{% endif %}>Roraima (RR)</option>
+                  <option value="SC" {% if vaga.dados_contato.estado =='SC' %}selected{% endif %}>Santa Catarina (SC)</option>
+                  <option value="SP" {% if vaga.dados_contato.estado =='SP' %}selected{% endif %}>São Paulo (SP)</option>
+                  <option value="SE" {% if vaga.dados_contato.estado =='SE' %}selected{% endif %}>Sergipe (SE)</option>
+                  <option value="TO" {% if vaga.dados_contato.estado =='TO' %}selected{% endif %}>Tocantins (TO)</option>
+                </select>
               </div>
               <div class="col-md-6 mb-3">
                 <label for="cidade" class="form-label">Cidade</label>
-                <input type="text" class="form-control" id="cidade" name="cidade" value="{{ vaga.dados_contato.cidade }}">
+                <select class="form-select" id="cidade" name="cidade" {% if not vaga.dados_contato.estado %}disabled{% endif %}>
+                  {% if vaga.dados_contato.estado %}
+                    <option value="{{ vaga.dados_contato.cidade }}" selected>{{ vaga.dados_contato.cidade }}</option>
+                  {% else %}
+                    <option value="" selected disabled>Selecione primeiro o estado</option>
+                  {% endif %}
+                </select>
               </div>
               <div class="col-md-6 mb-3">
-                <label for="estado" class="form-label">Estado</label>
-                <input type="text" class="form-control" id="estado" name="estado" value="{{ vaga.dados_contato.estado }}">
+                <label for="cep" class="form-label">CEP</label>
+                <input type="text" class="form-control" id="cep" name="cep" value="{{ vaga.dados_contato.cep }}">
               </div>
             </div>
           </fieldset>
@@ -76,19 +161,98 @@
             <div class="row">
               <div class="col-md-6 mb-3">
                 <label for="area_atuacao" class="form-label">Área de Atuação</label>
-                <input type="text" class="form-control" id="area_atuacao" name="area_atuacao" value="{{ vaga.dados_profissionais.area_atuacao }}">
+                <select class="form-select" id="area_atuacao" name="area_atuacao">
+                  <option value="" disabled>Selecione sua área de atuação</option>
+                  <option value="Administrativo" {% if vaga.dados_profissionais.area_atuacao =='Administrativo' %}selected{% endif %}>Administrativo</option>
+                  <option value="Atendimento ao Cliente" {% if vaga.dados_profissionais.area_atuacao =='Atendimento_ao_Cliente' %}selected{% endif %}>Atendimento ao Cliente</option>
+                  <option value="Comercial/Vendas" {% if vaga.dados_profissionais.area_atuacao =='Comercial/Vendas' %}selected{% endif %}>Comercial/Vendas</option>
+                  <option value="Comunicação/Marketing" {% if vaga.dados_profissionais.area_atuacao =='Comunicação/Marketing' %}selected{% endif %}>Comunicação/Marketing</option>
+                  <option value="Construção Civil" {% if vaga.dados_profissionais.area_atuacao =='Construção_Civil' %}selected{% endif %}>Construção Civil</option>
+                  <option value="Contabilidade/Finanças" {% if vaga.dados_profissionais.area_atuacao =='Contabilidade/Finanças' %}selected{% endif %}>Contabilidade/Finanças</option>
+                  <option value="Design" {% if vaga.dados_profissionais.area_atuacao =='Design' %}selected{% endif %}>Design</option>
+                  <option value="Educação" {% if vaga.dados_profissionais.area_atuacao =='Educação' %}selected{% endif %}>Educação</option>
+                  <option value="Engenharia" {% if vaga.dados_profissionais.area_atuacao =='Engenharia' %}selected{% endif %}>Engenharia</option>
+                  <option value="Gastronomia" {% if vaga.dados_profissionais.area_atuacao =='Gastronomia' %}selected{% endif %}>Gastronomia</option>
+                  <option value="Hotelaria/Turismo" {% if vaga.dados_profissionais.area_atuacao =='Hotelaria/Turismo' %}selected{% endif %}>Hotelaria/Turismo</option>
+                  <option value="Informática/TI" {% if vaga.dados_profissionais.area_atuacao =='Informática/TI' %}selected{% endif %}>Informática/TI</option>
+                  <option value="Jurídico" {% if vaga.dados_profissionais.area_atuacao =='Jurídico' %}selected{% endif %}>Jurídico</option>
+                  <option value="Logística/Transportes" {% if vaga.dados_profissionais.area_atuacao =='Logística/Transportes' %}selected{% endif %}>Logística/Transportes</option>
+                  <option value="Manutenção" {% if vaga.dados_profissionais.area_atuacao =='Manutenção' %}selected{% endif %}>Manutenção</option>
+                  <option value="Meio Ambiente" {% if vaga.dados_profissionais.area_atuacao =='Meio_Ambiente' %}selected{% endif %}>Meio Ambiente</option>
+                  <option value="Produção Industrial" {% if vaga.dados_profissionais.area_atuacao =='Produção_Industrial' %}selected{% endif %}>Produção Industrial</option>
+                  <option value="Recursos Humanos" {% if vaga.dados_profissionais.area_atuacao =='Recursos_Humanos' %}selected{% endif %}>Recursos Humanos</option>
+                  <option value="Saúde" {% if vaga.dados_profissionais.area_atuacao =='Saúde' %}selected{% endif %}>Saúde</option>
+                  <option value="Segurança" {% if vaga.dados_profissionais.area_atuacao =='Segurança' %}selected{% endif %}>Segurança</option>
+                  <option value="Serviços Gerais" {% if vaga.dados_profissionais.area_atuacao =='Serviços_Gerais' %}selected{% endif %}>Serviços Gerais</option>
+                  <option value="Telemarketing" {% if vaga.dados_profissionais.area_atuacao =='Telemarketing' %}selected{% endif %}>Telemarketing</option>
+                  <option value="Outros" {% if vaga.dados_profissionais.area_atuacao =='Outros' or
+                                          not vaga.dados_profissionais.area_atuacao in ['Administrativo', 'Atendimento ao Cliente', 'Comercial/Vendas', 'Comunicação/Marketing',
+                                          'Construção Civil', 'Contabilidade/Finanças', 'Design', 'Educação', 'Engenharia', 'Gastronomia', 'Hotelaria/Turismo',
+                                          'Informática/TI', 'Jurídico', 'Logística/Transportes', 'Manutenção', 'Meio Ambiente', 'Produção Industrial',
+                                          'Recursos Humanos', 'Saúde', 'Segurança', 'Serviços Gerais', 'Telemarketing'] %}selected{% endif %}>Outros</option>
+                </select>
+                {% if vaga.dados_profissionais.area_atuacao and
+                      not vaga.dados_profissionais.area_atuacao in ['Administrativo', 'Atendimento ao Cliente', 'Comercial/Vendas', 'Comunicação/Marketing',
+                      'Construção Civil', 'Contabilidade/Finanças', 'Design', 'Educação', 'Engenharia', 'Gastronomia', 'Hotelaria/Turismo',
+                      'Informática/TI', 'Jurídico', 'Logística/Transportes', 'Manutenção', 'Meio Ambiente', 'Produção Industrial',
+                      'Recursos Humanos', 'Saúde', 'Segurança', 'Serviços Gerais', 'Telemarketing'] %}
+                <div id="outros_area_container" class="mt-2">
+                  <label for="outros_area" class="form-label">Especifique a área de atuação</label>
+                  <input type="text" class="form-control" id="outros_area" name="outros_area" value="{{ vaga.dados_profissionais.area_atuacao }}">
+                </div>
+                {% endif %}
               </div>
               <div class="col-md-6 mb-3">
                 <label for="tipo_interesse" class="form-label">Tipo de Interesse</label>
-                <input type="text" class="form-control" id="tipo_interesse" name="tipo_interesse" value="{{ vaga.dados_profissionais.tipo_interesse }}">
+                <select class="form-select" id="tipo_interesse" name="tipo_interesse">
+                  <option value="" disabled>Selecione...</option>
+                  <option value="CLT" {% if vaga.dados_profissionais.tipo_interesse =='CLT' %}selected{% endif %}>CLT</option>
+                  <option value="PJ" {% if vaga.dados_profissionais.tipo_interesse =='PJ' %}selected{% endif %}>PJ</option>
+                  <option value="Freelancer" {% if vaga.dados_profissionais.tipo_interesse =='Freelancer' %}selected{% endif %}>Freelancer</option>
+                  <option value="Estagio" {% if vaga.dados_profissionais.tipo_interesse =='Estagio' %}selected{% endif %}>Estágio</option>
+                </select>
               </div>
-              <div class="col-md-6 mb-3">
-                <label for="disponibilidade" class="form-label">Disponibilidade</label>
-                <input type="text" class="form-control" id="disponibilidade" name="disponibilidade" value="{{ vaga.dados_profissionais.disponibilidade }}">
+              <div class="col-md-6 mb-3 equal-height-col">
+                <label class="form-label">Disponibilidade</label>
+                <div class="form-control p-3 equal-height-box">
+                  <div class="checkbox-container">
+                    {% set disponibilidade = vaga.dados_profissionais.disponibilidade.split(', ') %}
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" id="Seg" name="disponibilidade[]" value="Seg" {% if 'Seg' in disponibilidade %}checked{% endif %}>
+                      <label class="form-check-label" for="Seg">Segunda-feira</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" id="Ter" name="disponibilidade[]" value="Ter" {% if 'Ter' in disponibilidade %}checked{% endif %}>
+                      <label class="form-check-label" for="Ter">Terça-feira</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" id="Qua" name="disponibilidade[]" value="Qua" {% if 'Qua' in disponibilidade %}checked{% endif %}>
+                      <label class="form-check-label" for="Qua">Quarta-feira</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" id="Qui" name="disponibilidade[]" value="Qui" {% if 'Qui' in disponibilidade %}checked{% endif %}>
+                      <label class="form-check-label" for="Qui">Quinta-feira</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" id="Sex" name="disponibilidade[]" value="Sex" {% if 'Sex' in disponibilidade %}checked{% endif %}>
+                      <label class="form-check-label" for="Sex">Sexta-feira</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" id="Sáb" name="disponibilidade[]" value="Sáb" {% if 'Sáb' in disponibilidade %}checked{% endif %}>
+                      <label class="form-check-label" for="Sáb">Sábado</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" id="Dom" name="disponibilidade[]" value="Dom" {% if 'Dom' in disponibilidade %}checked{% endif %}>
+                      <label class="form-check-label" for="Dom">Domingo</label>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div class="col-md-12 mb-3">
+              <div class="col-md-6 mb-3 equal-height-col">
                 <label for="experiencia" class="form-label">Experiência Profissional</label>
-                <textarea class="form-control" id="experiencia" name="experiencia" rows="3">{{ vaga.dados_profissionais.experiencia }}</textarea>
+                <div class="textarea-container">
+                  <textarea class="form-control" id="experiencia" name="experiencia">{{ vaga.dados_profissionais.experiencia }}</textarea>
+                </div>
               </div>
             </div>
           </fieldset>
@@ -98,20 +262,19 @@
             <div class="row">
               <div class="col-md-6 mb-3">
                 <label for="banco" class="form-label">Banco</label>
-                <input type="text" class="form-control" id="banco" name="banco"
-       value="{{ vaga.dados_bancarios.banco if vaga.dados_bancarios else '' }}">
+                <input type="text" class="form-control" id="banco" name="banco" value="{{ vaga.dados_bancarios.banco if vaga.dados_bancarios else '' }}">
               </div>
               <div class="col-md-3 mb-3">
                 <label for="agencia" class="form-label">Agência</label>
-                <input type="text" class="form-control" id="agencia" name="agencia" value="{{ vaga.dados_bancarios.agencia }}">
+                <input type="text" class="form-control" id="agencia" name="agencia" value="{{ vaga.dados_bancarios.agencia if vaga.dados_bancarios else '' }}">
               </div>
               <div class="col-md-3 mb-3">
                 <label for="conta" class="form-label">Conta</label>
-                <input type="text" class="form-control" id="conta" name="conta" value="{{ vaga.dados_bancarios.conta }}">
+                <input type="text" class="form-control" id="conta" name="conta" value="{{ vaga.dados_bancarios.conta if vaga.dados_bancarios else '' }}">
               </div>
               <div class="col-md-6 mb-3">
                 <label for="pix" class="form-label">Chave PIX</label>
-                <input type="text" class="form-control" id="pix" name="pix" value="{{ vaga.dados_bancarios.pix }}">
+                <input type="text" class="form-control" id="pix" name="pix" value="{{ vaga.dados_bancarios.pix if vaga.dados_bancarios else '' }}">
               </div>
             </div>
           </fieldset>
@@ -121,28 +284,28 @@
             <div class="row">
               <div class="col-md-6 mb-3">
                 <label for="rg" class="form-label">RG (Atualizar)</label>
-                <input type="file" class="form-control" id="rg" name="rg">
+                <input type="file" class="form-control" id="rg" name="rg" accept=".pdf,.jpg,.jpeg,.png">
                 {% if vaga.arquivos.rg %}
                 <small class="text-muted">Documento atual: <a href="{{ url_for('static', filename='uploads/' + vaga.arquivos.rg) }}" target="_blank">Visualizar</a></small>
                 {% endif %}
               </div>
               <div class="col-md-6 mb-3">
                 <label for="cpf_doc" class="form-label">CPF (Atualizar)</label>
-                <input type="file" class="form-control" id="cpf_doc" name="cpf_doc">
+                <input type="file" class="form-control" id="cpf_doc" name="cpf_doc" accept=".pdf,.jpg,.jpeg,.png">
                 {% if vaga.arquivos.cpf_doc %}
                 <small class="text-muted">Documento atual: <a href="{{ url_for('static', filename='uploads/' + vaga.arquivos.cpf_doc) }}" target="_blank">Visualizar</a></small>
                 {% endif %}
               </div>
               <div class="col-md-6 mb-3">
                 <label for="titulo_eleitor" class="form-label">Título de Eleitor (Atualizar)</label>
-                <input type="file" class="form-control" id="titulo_eleitor" name="titulo_eleitor">
+                <input type="file" class="form-control" id="titulo_eleitor" name="titulo_eleitor" accept=".pdf,.jpg,.jpeg,.png">
                 {% if vaga.arquivos.titulo_eleitor %}
                 <small class="text-muted">Documento atual: <a href="{{ url_for('static', filename='uploads/' + vaga.arquivos.titulo_eleitor) }}" target="_blank">Visualizar</a></small>
                 {% endif %}
               </div>
               <div class="col-md-6 mb-3">
                 <label for="ctps" class="form-label">CTPS (Atualizar)</label>
-                <input type="file" class="form-control" id="ctps" name="ctps">
+                <input type="file" class="form-control" id="ctps" name="ctps" accept=".pdf,.jpg,.jpeg,.png">
                 {% if vaga.arquivos.ctps %}
                 <small class="text-muted">Documento atual: <a href="{{ url_for('static', filename='uploads/' + vaga.arquivos.ctps) }}" target="_blank">Visualizar</a></small>
                 {% endif %}
@@ -164,5 +327,215 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Validador e formatador de CPF
+    document.getElementById('cpf').addEventListener('input', function(e) {
+      let cpf = e.target.value.replace(/\D/g, '');
+
+      // Formata o CPF enquanto digita
+      if (cpf.length > 3 && cpf.length <= 6) {
+        cpf = cpf.replace(/(\d{3})(\d)/, '$1.$2');
+      } else if (cpf.length > 6 && cpf.length <= 9) {
+        cpf = cpf.replace(/(\d{3})(\d{3})(\d)/, '$1.$2.$3');
+      } else if (cpf.length > 9) {
+        cpf = cpf.replace(/(\d{3})(\d{3})(\d{3})(\d)/, '$1.$2.$3-$4');
+      }
+
+      e.target.value = cpf.substring(0, 14);
+
+      // Valida o CPF quando estiver completo
+      if (cpf.length === 14) {
+        if (!validarCPF(cpf)) {
+          e.target.classList.add('is-invalid');
+          e.target.setCustomValidity('CPF inválido');
+        } else {
+          e.target.classList.remove('is-invalid');
+          e.target.setCustomValidity('');
+        }
+      } else {
+        e.target.classList.remove('is-invalid');
+        e.target.setCustomValidity('');
+      }
+    });
+
+    // Função para validar CPF
+    function validarCPF(cpf) {
+      cpf = cpf.replace(/[^\d]+/g, '');
+
+      if (cpf.length !== 11 ||
+          /^(\d)\1{10}$/.test(cpf)) {
+        return false;
+      }
+
+      let soma = 0;
+      let resto;
+
+      for (let i = 1; i <= 9; i++) {
+        soma += parseInt(cpf.substring(i-1, i)) * (11 - i);
+      }
+
+      resto = (soma * 10) % 11;
+
+      if ((resto === 10) || (resto === 11)) {
+        resto = 0;
+      }
+
+      if (resto !== parseInt(cpf.substring(9, 10))) {
+        return false;
+      }
+
+      soma = 0;
+
+      for (let i = 1; i <= 10; i++) {
+        soma += parseInt(cpf.substring(i-1, i)) * (12 - i);
+      }
+
+      resto = (soma * 10) % 11;
+
+      if ((resto === 10) || (resto === 11)) {
+        resto = 0;
+      }
+
+      if (resto !== parseInt(cpf.substring(10, 11))) {
+        return false;
+      }
+
+      return true;
+    }
+
+    // Validador e formatador de Telefone
+    document.getElementById('telefone').addEventListener('input', function(e) {
+        let telefone = e.target.value.replace(/\D/g, '');
+
+        // Adiciona o código do país se não estiver presente
+        if (!telefone.startsWith('55') && telefone.length > 0) {
+            telefone = '55' + telefone;
+        }
+
+        // Formata o telefone
+        let formatted = '+55 ';
+
+        if (telefone.length > 2) {
+            const ddd = telefone.substring(2, 4);
+            formatted += `(${ddd}) `;
+
+            if (telefone.length > 4) {
+                const nextDigit = telefone.substring(4, 5);
+
+                // Verifica se é celular (começa com 9)
+                if (nextDigit === '9') {
+                    formatted += nextDigit;
+
+                    if (telefone.length > 5) {
+                        const parte1 = telefone.substring(5, 9);
+                        formatted += ` ${parte1}`;
+
+                        if (telefone.length > 9) {
+                            const parte2 = telefone.substring(9, 13);
+                            formatted += `-${parte2}`;
+                        }
+                    }
+                } else {
+                    // Telefone fixo
+                    const parte1 = telefone.substring(4, 8);
+                    formatted += parte1;
+
+                    if (telefone.length > 8) {
+                        const parte2 = telefone.substring(8, 12);
+                        formatted += `-${parte2}`;
+                    }
+                }
+            }
+        }
+
+        e.target.value = formatted;
+    });
+
+    // Validador de telefone corrigido
+    document.getElementById('telefone').addEventListener('blur', function(e) {
+        const telefone = e.target.value.replace(/\D/g, '');
+
+        // Remove o código do país para validação
+        const numero = telefone.substring(2);
+
+        // Verifica se é um celular válido (11 dígitos com DDD) ou fixo válido (10 dígitos com DDD)
+        const isCelularValido = numero.length === 11 && numero.substring(2, 3) === '9'; // DDD + 9XXXXXXXX
+        const isFixoValido = numero.length === 10 && numero.substring(2, 3) !== '9';    // DDD + XXXX-XXXX
+
+        if (numero.length === 0) {
+            // Campo vazio (não é obrigatório pelo HTML)
+            e.target.setCustomValidity('');
+            e.target.classList.remove('is-invalid');
+        } else if (isCelularValido || isFixoValido) {
+            // Número válido
+            e.target.setCustomValidity('');
+            e.target.classList.remove('is-invalid');
+        } else {
+            // Número inválido
+            e.target.setCustomValidity('Telefone inválido. Celulares devem ter 11 dígitos (com DDD) e começar com 9. Fixos devem ter 10 dígitos (com DDD).');
+            e.target.classList.add('is-invalid');
+        }
+    });
+
+    document.getElementById('estado').addEventListener('change', async function() {
+      const uf = this.value;
+      const cidadeSelect = document.getElementById('cidade');
+
+      cidadeSelect.innerHTML = '<option value="" disabled selected>Carregando cidades...</option>';
+      cidadeSelect.disabled = !uf;
+
+      if (!uf) return;
+
+      try {
+        const response = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`);
+        const cidades = await response.json();
+
+        cidadeSelect.innerHTML = '<option value="" selected disabled>Selecione sua cidade</option>';
+
+        cidades.forEach(municipio => {
+          const option = new Option(municipio.nome, municipio.nome);
+          cidadeSelect.add(option);
+        });
+
+        // Seleciona a cidade salva se existir
+        const cidadeSalva = "{{ vaga.dados_contato.cidade }}";
+        if (cidadeSalva) {
+          cidadeSelect.value = cidadeSalva;
+        }
+
+        cidadeSelect.disabled = false;
+      } catch (error) {
+        cidadeSelect.innerHTML = '<option value="" disabled selected>Erro ao carregar cidades</option>';
+        console.error("Falha ao buscar cidades:", error);
+      }
+    });
+
+    // Adiciona campo para "Outros" quando selecionado na área de atuação
+    document.getElementById('area_atuacao').addEventListener('change', function() {
+      const outrosContainer = document.getElementById('outros_area_container');
+      if (this.value === 'Outros') {
+        if (!outrosContainer) {
+          const container = document.createElement('div');
+          container.id = 'outros_area_container';
+          container.className = 'mt-2';
+          container.innerHTML = `
+            <label for="outros_area" class="form-label">Especifique a área de atuação</label>
+            <input type="text" class="form-control" id="outros_area" name="outros_area">
+          `;
+          this.parentNode.appendChild(container);
+        }
+      } else if (outrosContainer) {
+        outrosContainer.remove();
+      }
+    });
+
+    // Carrega cidades se estado já estiver selecionado
+    document.addEventListener('DOMContentLoaded', function() {
+      const estadoSelect = document.getElementById('estado');
+      if (estadoSelect.value) {
+        estadoSelect.dispatchEvent(new Event('change'));
+      }
+    });
+  </script>
 </body>
 </html>

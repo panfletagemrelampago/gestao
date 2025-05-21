@@ -1,27 +1,29 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, Response
 from flask_sqlalchemy import SQLAlchemy
 import os
-from datetime import datetime
+from datetime import datetime, date
 from werkzeug.utils import secure_filename
 from enum import Enum
-from flask_wtf.csrf import CSRFProtect
+import csv
+from io import StringIO
+import pandas as pd
 
 app = Flask(__name__)
-app.secret_key = '@Zadu0204#='
-csrf = CSRFProtect(app)
+app.config['SECRET_KEY'] = '@Zadu0204#'
+app.secret_key = '@Zadu0204#'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 # Configurações de upload
 UPLOAD_FOLDER = 'static/uploads'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf', 'doc', 'docx'}
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf', 'doc', 'docx', 'csv', 'xlsx'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Credenciais
 PREDEFINED_CREDENTIALS = {
-    'username': 'Relam01',
-    'password': '@Zadu0204#='
+    'username': 'Relam',
+    'password': '@Zadu0204'
 }
 
 
@@ -88,7 +90,7 @@ class Acao(db.Model):
     locais = db.Column(db.String(200))
     quantidade_pessoas = db.Column(db.String(10))
     responsavel = db.Column(db.String(100))
-    status = db.Column(db.String(20), default='ativo')  # Alterado para String temporariamente
+    status = db.Column(db.String(20), default='ativo')
     material_acao = db.Column(db.String(200))
     foto_equipe = db.Column(db.String(200))
     data_cadastro = db.Column(db.DateTime, default=datetime.now)
@@ -112,6 +114,22 @@ def handle_file_upload(file, prefix):
     return None
 
 
+def calcular_idade(data_nascimento):
+    if isinstance(data_nascimento, str):
+        try:
+            data_nascimento = datetime.strptime(data_nascimento, '%Y-%m-%d').date()
+        except ValueError:
+            return "N/A"
+
+    hoje = date.today()
+    idade = hoje.year - data_nascimento.year - ((hoje.month, hoje.day) < (data_nascimento.month, data_nascimento.day))
+    return idade
+
+
+# Adiciona a função ao contexto do Jinja2
+app.jinja_env.globals.update(calcular_idade=calcular_idade)
+
+
 @app.before_request
 def require_login():
     if request.endpoint in [None, 'static', 'login', 'logout']:
@@ -123,19 +141,13 @@ def require_login():
 def migrate_status_values():
     with app.app_context():
         try:
-            # Verifica se já existe uma tabela de backup
             backup_exists = db.engine.execute(
                 "SELECT name FROM sqlite_master WHERE type='table' AND name='acao_backup'"
             ).fetchone() is not None
 
             if not backup_exists:
-                # Cria uma cópia de backup da tabela original
                 db.engine.execute('ALTER TABLE acao RENAME TO acao_backup')
-
-                # Recria a tabela com o mesmo esquema
                 db.create_all()
-
-                # Copia os dados convertendo os status para minúsculas
                 db.engine.execute('''
                     INSERT INTO acao (id, nome_cliente, empresa, tipo_acao, quantidade_material, 
                                     data_inicio, data_termino, hora_inicio, hora_termino, 
@@ -148,11 +160,9 @@ def migrate_status_values():
                            material_acao, foto_equipe, data_cadastro
                     FROM acao_backup
                 ''')
-
                 print("Migração de status concluída com sucesso!")
         except Exception as e:
             print(f"Erro durante a migração: {str(e)}")
-            # Em caso de erro, tentar restaurar a tabela original
             db.engine.execute('DROP TABLE IF EXISTS acao')
             db.engine.execute('ALTER TABLE acao_backup RENAME TO acao')
             raise
@@ -249,6 +259,82 @@ def excluir_cliente(cliente_id):
         db.session.rollback()
         flash(f'Erro ao excluir cliente: {str(delete_error)}', 'danger')
     return redirect(url_for('banco_clientes'))
+
+
+@app.route('/clientes/importar', methods=['GET', 'POST'])
+def importar_clientes():
+    if request.method == 'POST':
+        try:
+            if 'arquivo' not in request.files:
+                flash('Nenhum arquivo enviado', 'danger')
+                return redirect(request.url)
+
+            file = request.files['arquivo']
+            if file.filename == '':
+                flash('Nenhum arquivo selecionado', 'danger')
+                return redirect(request.url)
+
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+
+                if filename.endswith('.csv'):
+                    stream = StringIO(file.stream.read().decode("UTF8"), newline=None)
+                    csv_reader = csv.DictReader(stream, delimiter=',')
+                    clientes_data = [row for row in csv_reader]
+
+                elif filename.endswith('.xlsx'):
+                    df = pd.read_excel(file)
+                    clientes_data = df.to_dict('records')
+
+                else:
+                    flash('Formato de arquivo não suportado', 'danger')
+                    return redirect(request.url)
+
+                count = 0
+                for cliente_data in clientes_data:
+                    try:
+                        novo_cliente = Cliente(
+                            nome=cliente_data.get('nome', ''),
+                            empresa=cliente_data.get('empresa', ''),
+                            segmento=cliente_data.get('segmento', ''),
+                            telefone=cliente_data.get('telefone', ''),
+                            email=cliente_data.get('email', ''),
+                            cpf_cnpj=cliente_data.get('cpf_cnpj', '')
+                        )
+                        db.session.add(novo_cliente)
+                        count += 1
+                    except Exception as e:
+                        db.session.rollback()
+                        flash(f'Erro ao processar linha: {str(e)}', 'warning')
+                        continue
+
+                db.session.commit()
+                flash(f'{count} clientes importados com sucesso!', 'success')
+                return redirect(url_for('banco_clientes'))
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erro ao importar clientes: {str(e)}', 'danger')
+            app.logger.error(f"Erro na importação: {str(e)}", exc_info=True)
+
+    return redirect(url_for('banco_clientes'))
+
+
+@app.route('/clientes/download-modelo')
+def download_modelo_clientes():
+    output = StringIO()
+    writer = csv.writer(output)
+
+    writer.writerow(['nome', 'empresa', 'segmento', 'telefone', 'email', 'cpf_cnpj'])
+    writer.writerow(['João Silva', 'Empresa A', 'Tecnologia', '11999999999', 'joao@empresa.com', '123.456.789-00'])
+    writer.writerow(['Maria Souza', 'Empresa B', 'Educação', '21988888888', 'maria@empresa.com', '987.654.321-00'])
+
+    output.seek(0)
+    return Response(
+        output,
+        mimetype="text/csv",
+        headers={"Content-disposition": "attachment; filename=modelo_clientes.csv"}
+    )
 
 
 # Rotas para Materiais
@@ -354,6 +440,8 @@ def banco_vagas():
 def cadastrar_vaga():
     if request.method == 'POST':
         try:
+            dias_disponibilidade = request.form.getlist('disponibilidade[]')
+
             arquivos = {
                 'rg': handle_file_upload(request.files.get('rg'), 'rg'),
                 'cpf_doc': handle_file_upload(request.files.get('cpf_doc'), 'cpf'),
@@ -379,7 +467,7 @@ def cadastrar_vaga():
                 dados_profissionais={
                     'area_atuacao': request.form['area_atuacao'],
                     'tipo_interesse': request.form.get('tipo_interesse', ''),
-                    'disponibilidade': request.form['disponibilidade'],
+                    'disponibilidade': ', '.join(dias_disponibilidade),
                     'experiencia': request.form['experiencia']
                 },
                 dados_bancarios={
@@ -390,13 +478,18 @@ def cadastrar_vaga():
                 },
                 arquivos=arquivos
             )
+
             db.session.add(nova_vaga)
             db.session.commit()
             flash('Vaga cadastrada com sucesso!', 'success')
             return redirect(url_for('banco_vagas'))
+
         except Exception as e:
             db.session.rollback()
             flash(f'Erro ao cadastrar vaga: {str(e)}', 'danger')
+            app.logger.error(f"Erro ao cadastrar vaga: {str(e)}", exc_info=True)
+            return render_template('cadastrar_vaga.html')
+
     return render_template('cadastrar_vaga.html')
 
 
@@ -406,13 +499,19 @@ def editar_vaga(vaga_id):
 
     if request.method == 'POST':
         try:
+            # Obter os dados do formulário
+            dias_disponibilidade = request.form.getlist('disponibilidade[]')
+
+            # Processar arquivos (se enviados)
             arquivos = {
-                'rg': handle_file_upload(request.files.get('rg'), 'rg'),
-                'cpf_doc': handle_file_upload(request.files.get('cpf_doc'), 'cpf'),
-                'titulo_eleitor': handle_file_upload(request.files.get('titulo_eleitor'), 'titulo'),
-                'ctps': handle_file_upload(request.files.get('ctps'), 'ctps')
+                'rg': handle_file_upload(request.files.get('rg'), 'rg') or vaga.arquivos.get('rg'),
+                'cpf_doc': handle_file_upload(request.files.get('cpf_doc'), 'cpf') or vaga.arquivos.get('cpf_doc'),
+                'titulo_eleitor': handle_file_upload(request.files.get('titulo_eleitor'),
+                                                     'titulo') or vaga.arquivos.get('titulo_eleitor'),
+                'ctps': handle_file_upload(request.files.get('ctps'), 'ctps') or vaga.arquivos.get('ctps')
             }
 
+            # Atualizar os dados
             vaga.dados_pessoais = {
                 'nome_completo': request.form['nome_completo'],
                 'data_nascimento': request.form['data_nascimento'],
@@ -420,20 +519,23 @@ def editar_vaga(vaga_id):
                 'estado_civil': request.form.get('estado_civil', vaga.dados_pessoais.get('estado_civil', '')),
                 'dependentes': request.form.get('dependentes', vaga.dados_pessoais.get('dependentes', ''))
             }
+
             vaga.dados_contato = {
-                'telefone': request.form['telefone'],
-                'email': request.form['email'],
+                'telefone': request.form.get('telefone', vaga.dados_contato.get('telefone', '')),
+                'email': request.form.get('email', vaga.dados_contato.get('email', '')),
                 'cep': request.form.get('cep', vaga.dados_contato.get('cep', '')),
                 'cidade': request.form.get('cidade', vaga.dados_contato.get('cidade', '')),
                 'estado': request.form.get('estado', vaga.dados_contato.get('estado', ''))
             }
+
             vaga.dados_profissionais = {
-                'area_atuacao': request.form['area_atuacao'],
+                'area_atuacao': request.form.get('area_atuacao', vaga.dados_profissionais.get('area_atuacao', '')),
                 'tipo_interesse': request.form.get('tipo_interesse',
                                                    vaga.dados_profissionais.get('tipo_interesse', '')),
-                'disponibilidade': request.form['disponibilidade'],
-                'experiencia': request.form['experiencia']
+                'disponibilidade': ', '.join(dias_disponibilidade),
+                'experiencia': request.form.get('experiencia', vaga.dados_profissionais.get('experiencia', ''))
             }
+
             vaga.dados_bancarios = {
                 'banco': request.form.get('banco', vaga.dados_bancarios.get('banco', '')),
                 'agencia': request.form.get('agencia', vaga.dados_bancarios.get('agencia', '')),
@@ -441,23 +543,20 @@ def editar_vaga(vaga_id):
                 'pix': request.form.get('pix', vaga.dados_bancarios.get('pix', ''))
             }
 
-            # Atualiza apenas os arquivos que foram enviados
-            for key, value in arquivos.items():
-                if value is not None:
-                    vaga.arquivos[key] = value
+            vaga.arquivos = arquivos
 
             db.session.commit()
             flash('Vaga atualizada com sucesso!', 'success')
             return redirect(url_for('banco_vagas'))
-        except Exception as update_error:
-            db.session.rollback()
-            flash(f'Erro ao atualizar vaga: {str(update_error)}', 'danger')
-            import traceback
-            traceback.print_exc()
 
-    # Preparar dados para o template (GET request)
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erro ao atualizar vaga: {str(e)}', 'danger')
+            return redirect(url_for('editar_vaga', vaga_id=vaga_id))
+
+    # Renderizar o template com os dados da vaga para edição
     vaga_data = {
-        'id': vaga.id,  # Certifique-se de usar 'id' e não '_id'
+        'id': vaga.id,
         'dados_pessoais': vaga.dados_pessoais,
         'dados_contato': vaga.dados_contato,
         'dados_profissionais': vaga.dados_profissionais,
@@ -466,7 +565,6 @@ def editar_vaga(vaga_id):
     }
 
     return render_template('editar_vaga.html', vaga=vaga_data, vaga_id=vaga_id)
-
 
 @app.route('/vagas/excluir/<int:vaga_id>', methods=['POST'])
 def excluir_vaga(vaga_id):
@@ -481,13 +579,125 @@ def excluir_vaga(vaga_id):
     return redirect(url_for('banco_vagas'))
 
 
+@app.route('/vagas/importar', methods=['GET', 'POST'])
+def importar_vagas():
+    if request.method == 'POST':
+        try:
+            if 'arquivo' not in request.files:
+                flash('Nenhum arquivo enviado', 'danger')
+                return redirect(request.url)
+
+            file = request.files['arquivo']
+            if file.filename == '':
+                flash('Nenhum arquivo selecionado', 'danger')
+                return redirect(request.url)
+
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+
+                if filename.endswith('.csv'):
+                    stream = StringIO(file.stream.read().decode("UTF8"), newline=None)
+                    csv_reader = csv.DictReader(stream, delimiter=',')
+                    vagas_data = [row for row in csv_reader]
+
+                elif filename.endswith('.xlsx'):
+                    df = pd.read_excel(file)
+                    vagas_data = df.to_dict('records')
+
+                else:
+                    flash('Formato de arquivo não suportado', 'danger')
+                    return redirect(request.url)
+
+                count = 0
+                for vaga_data in vagas_data:
+                    try:
+                        nova_vaga = Vaga(
+                            dados_pessoais={
+                                'nome_completo': vaga_data.get('nome_completo', ''),
+                                'cpf': vaga_data.get('cpf', ''),
+                                'data_nascimento': vaga_data.get('data_nascimento', ''),
+                                'estado_civil': vaga_data.get('estado_civil', ''),
+                                'dependentes': vaga_data.get('dependentes', '')
+                            },
+                            dados_contato={
+                                'telefone': vaga_data.get('telefone', ''),
+                                'email': vaga_data.get('email', ''),
+                                'cep': vaga_data.get('cep', ''),
+                                'cidade': vaga_data.get('cidade', ''),
+                                'estado': vaga_data.get('estado', '')
+                            },
+                            dados_profissionais={
+                                'area_atuacao': vaga_data.get('area_atuacao', ''),
+                                'tipo_interesse': vaga_data.get('tipo_interesse', ''),
+                                'disponibilidade': vaga_data.get('disponibilidade', ''),
+                                'experiencia': vaga_data.get('experiencia', '')
+                            },
+                            dados_bancarios={
+                                'banco': vaga_data.get('banco', ''),
+                                'agencia': vaga_data.get('agencia', ''),
+                                'conta': vaga_data.get('conta', ''),
+                                'pix': vaga_data.get('pix', '')
+                            },
+                            arquivos={}
+                        )
+                        db.session.add(nova_vaga)
+                        count += 1
+                    except Exception as e:
+                        db.session.rollback()
+                        flash(f'Erro ao processar linha: {str(e)}', 'warning')
+                        continue
+
+                db.session.commit()
+                flash(f'{count} vagas importadas com sucesso!', 'success')
+                return redirect(url_for('banco_vagas'))
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erro ao importar vagas: {str(e)}', 'danger')
+            app.logger.error(f"Erro na importação: {str(e)}", exc_info=True)
+
+    return redirect(url_for('banco_vagas'))
+
+
+@app.route('/vagas/download-modelo')
+def download_modelo_vagas():
+    output = StringIO()
+    writer = csv.writer(output)
+
+    writer.writerow([
+        'nome_completo', 'cpf', 'data_nascimento', 'estado_civil', 'dependentes',
+        'telefone', 'email', 'cep', 'cidade', 'estado',
+        'area_atuacao', 'tipo_interesse', 'disponibilidade', 'experiencia',
+        'banco', 'agencia', 'conta', 'pix'
+    ])
+
+    writer.writerow([
+        'João Silva', '123.456.789-00', '1990-01-01', 'Solteiro', '0',
+        '11999999999', 'joao@email.com', '01234-567', 'São Paulo', 'SP',
+        'Promotor de Vendas', 'Temporário', 'Segunda a Sexta', '2 anos',
+        'Banco do Brasil', '1234', '56789-0', '123.456.789-00'
+    ])
+    writer.writerow([
+        'Maria Souza', '987.654.321-00', '1985-05-15', 'Casada', '2',
+        '21988888888', 'maria@email.com', '21000-000', 'Rio de Janeiro', 'RJ',
+        'Auxiliar Administrativo', 'Efetivo', 'Todos os dias', '5 anos',
+        'Itaú', '4321', '12345-6', 'maria@email.com'
+    ])
+
+    output.seek(0)
+    return Response(
+        output,
+        mimetype="text/csv",
+        headers={"Content-disposition": "attachment; filename=modelo_vagas.csv"}
+    )
+
+
 # Rotas para Ações
 @app.route('/acoes')
 def banco_acoes():
     try:
         acoes = Acao.query.order_by(Acao.data_cadastro.desc()).all()
 
-        # Converter status para o formato correto se necessário
         for acao in acoes:
             if not isinstance(acao.status, str):
                 acao.status = str(acao.status)
@@ -502,15 +712,13 @@ def banco_acoes():
 def cadastrar_acao():
     if request.method == 'POST':
         try:
-            # Processar uploads
-            material_filename = handle_file_upload(request.files.get('material_acao'), 'material')
-            foto_filename = handle_file_upload(request.files.get('foto_equipe'), 'foto')
-
-            # Validar status
             status_input = request.form.get('status', 'ativo').lower()
             if status_input not in [s.value for s in StatusAcao]:
                 flash('Status inválido selecionado', 'danger')
                 return render_template('cadastrar_acao.html')
+
+            material_filename = handle_file_upload(request.files.get('material_acao'), 'material')
+            foto_filename = handle_file_upload(request.files.get('foto_equipe'), 'foto')
 
             nova_acao = Acao(
                 nome_cliente=request.form['nome_cliente'],
@@ -524,7 +732,7 @@ def cadastrar_acao():
                 locais=request.form['locais'],
                 quantidade_pessoas=request.form['quantidade_pessoas'],
                 responsavel=request.form['responsavel'],
-                status=status_input,  # Armazena como string
+                status=status_input,
                 material_acao=material_filename,
                 foto_equipe=foto_filename
             )
@@ -545,33 +753,28 @@ def editar_acao(acao_id):
 
     if request.method == 'POST':
         try:
-            # Tratamento seguro do status
             status_input = request.form.get('status', 'ativo').lower()
             if status_input not in [s.value for s in StatusAcao]:
                 flash('Status inválido selecionado', 'danger')
                 return redirect(url_for('editar_acao', acao_id=acao_id))
 
-            # Atualizar outros dados
             acao.nome_cliente = request.form.get('nome_cliente', acao.nome_cliente)
             acao.empresa = request.form.get('empresa', acao.empresa)
             acao.tipo_acao = request.form.get('tipo_acao', acao.tipo_acao)
             acao.quantidade_material = request.form['quantidade']
-            acao.status = status_input  # Armazena como string
+            acao.status = status_input
 
-            # Atualizar datas
             if request.form.get('data_inicio'):
                 acao.data_inicio = datetime.strptime(request.form['data_inicio'], '%Y-%m-%d').date()
             if request.form.get('data_termino'):
                 acao.data_termino = datetime.strptime(request.form['data_termino'], '%Y-%m-%d').date()
 
-            # Atualizar outros campos
             acao.hora_inicio = request.form.get('hora_inicio', acao.hora_inicio)
             acao.hora_termino = request.form.get('hora_termino', acao.hora_termino)
             acao.locais = request.form.get('locais', acao.locais)
             acao.quantidade_pessoas = request.form.get('quantidade_pessoas', acao.quantidade_pessoas)
             acao.responsavel = request.form.get('responsavel', acao.responsavel)
 
-            # Atualizar arquivos
             if 'material_acao' in request.files:
                 material_file = request.files['material_acao']
                 if material_file and allowed_file(material_file.filename):
@@ -593,7 +796,6 @@ def editar_acao(acao_id):
             db.session.rollback()
             flash(f'Erro ao atualizar ação: {str(e)}', 'danger')
 
-    # Preparar dados para o template (GET request)
     acao_data = {
         'id': acao.id,
         'nome_cliente': acao.nome_cliente,
@@ -607,7 +809,7 @@ def editar_acao(acao_id):
         'locais': acao.locais,
         'quantidade_pessoas': acao.quantidade_pessoas,
         'responsavel': acao.responsavel,
-        'status': acao.status,  # Já está como string
+        'status': acao.status,
         'material_acao': acao.material_acao,
         'foto_equipe': acao.foto_equipe
     }
@@ -633,9 +835,4 @@ if __name__ == '__main__':
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
     with app.app_context():
         db.create_all()
-        try:
-            migrate_status_values()
-        except Exception as migration_error:
-            print(f"Erro na migração: {str(migration_error)}")
-            print("Continuando a execução...")
     app.run(debug=True)

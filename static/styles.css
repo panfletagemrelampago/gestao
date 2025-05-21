@@ -154,3 +154,178 @@
   width: 45%;
   min-width: 300px;
 }
+
+/* Estilos para o hero com GIF */
+.gif-hero {
+    position: relative;
+    width: 100%;
+    height: 70vh;
+    overflow: hidden;
+    margin-bottom: 2rem;
+    background: url('seu-gif-hero.gif') no-repeat center center;
+    background-size: cover;
+}
+
+/* Overlay para melhorar legibilidade */
+.gif-hero::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 0;
+}
+
+/* Conteúdo sobreposto */
+.hero-content {
+    position: relative;
+    z-index: 1;
+    padding-top: 20vh;
+    text-align: center;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Estilos para containers de GIF */
+.gif-container {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 1rem 0;
+    box-shadow: var(--sombra-card);
+    transition: transform 0.3s ease;
+}
+
+.gif-container:hover {
+    transform: scale(1.02);
+    box-shadow: var(--sombra-card-hover);
+}
+
+/* GIFs responsivos */
+.responsive-gif {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Background animado com GIF */
+.animated-bg {
+    background: url('seu-gif-de-fundo.gif') repeat;
+    position: relative;
+    padding: 2rem;
+    color: white;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+}
+
+.animated-bg::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(142, 0, 0, 0.6);
+}
+
+/* Melhorias para Mobile */
+@media (max-width: 768px) {
+    .gif-hero {
+        height: 50vh;
+        background-image: url('seu-gif-mobile.gif') !important;
+    }
+
+    .hero-content {
+        padding-top: 15vh;
+    }
+
+    /* Otimização para mobile - substituir GIFs pesados */
+    .animated-bg {
+        background: var(--vinho-medio) !important;
+    }
+
+    img[src*=".gif"] {
+        content: url('versao-estatica.jpg');
+    }
+}
+
+@media (max-width: 576px) {
+  /* Ajustes no menu principal */
+  .navbar-relampago {
+    padding: 0.5rem;
+  }
+
+  .navbar-brand {
+    font-size: 1rem;
+  }
+
+  /* Ajustes nos cards do menu */
+  .menu-card {
+    padding: 15px;
+    min-height: 80px;
+  }
+
+  .menu-card h3 {
+    font-size: 1rem;
+  }
+
+  /* Ajustes no dropdown */
+  .dropdown-menu {
+    width: 100%;
+    margin-left: 0 !important;
+  }
+
+  /* Espaçamento entre linhas do menu */
+  .menu-row {
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  /* Colunas ocupam 100% em mobile */
+  .menu-column {
+    width: 100%;
+    min-width: auto;
+  }
+
+  /* Ajustes no hero section */
+  .hero-title {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .hero-subtitle {
+    font-size: 0.9rem;
+  }
+
+  /* Ajustes na área do usuário */
+  .user-area {
+    padding: 0.5rem 0;
+  }
+
+  .user-info-box span, .logout-btn span {
+    display: none;
+  }
+
+  .user-info-box, .logout-btn {
+    padding: 0.25rem;
+  }
+
+  /* Features section */
+  .feature-box {
+    padding: 1rem;
+  }
+
+  .feature-icon {
+    font-size: 1.5rem;
+  }
+
+  .feature-box h3 {
+    font-size: 1.1rem;
+  }
+
+  .feature-box p {
+    font-size: 0.9rem;
+  }
+}

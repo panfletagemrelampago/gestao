@@ -7,6 +7,7 @@ from enum import Enum
 import csv
 from io import StringIO
 import pandas as pd
+from whitenoise import WhiteNoise
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '@Zadu0204#'
@@ -14,6 +15,7 @@ app.secret_key = '@Zadu0204#'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+app.wsgi_app = WhiteNoise(app.wsgi_app, root='static/')
 
 # Configurações de upload
 UPLOAD_FOLDER = 'static/uploads'

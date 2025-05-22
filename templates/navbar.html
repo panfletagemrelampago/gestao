@@ -16,7 +16,7 @@
           <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown">
             <i class="bi bi-plus-circle me-1 text-white"></i>Cadastros
           </a>
-          <ul class="dropdown-menu">
+          <ul class="dropdown-menu dropdown-menu-relampago">
             <li><a class="dropdown-item" href="{{ url_for('cadastrar_cliente') }}"><i class="bi bi-people me-2"></i>Clientes</a></li>
             <li><a class="dropdown-item" href="{{ url_for('cadastrar_material') }}"><i class="bi bi-box-seam me-2"></i>Materiais</a></li>
             <li><a class="dropdown-item" href="{{ url_for('cadastrar_vaga') }}"><i class="bi bi-person-badge me-2"></i>Vagas</a></li>
@@ -29,7 +29,7 @@
           <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown">
             <i class="bi bi-database me-1 text-white"></i>Bancos
           </a>
-          <ul class="dropdown-menu">
+          <ul class="dropdown-menu dropdown-menu-relampago">
             <li><a class="dropdown-item" href="{{ url_for('banco_clientes') }}"><i class="bi bi-people-fill me-2"></i>Clientes</a></li>
             <li><a class="dropdown-item" href="{{ url_for('banco_materiais') }}"><i class="bi bi-box-seam-fill me-2"></i>Materiais</a></li>
             <li><a class="dropdown-item" href="{{ url_for('banco_vagas') }}"><i class="bi bi-person-badge-fill me-2"></i>Vagas</a></li>
@@ -54,3 +54,87 @@
     </div>
   </div>
 </nav>
+
+<style>
+  /* Estilos para o navbar */
+  .navbar-relampago {
+    background: linear-gradient(135deg, #8E0000, #A50C0D);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 0.5rem 1rem;
+  }
+
+  .navbar-relampago .navbar-brand {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+  }
+
+  .navbar-relampago .navbar-brand i {
+    font-size: 1.5rem;
+  }
+
+  .navbar-relampago .nav-link {
+    padding: 0.5rem 1rem;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+  }
+
+  .navbar-relampago .nav-link:hover {
+    color: #FF9E0C !important;
+  }
+
+  .dropdown-menu-relampago {
+    background-color: white;
+    border: none;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    margin-top: 0.5rem;
+  }
+
+  .dropdown-menu-relampago .dropdown-item {
+    padding: 0.5rem 1rem;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+  }
+
+  .dropdown-menu-relampago .dropdown-item:hover {
+    background-color: #f8f9fa;
+    color: #8E0000;
+  }
+
+  .dropdown-menu-relampago .dropdown-item i {
+    width: 20px;
+    text-align: center;
+  }
+
+  .user-info-box {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+  }
+
+  .logout-btn {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    transition: all 0.3s ease;
+  }
+
+  .logout-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  @media (max-width: 992px) {
+    .navbar-relampago .navbar-collapse {
+      padding: 1rem 0;
+    }
+    
+    .dropdown-menu-relampago {
+      margin-left: 1rem;
+      width: calc(100% - 2rem);
+    }
+  }
+</style>

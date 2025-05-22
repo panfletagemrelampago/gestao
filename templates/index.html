@@ -30,6 +30,56 @@
             padding: 0;
         }
 
+        /* Navbar Estilizado */
+        .navbar-relampago {
+            background: linear-gradient(135deg, var(--vinho-escuro), var(--vinho-medio)) !important;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 0.5rem 1rem;
+        }
+
+        .navbar-relampago .navbar-brand {
+            font-weight: 600;
+            font-size: 1.5rem;
+            padding: 0.5rem 0;
+            color: white !important;
+        }
+
+        .navbar-relampago .nav-link {
+            padding: 0.5rem 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            color: white !important;
+        }
+
+        .navbar-relampago .nav-link:hover {
+            color: var(--laranja-destaque) !important;
+        }
+
+        .navbar-relampago .dropdown-menu {
+            background-color: var(--branco);
+            border: none;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar-relampago .dropdown-item {
+            padding: 0.5rem 1.5rem;
+            color: var(--texto-escuro);
+        }
+
+        .navbar-relampago .dropdown-item:hover {
+            background-color: rgba(142, 0, 0, 0.1);
+            color: var(--vinho-escuro);
+        }
+
+        .user-info-box:hover {
+            color: var(--laranja-destaque) !important;
+            cursor: default;
+        }
+
+        .logout-btn:hover {
+            color: var(--laranja-destaque) !important;
+        }
+
         /* Video Section */
         .video-hero {
             position: relative;
@@ -406,10 +456,10 @@
 
     <!-- Video Hero com fallback -->
     <section class="video-hero">
-        <img src="static/images/hero-fallback.jpg" alt="Hero image" class="hero-fallback">
+        <img src="/static/images/hero-fallback.jpg" alt="Hero image" class="hero-fallback">
         <video class="hero-video" autoplay muted loop playsinline>
-            <source src="static/videos/demo.mp4" type="video/mp4">
-            <source src="static/videos/demo.webm" type="video/webm">
+            <source src="/static/videos/demo.mp4" type="video/mp4">
+            <source src="/static/videos/demo.webm" type="video/webm">
             Seu navegador não suporta o elemento de vídeo.
         </video>
     </section>
@@ -534,12 +584,12 @@
         document.addEventListener('DOMContentLoaded', function() {
             const video = document.querySelector('.hero-video');
             const fallback = document.querySelector('.hero-fallback');
-            
+
             video.addEventListener('error', function() {
                 video.style.display = 'none';
                 fallback.style.display = 'block';
             });
-            
+
             // Força o fallback se o vídeo não carregar em 3 segundos
             setTimeout(function() {
                 if (video.readyState < 3) { // 0-2 significa não carregou

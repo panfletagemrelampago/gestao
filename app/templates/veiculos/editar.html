@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Veículo - Gestão Promocional{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+
+    <div class="col-12 col-lg-8">
+
+        <div class="d-flex align-items-center mb-4">
+
+            <a href="{{ url_for('veiculos.listar') }}"
+               class="btn btn-light rounded-circle me-3">
+
+                <i class="fas fa-arrow-left"></i>
+
+            </a>
+
+            <h2 class="fw-bold mb-0">
+                Editar <span class="text-vinho">Veículo</span>
+            </h2>
+
+        </div>
+
+
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+
+            <div class="card-body p-4">
+
+                <form method="POST">
+
+                    <div class="row g-3">
+
+                        <div class="col-12 col-md-6">
+
+                            <label class="form-label">Marca</label>
+
+                            <input
+                                type="text"
+                                class="form-control"
+                                name="marca"
+                                value="{{ veiculo.marca }}"
+                                required>
+
+                        </div>
+
+
+                        <div class="col-12 col-md-6">
+
+                            <label class="form-label">Modelo</label>
+
+                            <input
+                                type="text"
+                                class="form-control"
+                                name="modelo"
+                                value="{{ veiculo.modelo }}"
+                                required>
+
+                        </div>
+
+
+                        <div class="col-12 col-md-4">
+
+                            <label class="form-label">Placa</label>
+
+                            <input
+                                type="text"
+                                class="form-control"
+                                name="placa"
+                                value="{{ veiculo.placa }}"
+                                required>
+
+                        </div>
+
+
+                        <div class="col-12 col-md-4">
+
+                            <label class="form-label">Cor</label>
+
+                            <input
+                                type="text"
+                                class="form-control"
+                                name="cor"
+                                value="{{ veiculo.cor }}"
+                                required>
+
+                        </div>
+
+
+                        <div class="col-12 col-md-4">
+
+                            <label class="form-label">Motorista</label>
+
+                            <select class="form-select" name="motorista_id">
+
+                                <option value="">Nenhum</option>
+
+                                {% for membro in equipes %}
+
+                                <option value="{{ membro.id }}"
+                                {% if veiculo.motorista_id == membro.id %}selected{% endif %}>
+
+                                    {{ membro.nome }}
+
+                                </option>
+
+                                {% endfor %}
+
+                            </select>
+
+                        </div>
+
+
+                        <div class="col-12 mt-4">
+
+                            <div class="d-flex justify-content-end gap-2">
+
+                                <a href="{{ url_for('veiculos.listar') }}"
+                                   class="btn btn-light">
+
+                                    Cancelar
+
+                                </a>
+
+                                <button type="submit"
+                                        class="btn btn-primary">
+
+                                    Salvar Alterações
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

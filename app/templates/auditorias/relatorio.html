@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+{% block title %}Relatório de Auditoria — {{ acao.local_alvo }}{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+  #mapa-relatorio { height: 400px; border-radius: 10px; }
+  .foto-thumb { width: 100%; height: 140px; object-fit: cover; border-radius: 8px; cursor: pointer; transition: transform 0.2s; }
+  .foto-thumb:hover { transform: scale(1.03); }
+  .badge-dentro { background: #198754; }
+  .badge-fora   { background: #dc3545; }
+  .stat-card { border-radius: 12px; padding: 18px; color: white; }
+  @media print {
+    .no-print { display: none !important; }
+    #mapa-relatorio { height: 350px; }
+    .card { break-inside: avoid; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Cabeçalho -->
+<div class="row mb-4 align-items-start">
+  <div class="col-md-8">
+    <h2 class="mb-1">
+      <i class="fas fa-file-alt me-2" style="color:#8E0000;"></i>
+      Relatório de Auditoria de Campo
+    </h2>
+    <p class="text-muted mb-0">
+      Gerado em {{ agora.strftime('%d/%m/%Y às %H:%M') }} por {{ current_user.nome_exibicao }}
+    </p>
+  </div>
+  <div class="col-md-4 text-md-end mt-2 mt-md-0 no-print">
+    <button onclick="window.print()" class="btn btn-sm btn-outline-secondary rounded-pill me-2">
+      <i class="fas fa-print me-1"></i> Imprimir
+    </button>
+    <a href="{{ url_for('auditorias.turnos', acao_id=acao.id) }}" class="btn btn-sm btn-outline-primary rounded-pill me-2">
+      <i class="fas fa-clock me-1"></i> Turnos
+    </a>
+    <a href="{{ url_for('mapa.index') }}" class="btn btn-sm rounded-pill" style="background:#8E0000;color:white;border:none;">
+      <i class="fas fa-map me-1"></i> Mapa
+    </a>
+  </div>
+</div>
+
+<!-- Informações da Ação -->
+<div class="card border-0 shadow-sm rounded-4 mb-4">
+  <div class="card-header border-0 rounded-top-4" style="background:#8E0000;color:white;">
+    <i class="fas fa-bullhorn me-2"></i> Dados da Ação Promocional
+  </div>
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <div class="text-muted small">Cliente</div>
+        <div class="fw-bold">{{ acao.cliente.nome_empresa }}</div>
+      </div>
+      <div class="col-md-3">
+        <div class="text-muted small">Local / Bairro</div>
+        <div class="fw-bold">{{ acao.local_alvo }}</div>
+        <div class="small text-muted">{{ acao.bairro }} — {{ acao.cidade }}</div>
+      </div>
+      <div class="col-md-2">
+        <div class="text-muted small">Data</div>
+        <div class="fw-bold">{{ acao.data.strftime('%d/%m/%Y') }}</div>
+      </div>
+      <div class="col-md-2">
+        <div class="text-muted small">Tipo de Serviço</div>
+        <div class="fw-bold">{{ acao.tipo_servico }}</div>
+      </div>
+      <div class="col-md-2">
+        <div class="text-muted small">Status</div>
+        <span class="badge {% if acao.status == 'Em Andamento' %}bg-warning text-dark{% elif acao.status == 'Concluída' %}bg-success{% else %}bg-secondary{% endif %} rounded-pill px-3">
+          {{ acao.status }}
+        </span>
+      </div>
+    </div>
+    {% if acao.descricao %}
+    <div class="mt-3 p-3 bg-light rounded-3">
+      <div class="text-muted small mb-1">Descrição</div>
+      <div>{{ acao.descricao }}</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Estatísticas -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="background:#8E0000;">
+      <div class="small opacity-75">Turnos Realizados</div>
+      <div class="fs-2 fw-bold">{{ turnos|length }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="background:#FF9E0C;color:#333;">
+      <div class="small opacity-75">Fotos Registradas</div>
+      <div class="fs-2 fw-bold">{{ fotos|length }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="background:#198754;">
+      <div class="small opacity-75">Fotos na Área</div>
+      <div class="fs-2 fw-bold">{{ fotos|selectattr('dentro_da_area', 'equalto', True)|list|length }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="background:#0d6efd;">
+      <div class="small opacity-75">Áreas Definidas</div>
+      <div class="fs-2 fw-bold">{{ areas|length }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Mapa do Relatório -->
+<div class="card border-0 shadow-sm rounded-4 mb-4">
+  <div class="card-header border-0 rounded-top-4 bg-white py-3">
+    <h6 class="mb-0 fw-bold"><i class="fas fa-map me-2" style="color:#8E0000;"></i>Mapa da Ação</h6>
+  </div>
+  <div class="card-body p-3">
+    <div id="mapa-relatorio"></div>
+  </div>
+</div>
+
+<!-- Turnos -->
+{% if turnos %}
+<div class="card border-0 shadow-sm rounded-4 mb-4">
+  <div class="card-header border-0 rounded-top-4 bg-white py-3">
+    <h6 class="mb-0 fw-bold"><i class="fas fa-clock me-2" style="color:#8E0000;"></i>Turnos de Campo</h6>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>#</th>
+            <th>Equipe</th>
+            <th>Veículo</th>
+            <th>Início</th>
+            <th>Fim</th>
+            <th>Duração</th>
+            <th>Fotos</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in turnos %}
+          <tr>
+            <td class="text-muted small">{{ t.id }}</td>
+            <td class="fw-semibold">{{ t.equipe.nome if t.equipe else '—' }}</td>
+            <td>{{ t.veiculo.placa if t.veiculo else '<span class="text-muted small">A pé</span>'|safe }}</td>
+            <td><small>{{ t.inicio.strftime('%d/%m %H:%M') }}</small></td>
+            <td><small>{{ t.fim.strftime('%d/%m %H:%M') if t.fim else '—' }}</small></td>
+            <td>
+              {% if t.duracao_minutos %}
+                {{ (t.duracao_minutos // 60)|string + 'h ' + (t.duracao_minutos % 60)|string + 'min' }}
+              {% else %}—{% endif %}
+            </td>
+            <td><span class="badge bg-primary rounded-pill">{{ t.fotos|length }}</span></td>
+            <td>
+              <span class="badge {% if t.status == 'ativo' %}bg-success{% elif t.status == 'pausado' %}bg-warning text-dark{% else %}bg-secondary{% endif %} rounded-pill">
+                {{ t.status|capitalize }}
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Fotos de Campo -->
+{% if fotos %}
+<div class="card border-0 shadow-sm rounded-4 mb-4">
+  <div class="card-header border-0 rounded-top-4 bg-white py-3 d-flex justify-content-between align-items-center">
+    <h6 class="mb-0 fw-bold"><i class="fas fa-camera me-2" style="color:#8E0000;"></i>Fotos de Campo</h6>
+    <span class="badge bg-secondary rounded-pill">{{ fotos|length }} foto(s)</span>
+  </div>
+  <div class="card-body">
+    <div class="row g-3">
+      {% for foto in fotos %}
+      <div class="col-6 col-md-3 col-lg-2">
+        <div class="position-relative">
+          <img src="{{ foto.url }}" alt="Foto {{ loop.index }}" class="foto-thumb"
+               data-bs-toggle="modal" data-bs-target="#modalFoto"
+               data-url="{{ foto.url }}"
+               data-descricao="{{ foto.descricao or '' }}"
+               data-hora="{{ foto.data_hora.strftime('%d/%m/%Y %H:%M') }}"
+               data-lat="{{ foto.latitude }}"
+               data-lon="{{ foto.longitude }}"
+               data-dentro="{{ foto.dentro_da_area }}">
+          {% if foto.dentro_da_area == True %}
+            <span class="badge badge-dentro position-absolute top-0 end-0 m-1" style="font-size:9px;">✓ Área</span>
+          {% elif foto.dentro_da_area == False %}
+            <span class="badge badge-fora position-absolute top-0 end-0 m-1" style="font-size:9px;">✗ Fora</span>
+          {% endif %}
+          <div class="mt-1 small text-muted text-center">{{ foto.data_hora.strftime('%H:%M') }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Áreas de Atuação -->
+{% if areas %}
+<div class="card border-0 shadow-sm rounded-4 mb-4">
+  <div class="card-header border-0 rounded-top-4 bg-white py-3">
+    <h6 class="mb-0 fw-bold"><i class="fas fa-draw-polygon me-2" style="color:#8E0000;"></i>Áreas de Atuação Definidas</h6>
+  </div>
+  <div class="card-body">
+    <div class="row g-3">
+      {% for area in areas %}
+      <div class="col-md-4">
+        <div class="p-3 border rounded-3 d-flex align-items-center gap-3">
+          <div style="width:20px;height:20px;border-radius:4px;background:{{ area.cor }};flex-shrink:0;"></div>
+          <div>
+            <div class="fw-semibold">{{ area.nome }}</div>
+            {% if area.descricao %}<div class="small text-muted">{{ area.descricao }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Modal de foto ampliada -->
+<div class="modal fade" id="modalFoto" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-0">
+        <h6 class="modal-title" id="modalFotoTitulo">Foto de Campo</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-center p-2">
+        <img id="modalFotoImg" src="" alt="Foto" class="img-fluid rounded-3" style="max-height:70vh;">
+        <div class="mt-2 small text-muted" id="modalFotoInfo"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ── Mapa do Relatório ────────────────────────────────────────────────────────
+const mapaRel = L.map('mapa-relatorio').setView([-23.5505, -46.6333], 13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors'
+}).addTo(mapaRel);
+
+const layersRel = {
+  rastros: L.layerGroup().addTo(mapaRel),
+  fotos:   L.layerGroup().addTo(mapaRel),
+  areas:   L.layerGroup().addTo(mapaRel)
+};
+
+// Carregar dados via API para o mapa do relatório
+fetch('/api/mapa/dados/acao/{{ acao.id }}')
+  .then(r => r.json())
+  .then(data => {
+    // Rastros GPS por turno
+    Object.keys(data.rastros_por_turno || {}).forEach(turnoId => {
+      const info = data.rastros_por_turno[turnoId];
+      if (info.pontos && info.pontos.length > 1) {
+        L.polyline(info.pontos, { color: '#8E0000', weight: 4, opacity: 0.75 })
+          .addTo(layersRel.rastros)
+          .bindPopup('<strong>Turno ' + turnoId + '</strong><br>Equipe: ' + (info.equipe||'—') + '<br>Veículo: ' + (info.veiculo||'A pé'));
+      }
+    });
+
+    // Fotos
+    (data.fotos || []).forEach(f => {
+      const cor = f.dentro_da_area === true ? '#198754' : f.dentro_da_area === false ? '#dc3545' : '#FF9E0C';
+      L.circleMarker([f.latitude, f.longitude], {
+        radius: 8, fillColor: cor, color: '#fff', weight: 2, fillOpacity: 0.9
+      }).addTo(layersRel.fotos)
+        .bindPopup('<img src="' + f.url + '" style="max-width:200px;border-radius:6px;"><br><small>' + new Date(f.data_hora).toLocaleString('pt-BR') + '</small>');
+    });
+
+    // Áreas
+    (data.areas || []).forEach(area => {
+      if (!area.geojson) return;
+      try {
+        L.geoJSON(area.geojson, {
+          style: { color: area.cor||'#0d6efd', fillColor: area.cor||'#0d6efd', fillOpacity: 0.15, weight: 2.5, dashArray: '6,4' }
+        }).addTo(layersRel.areas)
+          .bindPopup('<strong>' + area.nome + '</strong>');
+      } catch(e) {}
+    });
+
+    // Ajustar zoom
+    const allL = L.featureGroup([layersRel.rastros, layersRel.fotos, layersRel.areas]);
+    if (allL.getLayers().length > 0) {
+      try { mapaRel.fitBounds(allL.getBounds(), { padding: [30, 30] }); } catch(e) {}
+    }
+  })
+  .catch(err => console.error('Erro ao carregar dados do mapa:', err));
+
+// ── Modal de foto ampliada ────────────────────────────────────────────────────
+document.querySelectorAll('.foto-thumb').forEach(img => {
+  img.addEventListener('click', function() {
+    document.getElementById('modalFotoImg').src = this.dataset.url;
+    document.getElementById('modalFotoTitulo').textContent = this.dataset.hora;
+    const dentro = this.dataset.dentro;
+    const badge = dentro === 'True' ? '<span class="badge bg-success">Dentro da área</span>'
+                : dentro === 'False' ? '<span class="badge bg-danger">Fora da área</span>' : '';
+    document.getElementById('modalFotoInfo').innerHTML =
+      badge + (this.dataset.descricao ? ' ' + this.dataset.descricao : '') +
+      '<br><small class="text-muted">📍 ' + parseFloat(this.dataset.lat).toFixed(5) + ', ' + parseFloat(this.dataset.lon).toFixed(5) + '</small>';
+  });
+});
+</script>
+{% endblock %}

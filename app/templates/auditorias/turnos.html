@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block title %}Turnos de Campo — {{ acao.local_alvo }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+  <div class="col-md-8">
+    <h2 class="mb-0">
+      <i class="fas fa-clock me-2" style="color:#8E0000;"></i>
+      Turnos de Campo
+    </h2>
+    <p class="text-muted small mb-0">
+      <strong>{{ acao.local_alvo }}</strong> — {{ acao.cliente.nome_empresa }} —
+      {{ acao.data.strftime('%d/%m/%Y') }}
+    </p>
+  </div>
+  <div class="col-md-4 text-md-end mt-2 mt-md-0">
+    <a href="{{ url_for('mapa.index') }}?acao_id={{ acao.id }}" class="btn btn-sm btn-outline-primary rounded-pill me-2">
+      <i class="fas fa-map me-1"></i> Ver no Mapa
+    </a>
+    <a href="{{ url_for('auditorias.relatorio', acao_id=acao.id) }}" class="btn btn-sm rounded-pill" style="background:#8E0000;color:white;border:none;">
+      <i class="fas fa-file-alt me-1"></i> Relatório
+    </a>
+  </div>
+</div>
+
+<!-- Card: Iniciar Turno -->
+{% if current_user.tipo_usuario in ['admin', 'equipe'] %}
+<div class="card border-0 shadow-sm rounded-4 mb-4">
+  <div class="card-header border-0 rounded-top-4" style="background:#8E0000;color:white;">
+    <i class="fas fa-play-circle me-2"></i> Iniciar Novo Turno
+  </div>
+  <div class="card-body p-4">
+    <form id="form-iniciar-turno">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Membro da Equipe *</label>
+          <select id="turno-equipe-id" class="form-select" required>
+            <option value="">Selecione...</option>
+            {% for membro in equipes %}
+            <option value="{{ membro.id }}">{{ membro.nome }} — {{ membro.cargo }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Veículo</label>
+          <select id="turno-veiculo-id" class="form-select">
+            <option value="">Sem veículo (a pé)</option>
+            {% for v in veiculos %}
+            <option value="{{ v.id }}">{{ v.placa }} — {{ v.modelo }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Observações</label>
+          <input type="text" id="turno-obs" class="form-control" placeholder="Opcional...">
+        </div>
+      </div>
+      <div class="mt-3">
+        <button type="submit" class="btn btn-success rounded-pill px-4">
+          <i class="fas fa-play me-1"></i> Iniciar Turno
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<!-- Lista de Turnos -->
+<div class="card border-0 shadow-sm rounded-4">
+  <div class="card-header border-0 rounded-top-4 bg-white py-3">
+    <h6 class="mb-0 fw-bold"><i class="fas fa-list me-2" style="color:#8E0000;"></i>Turnos desta Ação</h6>
+  </div>
+  <div class="card-body p-0">
+    <div id="lista-turnos">
+      <div class="text-center py-5 text-muted">
+        <i class="fas fa-spinner fa-spin fa-2x mb-3 d-block"></i>
+        Carregando turnos...
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const ACAO_ID = {{ acao.id }};
+
+async function carregarTurnos() {
+  try {
+    const resp = await fetch('/api/turnos/acao/' + ACAO_ID);
+    const data = await resp.json();
+    const container = document.getElementById('lista-turnos');
+
+    if (!data.turnos || data.turnos.length === 0) {
+      container.innerHTML = '<div class="text-center py-5 text-muted"><i class="fas fa-inbox fa-2x mb-3 d-block opacity-25"></i>Nenhum turno registrado.</div>';
+      return;
+    }
+
+    let html = '<div class="table-responsive"><table class="table table-hover mb-0">';
+    html += '<thead class="table-light"><tr><th>Equipe</th><th>Veículo</th><th>Início</th><th>Fim</th><th>Duração</th><th>Fotos</th><th>Status</th><th>Ações</th></tr></thead><tbody>';
+
+    data.turnos.forEach(t => {
+      const statusBadge = t.status === 'ativo'
+        ? '<span class="badge bg-success rounded-pill">Ativo</span>'
+        : t.status === 'pausado'
+        ? '<span class="badge bg-warning text-dark rounded-pill">Pausado</span>'
+        : '<span class="badge bg-secondary rounded-pill">Encerrado</span>';
+
+      const duracao = t.duracao_minutos !== null
+        ? Math.floor(t.duracao_minutos / 60) + 'h ' + (t.duracao_minutos % 60) + 'min'
+        : '—';
+
+      const inicio = t.inicio ? new Date(t.inicio).toLocaleString('pt-BR') : '—';
+      const fim = t.fim ? new Date(t.fim).toLocaleString('pt-BR') : '—';
+
+      let acoesBtns = '';
+      {% if current_user.tipo_usuario in ['admin', 'equipe'] %}
+      if (t.status === 'ativo') {
+        acoesBtns += `<button onclick="pausarTurno(${t.id})" class="btn btn-sm btn-outline-warning me-1" title="Pausar"><i class="fas fa-pause"></i></button>`;
+        acoesBtns += `<button onclick="encerrarTurno(${t.id})" class="btn btn-sm btn-outline-danger" title="Encerrar"><i class="fas fa-stop"></i></button>`;
+      } else if (t.status === 'pausado') {
+        acoesBtns += `<button onclick="retomarTurno(${t.id})" class="btn btn-sm btn-outline-success me-1" title="Retomar"><i class="fas fa-play"></i></button>`;
+        acoesBtns += `<button onclick="encerrarTurno(${t.id})" class="btn btn-sm btn-outline-danger" title="Encerrar"><i class="fas fa-stop"></i></button>`;
+      }
+      {% endif %}
+
+      html += `<tr>
+        <td>${t.equipe || '—'}</td>
+        <td>${t.veiculo || '<span class="text-muted small">A pé</span>'}</td>
+        <td><small>${inicio}</small></td>
+        <td><small>${fim}</small></td>
+        <td>${duracao}</td>
+        <td><span class="badge bg-primary rounded-pill">${t.total_fotos}</span></td>
+        <td>${statusBadge}</td>
+        <td>${acoesBtns}</td>
+      </tr>`;
+    });
+
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+  } catch(err) {
+    document.getElementById('lista-turnos').innerHTML = '<div class="alert alert-danger m-3">Erro ao carregar turnos.</div>';
+  }
+}
+
+document.getElementById('form-iniciar-turno')?.addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const equipeId = document.getElementById('turno-equipe-id').value;
+  const veiculoId = document.getElementById('turno-veiculo-id').value;
+  const obs = document.getElementById('turno-obs').value;
+
+  if (!equipeId) { alert('Selecione um membro da equipe.'); return; }
+
+  try {
+    const resp = await fetch('/api/turnos/iniciar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        acao_id: ACAO_ID,
+        equipe_id: parseInt(equipeId),
+        veiculo_id: veiculoId ? parseInt(veiculoId) : null,
+        observacoes: obs || null
+      })
+    });
+    const result = await resp.json();
+    if (resp.ok) {
+      alert('Turno iniciado! ID: ' + result.turno_id);
+      this.reset();
+      carregarTurnos();
+    } else {
+      alert('Erro: ' + result.erro);
+    }
+  } catch(err) {
+    alert('Erro: ' + err.message);
+  }
+});
+
+async function pausarTurno(id) {
+  if (!confirm('Pausar este turno?')) return;
+  const resp = await fetch('/api/turnos/' + id + '/pausar', { method: 'POST' });
+  const r = await resp.json();
+  alert(r.mensagem || r.erro);
+  carregarTurnos();
+}
+
+async function retomarTurno(id) {
+  const resp = await fetch('/api/turnos/' + id + '/retomar', { method: 'POST' });
+  const r = await resp.json();
+  alert(r.mensagem || r.erro);
+  carregarTurnos();
+}
+
+async function encerrarTurno(id) {
+  if (!confirm('Encerrar este turno?')) return;
+  const resp = await fetch('/api/turnos/' + id + '/encerrar', { method: 'POST' });
+  const r = await resp.json();
+  if (r.duracao_minutos !== undefined) {
+    const h = Math.floor(r.duracao_minutos / 60);
+    const m = r.duracao_minutos % 60;
+    alert('Turno encerrado! Duração: ' + h + 'h ' + m + 'min');
+  } else {
+    alert(r.mensagem || r.erro);
+  }
+  carregarTurnos();
+}
+
+carregarTurnos();
+setInterval(carregarTurnos, 30000);
+</script>
+{% endblock %}

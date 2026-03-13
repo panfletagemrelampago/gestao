@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Vagas e Candidatos - Gestão Promocional{% endblock %}
+
+{% block content %}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="fw-bold mb-0">Banco de <span class="text-vinho">Candidatos</span></h2>
+        <p class="text-muted small mb-0">Gerencie as candidaturas para as vagas de emprego.</p>
+    </div>
+    <div class="header-actions">
+        <a href="{{ url_for('vagas.novo') }}" class="btn btn-primary shadow-sm">
+            <i class="fas fa-user-plus me-2"></i> Nova Candidatura
+        </a>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th>Candidato</th>
+                        <th>Área</th>
+                        <th>Contato</th>
+                        <th>Localização</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                {% for vaga in vagas %}
+                    <tr>
+                        <td><strong class="text-vinho">{{ vaga.dados_pessoais.nome_completo }}</strong></td>
+                        <td>{{ vaga.dados_profissionais.area_atuacao }}</td>
+                        <td>
+                            <div class="small">{{ vaga.dados_contato.telefone }}</div>
+                            <div class="text-muted small">{{ vaga.dados_contato.email }}</div>
+                        </td>
+                        <td>{{ vaga.dados_contato.cidade }} - {{ vaga.dados_contato.estado }}</td>
+                        <td>
+                            <div class="d-flex gap-2">
+                                <!-- EDITAR -->
+                                <a href="{{ url_for('vagas.editar', id=vaga.id) }}"
+                                   class="btn btn-sm btn-outline-secondary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+
+                                <!-- EXCLUIR -->
+                                <form action="{{ url_for('vagas.excluir', id=vaga.id) }}" method="POST">
+                                    <button class="btn btn-sm btn-outline-danger"
+                                            onclick="return confirm('Excluir candidato?')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5">
+                            <i class="fas fa-id-badge fa-3x text-muted mb-3 opacity-25"></i>
+                            <p class="text-muted">Nenhuma candidatura cadastrada.</p>
+                        </td>
+                    </tr>
+                {% endfor %}
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Cliente{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+```
+<h2 class="fw-bold mb-4">
+    Editar <span class="text-vinho">Cliente</span>
+</h2>
+
+<form method="POST">
+
+    <div class="row g-3">
+
+        <div class="col-md-6">
+            <label class="form-label">Empresa</label>
+            <input type="text"
+                   name="nome_empresa"
+                   class="form-control"
+                   value="{{ cliente.nome_empresa }}"
+                   required>
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Responsável</label>
+            <input type="text"
+                   name="responsavel"
+                   class="form-control"
+                   value="{{ cliente.responsavel }}">
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Telefone</label>
+            <input type="text"
+                   name="telefone"
+                   class="form-control"
+                   value="{{ cliente.telefone }}">
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Email</label>
+            <input type="email"
+                   name="email"
+                   class="form-control"
+                   value="{{ cliente.email }}">
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Cidade</label>
+            <input type="text"
+                   name="cidade"
+                   class="form-control"
+                   value="{{ cliente.cidade }}">
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Estado</label>
+            <input type="text"
+                   name="estado"
+                   class="form-control"
+                   value="{{ cliente.estado }}">
+        </div>
+
+    </div>
+
+    <div class="mt-4 d-flex flex-column flex-md-row justify-content-center gap-3">
+
+        <button type="submit" class="btn btn-success px-4">
+            <i class="fas fa-save me-2"></i>
+            Salvar Alterações
+        </button>
+
+        <a href="{{ url_for('clientes.listar') }}" class="btn btn-secondary px-4">
+            Cancelar
+        </a>
+
+    </div>
+
+</form>
+```
+
+</div>
+
+{% endblock %}

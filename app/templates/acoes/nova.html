@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Nova Ação - Gestão Promocional{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+        <div class="d-flex align-items-center mb-4">
+            <a href="{{ url_for('acoes.listar') }}" class="btn btn-light rounded-circle me-3"><i class="fas fa-arrow-left"></i></a>
+            <h2 class="fw-bold mb-0">Lançar <span class="text-vinho">Nova Ação</span></h2>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+            <div class="card-body p-4">
+                <form method="POST">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label for="cliente_id" class="form-label">Cliente</label>
+                            <select class="form-select" id="cliente_id" name="cliente_id" required>
+                                <option value="" disabled selected>Selecione o cliente...</option>
+                                {% for cliente in clientes %}
+                                <option value="{{ cliente.id }}">{{ cliente.nome_empresa }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="lider_id" class="form-label">Líder da Equipe</label>
+                            <select class="form-select" id="lider_id" name="lider_id" required>
+                                <option value="" disabled selected>Selecione o líder...</option>
+                                {% for membro in equipes %}
+                                <option value="{{ membro.id }}">{{ membro.nome }} ({{ membro.cargo }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="local_alvo" class="form-label">Local Alvo</label>
+                            <input type="text" class="form-control" id="local_alvo" name="local_alvo" required placeholder="Ex: Entrada do Shopping, Praça Central...">
+                        </div>
+
+                        <div class="col-12 col-md-4">
+                            <label for="bairro" class="form-label">Bairro</label>
+                            <input type="text" class="form-control" id="bairro" name="bairro" required placeholder="Ex: Jardins">
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label for="cidade" class="form-label">Cidade</label>
+                            <input type="text" class="form-control" id="cidade" name="cidade" required placeholder="Ex: São Paulo">
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label for="tipo_servico" class="form-label">Tipo de Serviço</label>
+                            <input type="text" class="form-control" id="tipo_servico" name="tipo_servico" required placeholder="Ex: Panfletagem">
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label for="data" class="form-label">Data de Execução</label>
+                            <input type="date" class="form-control" id="data" name="data" required>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="turno" class="form-label">Turno</label>
+                            <select class="form-select" id="turno" name="turno" required>
+                                <option value="Manhã">Manhã</option>
+                                <option value="Tarde">Tarde</option>
+                                <option value="Noite">Noite</option>
+                                <option value="Integral">Integral</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="descricao" class="form-label">Descrição / Observações</label>
+                            <textarea class="form-control" id="descricao" name="descricao" rows="3" placeholder="Detalhes da ação promocional..."></textarea>
+                        </div>
+
+                        <div class="col-12 mt-4">
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <a href="{{ url_for('acoes.listar') }}" class="btn btn-light px-4">Cancelar</a>
+                                <button type="submit" class="btn btn-primary px-5">Criar Ação</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

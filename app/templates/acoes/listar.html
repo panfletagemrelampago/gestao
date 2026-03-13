@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Ações - Gestão Promocional{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="fw-bold mb-0">Ações <span class="text-vinho">Promocionais</span></h2>
+        <p class="text-muted small mb-0">Gerenciamento de campanhas e cronograma de campo.</p>
+    </div>
+    {% if current_user.tipo_usuario == 'admin' %}
+    <div class="header-actions">
+        <a href="{{ url_for('acoes.nova') }}" class="btn btn-primary shadow-sm">
+            <i class="fas fa-plus me-2"></i> Nova Ação
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle table-responsive-mobile">
+                <thead>
+                    <tr>
+                        <th>Data / Turno</th>
+                        <th>Local / Cidade</th>
+                        <th>Cliente</th>
+                        <th>Líder</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for acao in acoes %}
+                    <tr>
+                        <td data-label="Data / Turno">
+                            <div class="text-end text-md-center">
+                                <div class="fw-bold">{{ acao.data.strftime('%d/%m/%Y') }}</div>
+                                <small class="text-muted">{{ acao.turno }}</small>
+                            </div>
+                        </td>
+                        <td data-label="Local / Cidade">
+                            <div class="text-end text-md-center">
+                                <div class="fw-bold text-vinho">{{ acao.local_alvo }}</div>
+                                <small class="text-muted">{{ acao.cidade }} - {{ acao.bairro }}</small>
+                            </div>
+                        </td>
+                        <td data-label="Cliente">
+                            <div class="text-end text-md-center">{{ acao.cliente.nome_empresa }}</div>
+                        </td>
+                        <td data-label="Líder">
+                            <div class="text-end text-md-center">{{ acao.lider.nome }}</div>
+                        </td>
+                        <td data-label="Status">
+                            <div class="d-flex justify-content-end justify-content-md-center">
+                                <span class="badge {% if acao.status == 'Em Andamento' %}bg-warning text-dark{% elif acao.status == 'Concluída' %}bg-success{% else %}bg-secondary{% endif %} rounded-pill px-3">
+                                    {{ acao.status }}
+                                </span>
+                            </div>
+                        </td>
+                        <td data-label="Ações">
+                            <div class="d-flex justify-content-end justify-content-md-center gap-2">
+                                <a href="{{ url_for('mapa.index') }}" class="btn btn-sm btn-outline-primary btn-action-square" title="Ver no Mapa"><i class="fas fa-map-marker-alt"></i></a>
+                                <a href="{{ url_for('auditorias.turnos', acao_id=acao.id) }}" class="btn btn-sm btn-outline-success btn-action-square" title="Turnos de Campo"><i class="fas fa-clock"></i></a>
+                                <a href="{{ url_for('auditorias.relatorio', acao_id=acao.id) }}" class="btn btn-sm btn-action-square" style="background:#8E0000;color:white;border:none;" title="Relatório"><i class="fas fa-file-alt"></i></a>
+                                <div class="dropdown d-inline-block">
+                                    <button class="btn btn-sm btn-outline-secondary btn-action-square" type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                        <li><h6 class="dropdown-header">Alterar Status</h6></li>
+                                        <li>
+                                            <form action="{{ url_for('acoes.atualizar_status', id=acao.id) }}" method="POST">
+                                                <input type="hidden" name="status" value="Em Andamento">
+                                                <button type="submit" class="dropdown-item">Em Andamento</button>
+                                            </form>
+                                        </li>
+                                        <li>
+                                            <form action="{{ url_for('acoes.atualizar_status', id=acao.id) }}" method="POST">
+                                                <input type="hidden" name="status" value="Concluída">
+                                                <button type="submit" class="dropdown-item text-success">Concluída</button>
+                                            </form>
+                                        </li>
+                                        <li>
+                                            <form action="{{ url_for('acoes.atualizar_status', id=acao.id) }}" method="POST">
+                                                <input type="hidden" name="status" value="Cancelada">
+                                                <button type="submit" class="dropdown-item text-danger">Cancelada</button>
+                                            </form>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <i class="fas fa-folder-open fa-3x text-muted mb-3 opacity-25"></i>
+                            <p class="text-muted">Nenhuma ação cadastrada.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

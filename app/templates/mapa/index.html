@@ -1,0 +1,407 @@
+{% extends "base.html" %}
+{% block title %}Mapa de Auditoria — Gestão Promocional{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
+
+<style>
+#map{
+height:70vh;
+width:100%;
+border-radius:12px;
+box-shadow:var(--shadow-md);
+z-index:1;
+}
+
+.leaflet-popup-content img{
+max-width:220px;
+border-radius:6px;
+margin-top:6px;
+display:block;
+}
+
+#painel-controle{
+position:absolute;
+top:80px;
+right:10px;
+z-index:1000;
+width:270px;
+background:white;
+border-radius:12px;
+box-shadow:var(--shadow-md);
+padding:14px;
+font-size:13px;
+max-height:calc(70vh - 20px);
+overflow-y:auto;
+}
+
+.layer-toggle{
+cursor:pointer;
+user-select:none;
+}
+
+.layer-toggle input{
+margin-right:6px;
+}
+
+.cor-legenda{
+display:inline-block;
+width:14px;
+height:14px;
+border-radius:50%;
+margin-right:5px;
+vertical-align:middle;
+}
+</style>
+{% endblock %}
+
+
+{% block content %}
+
+<div class="row mb-3 align-items-center">
+
+<div class="col-md-7">
+<h2 class="mb-0">
+<i class="fas fa-map-marked-alt me-2" style="color:#8E0000;"></i>
+Mapa de Auditoria de Campo
+</h2>
+
+<p class="text-muted small mb-0">
+Rastros GPS via Traccar, fotos geolocalizadas e áreas de atuação.
+</p>
+</div>
+
+
+<div class="col-md-5 d-flex gap-2 justify-content-md-end mt-2 mt-md-0 flex-wrap">
+
+<select id="filtro-acao" class="form-select form-select-sm" style="max-width:200px;">
+<option value="">Todas as ações</option>
+
+{% for acao in acoes %}
+<option value="{{ acao.id }}">
+{{ acao.local_alvo }} ({{ acao.data.strftime("%d/%m") }})
+</option>
+{% endfor %}
+
+</select>
+
+
+<button id="btn-atualizar" class="btn btn-sm btn-outline-primary rounded-pill">
+<i class="fas fa-sync-alt me-1"></i>
+Atualizar
+</button>
+
+
+{% if current_user.tipo_usuario in ["admin","equipe"] %}
+
+<button id="btn-desenhar"
+class="btn btn-sm rounded-pill"
+style="background:#8E0000;color:white;border:none;">
+
+<i class="fas fa-draw-polygon me-1"></i>
+Desenhar Área
+
+</button>
+
+{% endif %}
+
+</div>
+</div>
+
+
+<div class="position-relative">
+
+<div id="map"></div>
+
+<div id="painel-controle" class="d-none d-md-block">
+
+<div class="fw-bold mb-2" style="color:#8E0000;">
+<i class="fas fa-layer-group me-1"></i>
+Camadas
+</div>
+
+<label class="layer-toggle d-block mb-1">
+<input type="checkbox" id="toggle-rastros" checked>
+<span class="cor-legenda" style="background:#8E0000;"></span>
+Rastros GPS (Traccar)
+</label>
+
+<label class="layer-toggle d-block mb-1">
+<input type="checkbox" id="toggle-fotos" checked>
+<span class="cor-legenda" style="background:#FF9E0C;"></span>
+Fotos de Campo
+</label>
+
+<label class="layer-toggle d-block mb-1">
+<input type="checkbox" id="toggle-areas" checked>
+<span class="cor-legenda" style="background:#0d6efd;border-radius:2px;"></span>
+Áreas de Atuação
+</label>
+
+<hr class="my-2">
+
+<div class="fw-bold mb-1 text-muted small">
+ESTATÍSTICAS
+</div>
+
+<div id="stats-rastros" class="small">
+Dispositivos Online: <strong>0</strong>
+</div>
+
+<div id="stats-ultima-atualizacao" class="small text-muted mt-1">
+—
+</div>
+
+</div>
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script type='text/javascript' src='https://private-us-east-1.manuscdn.com/3GkE1TLsSmLAiZXjosx4QreGOelOf0TaFOpsejnh7BelWju5jA1AxWgL52M824-vaBo6qhjyXTljV2QES7Bt1HXgVvXBOw5eNifO3vHeUd_DMRhojosma0pjUOGsS625akrNZ3Qd_f1XhCSgLKbUC6Vsa91Jyk1bFqnaqwqh1Pr_-Lf-5P6QbLf8UaNUBwIsjSPJVpXSv9LlgtESUIsJEMdHd7gMy6qiJudhEZ1LpgVIaCRf7q_nVElQfZZsUnGbWnxcWKB2zGVwnpFMU3lfMPx8O9vYn1g4oGndt8KTFmU0gTR2hPEWMH5lxaFYw632LarkrallmlW8ksOUabSyqLpMgDeymZ7YWA07Q1IRorLjjJKqBOwuVriFv-bx-PkWX2c0T7yfWbUKlC3XnPys3vG2qF3SHLUC0Km_kGn0WiBFIrnC8L-sTAfV3hAn1oQqei__K90817uT6uO6yT5DS6jezYjNZVPa1lUP7p9nC4otn2xAMuK3qSyX_WxTF94rTHrjfjy7JJinmTqfj14xM6j4xgvJvwuPNNEJAmE9bjHKO1OQodVP3i2jQcvV-3oDigAB0YWtHBC2xFJY14ZQuBGEqX0WyE_3UIsc7wwcTcpsMU6c1R1y13bWNBWT4pWj5P0ZtdeLxEmoUoecqoFwww3ZzNvCJitPUzfFtA-GUK13l9SlBr403ylCcpvCP66squmloZJoknw9xIHL2ReHl3Hz7vjqSaFaGNA4K5RcZ0nOjytcvoDuVdssu-8EfaoeOMHCy7rp1xE0AUM7WZfpqVA-4vnm_UKka-zXrLe0gZZ34BdygT3xxmKtdyZlcNhUQ6n2XA9bjDZqe0MV0K3pEN6Gx4JEe5zuv39XPBTgI3WAnnFLb7AcswD9HQ-rCNw4EPc8Y7fm9WC6BxcNMcCA41W75UPbwyqJfX0Znu3s9w9RWYMV6SRKaASmeHVATsyayaJ905R7G9ZYNGNkXMY--uLe-gEq23AsWcZ1OIsNpv2ERmqPctvzfg9CbbPicv91JkHuZz_hQRZh7oXpjzcmVnEfly-wpR5wARZ7OfQW3zbHLvWJrNpHvVOqjGkfil8M0r0cgGE6LXk4eLLsYG4hntG_XWLHIiS-Ho5aDmGgFSjpgpYoh68obGheypqHZgqH-kX2uBItuAb_7lXYbzasyvd9hg1-f6pwPkWX-2tTC4sxwrWlg2PCgMEv4Vf0gYUh6wPKiieoB-FnCcvwUS3ggbQVASqmDX-64b9mPz2Lx7k0egHYhCcnDYm2V968gOY926MMUzzr7mKnJD_Ft-bJqlfMoF__8AtF1mUN_6qUrfx1RKek5rqLTzaePrDHYDhQ7FWUVyHY_nZLLEf-_S96ydzfeuD8nBs9msSFwQteOTO3WYD54pnkK2r_qtrLDdr2c99Ybyjm9IFNN2ZAH99rjfFLGeBqCMaYGPDSJTIem8iXNhF9KCn42kjeG9440fpBTQKH8ZuNtoxIZXtl6SdTrHpEmfJ6k3-6EXFoa6TRAP3XdoP0JENyJ7nO3K0UWxnvDnf32RXySG1w_EcyP5trx_XUqAzL1rOTjiWvGDWGt4yjgocCJl2bcRTWF0-nvkA6sFdfnBd8EArnKQR8zPsknwlV51asat1GfNLGqqtpylT4ALjgUP25LaDxEW_ucDYLCnPq51g3BS8zO197rdD_mpKod5LXlqlzzpK2AMweSnA7NSWX9HzbwOHG'></script><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+
+
+<script>
+
+const map = L.map("map").setView([-15.5668,-56.0568],13)
+
+L.tileLayer(
+"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+).addTo(map)
+
+
+
+const layers={
+rastros:L.layerGroup().addTo(map),
+fotos:L.layerGroup().addTo(map),
+areas:L.layerGroup().addTo(map),
+desenho:new L.FeatureGroup().addTo(map)
+}
+
+
+
+let traccarPositions={{ positions | tojson | safe }}
+
+function carregarAreasSalvas() {
+	layers.areas.clearLayers() // Limpa as áreas existentes antes de carregar
+	fetch("/api/mapa/areas")
+		.then((response) => response.json())
+		.then((data) => {
+			data.forEach((area) => {
+				const geojsonLayer = L.geoJSON(area.geojson, {
+					style: {
+						color: "#0d6efd",
+						weight: 3,
+						opacity: 0.8,
+						fillOpacity: 0.3,
+					},
+				})
+				geojsonLayer.bindPopup(`<b>Área</b><br>Criado em: ${new Date(area.criado_em).toLocaleString()}`)
+				layers.areas.addLayer(geojsonLayer)
+			})
+			console.log("Áreas salvas carregadas:", data.length)
+		})
+		.catch((error) => {
+			console.error("Erro ao carregar áreas salvas:", error)
+		})
+}
+
+function carregarAreasSalvas() {
+	layers.areas.clearLayers() // Limpa as áreas existentes antes de carregar
+	fetch("/api/mapa/areas")
+		.then((response) => response.json())
+		.then((data) => {
+			data.forEach((area) => {
+				const geojsonLayer = L.geoJSON(area.geojson, {
+					style: {
+						color: "#0d6efd",
+						weight: 3,
+						opacity: 0.8,
+						fillOpacity: 0.3,
+					},
+				})
+				geojsonLayer.bindPopup(`<b>Área</b><br>Criada em: ${new Date(area.criado_em).toLocaleString()}`)
+				layers.areas.addLayer(geojsonLayer)
+			})
+			console.log("Áreas salvas carregadas:", data.length)
+		})
+		.catch((error) => {
+			console.error("Erro ao carregar áreas salvas:", error)
+		})
+}
+
+
+
+function carregarDados(){
+
+layers.rastros.clearLayers()
+
+let online=0
+
+tracarPositions.forEach(pos=>{
+
+online++
+
+const marker=L.circleMarker(
+[pos.latitude,pos.longitude],
+{
+radius:8,
+fillColor:"#8E0000",
+color:"#fff",
+weight:2,
+fillOpacity:1
+})
+
+marker.addTo(layers.rastros)
+
+const bateria =
+pos.attributes && pos.attributes.batteryLevel
+? pos.attributes.batteryLevel
+: "--"
+
+
+marker.bindPopup(`
+<div style="line-height:1.2;">
+<strong><i class="fas fa-truck me-1"></i> ${pos.deviceId}</strong>
+<hr class="my-1">
+
+<b>Velocidade:</b>
+${(pos.speed*1.852).toFixed(1)} km/h<br>
+
+<b>Bateria:</b>
+${bateria}%<br>
+
+<small class="text-muted">
+Atualizado:
+${new Date(pos.deviceTime).toLocaleString("pt-BR")}
+</small>
+</div>
+`)
+
+})
+
+
+document.getElementById("stats-rastros").innerHTML =
+"Dispositivos Online: <strong>"+online+"</strong>"
+
+document.getElementById("stats-ultima-atualizacao").textContent =
+"Sincronizado: "+new Date().toLocaleTimeString("pt-BR")
+
+}
+
+
+
+document.getElementById("toggle-rastros")
+.addEventListener("change",function(){
+
+this.checked
+? map.addLayer(layers.rastros)
+: map.removeLayer(layers.rastros)
+
+})
+
+
+document.getElementById("toggle-fotos")
+.addEventListener("change",function(){
+
+this.checked
+? map.addLayer(layers.fotos)
+: map.removeLayer(layers.fotos)
+
+})
+
+document.getElementById("toggle-areas")
+.addEventListener("change",function(){
+
+this.checked
+? map.addLayer(layers.areas)
+: map.removeLayer(layers.areas)
+
+})
+
+
+
+document
+.getElementById("btn-atualizar")
+.addEventListener("click",carregarDados)
+
+
+
+const drawControl=new L.Control.Draw({
+
+draw:{
+polygon:{
+allowIntersection:false,
+showArea:true,
+shapeOptions:{
+color:"#0d6efd"
+}
+},
+
+rectangle:true,
+circle:false,
+marker:false,
+polyline:false,
+circlemarker:false
+},
+
+edit:{
+featureGroup:layers.desenho
+}
+
+})
+
+
+map.addControl(drawControl)
+
+
+
+document
+.getElementById("btn-desenhar")
+?.addEventListener("click",function(){
+
+const drawer=new L.Draw.Polygon(
+map,
+drawControl.options.draw.polygon
+)
+
+drawer.enable()
+
+})
+
+
+
+map.on(
+L.Draw.Event.CREATED,
+function(e){
+
+const layer=e.layer
+
+layers.desenho.addLayer(layer)
+
+const geojson=layer.toGeoJSON()
+
+console.log("Área criada:",geojson)
+
+}
+
+)
+
+
+
+carregarDados()
+
+
+
+setInterval(
+carregarDados,
+40000
+)
+
+</script>
+
+{% endblock %}

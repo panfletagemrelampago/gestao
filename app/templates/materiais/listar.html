@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Materiais - Gestão Promocional{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="fw-bold mb-0">Gestão de <span class="text-vinho">Materiais</span></h2>
+        <p class="text-muted small mb-0">Controle de campanhas e estoque de materiais.</p>
+    </div>
+    <div class="header-actions">
+        <a href="{{ url_for('materiais.novo') }}" class="btn btn-primary shadow-sm">
+            <i class="fas fa-plus me-2"></i> Novo Material
+        </a>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle table-responsive-mobile">
+                <thead>
+                    <tr>
+                        <th>Foto</th>
+                        <th>Campanha</th>
+                        <th>Empresa</th>
+                        <th>Quantidade</th>
+                        <th>Período</th>
+                        <th>Responsável</th>
+                        <th>Protocolo</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for material in materiais %}
+                    <tr>
+
+                        <td data-label="Foto">
+                            <div class="d-flex justify-content-end justify-content-md-center">
+                                {% if material.imagem_url %}
+                                <img src="{{ material.imagem_url }}"
+                                     class="img-thumbnail-custom"
+                                     onclick="openModal('{{ material.imagem_url }}', 'image')"
+                                     alt="Foto">
+                                {% else %}
+                                <div class="img-thumbnail-custom">
+                                    <i class="fas fa-image text-muted opacity-50"></i>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <td data-label="Campanha">
+                            <div class="text-end text-md-center fw-bold text-vinho">
+                                {{ material.nome_campanha }}
+                            </div>
+                        </td>
+
+                        <td data-label="Empresa">
+                            <div class="text-end text-md-center">
+                                {{ material.empresa }}
+                            </div>
+                        </td>
+
+                        <td data-label="Quantidade">
+                            <div class="text-end text-md-center">
+                                {{ material.quantidade }}
+                            </div>
+                        </td>
+
+                        <td data-label="Período">
+                            <div class="text-end text-md-center">
+                                <div class="small">
+                                    {{ material.data_inicio.strftime('%d/%m/%y') }}
+                                </div>
+                                <div class="small text-muted">
+                                    {{ material.data_termino.strftime('%d/%m/%y') }}
+                                </div>
+                            </div>
+                        </td>
+
+                        <td data-label="Responsável">
+                            <div class="text-end text-md-center">
+                                {{ material.responsavel }}
+                            </div>
+                        </td>
+
+                        <td data-label="Protocolo">
+                            <div class="d-flex justify-content-end justify-content-md-center">
+                                {% if material.documento_url %}
+
+                                    {% if material.documento_url.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')) %}
+                                        <img src="{{ material.documento_url }}"
+                                             class="img-thumbnail-custom"
+                                             onclick="openModal('{{ material.documento_url }}', 'image')"
+                                             alt="Protocolo">
+                                    {% else %}
+                                        <div class="img-thumbnail-custom"
+                                             onclick="openModal('{{ material.documento_url }}', 'doc')"
+                                             title="Ver Protocolo">
+
+                                            <i class="fas fa-file-pdf text-danger"></i>
+
+                                        </div>
+                                    {% endif %}
+
+                                {% else %}
+                                <span class="text-muted small">-</span>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <td data-label="Ações">
+                            <div class="d-flex justify-content-end justify-content-md-center gap-2">
+
+                                <!-- BOTÃO EDITAR -->
+                                <a href="{{ url_for('materiais.editar', id=material.id) }}"
+                                   class="btn btn-sm btn-outline-secondary btn-action-square">
+
+                                    <i class="fas fa-edit"></i>
+
+                                </a>
+
+                                <!-- BOTÃO EXCLUIR -->
+                                <form action="{{ url_for('materiais.excluir', id=material.id) }}"
+                                      method="POST"
+                                      class="d-inline">
+
+                                    <button type="submit"
+                                            class="btn btn-sm btn-outline-danger btn-action-square"
+                                            onclick="return confirm('Excluir este material?')">
+
+                                        <i class="fas fa-trash"></i>
+
+                                    </button>
+
+                                </form>
+
+                            </div>
+                        </td>
+
+                    </tr>
+
+                    {% else %}
+
+                    <tr>
+                        <td colspan="8" class="text-center py-5">
+                            <i class="fas fa-box-open fa-3x text-muted mb-3 opacity-25"></i>
+                            <p class="text-muted">Nenhum material cadastrado.</p>
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

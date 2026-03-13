@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Novo Material - Gestão Promocional{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+        <div class="d-flex align-items-center mb-4">
+            <a href="{{ url_for('materiais.listar') }}" class="btn btn-light rounded-circle me-3"><i class="fas fa-arrow-left"></i></a>
+            <h2 class="fw-bold mb-0">Novo <span class="text-vinho">Material</span></h2>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+            <div class="card-body p-4">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label for="empresa" class="form-label">Empresa / Cliente</label>
+                            <input type="text" class="form-control" id="empresa" name="empresa" required placeholder="Ex: Coca-Cola">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="nome_campanha" class="form-label">Nome da Campanha</label>
+                            <input type="text" class="form-control" id="nome_campanha" name="nome_campanha" required placeholder="Ex: Verão 2026">
+                        </div>
+
+                        <div class="col-12 col-md-4">
+                            <label for="quantidade" class="form-label">Quantidade</label>
+                            <input type="number" class="form-control" id="quantidade" name="quantidade" required placeholder="Ex: 5000">
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label for="data_inicio" class="form-label">Data Início</label>
+                            <input type="date" class="form-control" id="data_inicio" name="data_inicio" required>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label for="data_termino" class="form-label">Data Término</label>
+                            <input type="date" class="form-control" id="data_termino" name="data_termino" required>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label for="responsavel" class="form-label">Responsável</label>
+                            <input type="text" class="form-control" id="responsavel" name="responsavel" required placeholder="Ex: Maria Souza">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="imagem" class="form-label">Foto do Material</label>
+                            <input type="file" class="form-control" id="imagem" name="imagem" accept="image/*">
+                        </div>
+
+                        <div class="col-12">
+                            <label for="documento" class="form-label">Documento / PDF (Opcional)</label>
+                            <input type="file" class="form-control" id="documento" name="documento" accept=".pdf,.doc,.docx">
+                        </div>
+
+                        <div class="col-12 mt-4">
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <a href="{{ url_for('materiais.listar') }}" class="btn btn-light px-4">Cancelar</a>
+                                <button type="submit" class="btn btn-primary px-5">Cadastrar Material</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

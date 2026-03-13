@@ -1,0 +1,25 @@
+# Ambiente virtual
+venv/
+env/
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Banco de dados local
+*.db
+*.sqlite3
+
+# Uploads locais (não precisa mais com Cloudinary)
+static/uploads/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log

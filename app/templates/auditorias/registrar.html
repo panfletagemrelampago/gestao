@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Registrar Auditoria - Gestão Promocional{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-6">
+        <div class="d-flex align-items-center mb-4">
+            <a href="{{ url_for('auditorias.listar') }}" class="btn btn-light rounded-circle me-3"><i class="fas fa-arrow-left"></i></a>
+            <h2 class="fw-bold mb-0">Registrar <span class="text-vinho">Auditoria</span></h2>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+            <div class="card-body p-4">
+                <form method="POST" enctype="multipart/form-data" id="auditoria-form">
+                    <div class="mb-3">
+                        <label for="acao_id" class="form-label">Ação Promocional Ativa</label>
+                        <select class="form-select" id="acao_id" name="acao_id" required>
+                            <option value="" disabled selected>Selecione a ação...</option>
+                            {% for acao in acoes %}
+                            <option value="{{ acao.id }}">{{ acao.local_alvo }} ({{ acao.cidade }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="descricao" class="form-label">Descrição da Evidência</label>
+                        <textarea class="form-control" id="descricao" name="descricao" rows="2" placeholder="O que você está registrando?"></textarea>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="foto" class="form-label">Foto da Evidência</label>
+                        <div class="upload-area p-4 border-2 border-dashed rounded-4 bg-light text-center cursor-pointer" onclick="document.getElementById('foto').click()">
+                            <i class="fas fa-camera fa-2x text-muted mb-2"></i>
+                            <h6 class="fw-bold mb-0">Capturar Imagem</h6>
+                            <p class="text-muted small mb-0">Toque para abrir a câmera</p>
+                            <input class="d-none" type="file" id="foto" name="foto" accept="image/*" capture="environment" required onchange="previewImage(this)">
+                        </div>
+                        <div id="image-preview" class="mt-3 d-none">
+                            <img src="" alt="Prévia" class="img-fluid rounded-4 shadow-sm">
+                        </div>
+                    </div>
+                    
+                    <!-- Campos ocultos para geolocalização -->
+                    <input type="hidden" id="latitude" name="latitude">
+                    <input type="hidden" id="longitude" name="longitude">
+                    
+                    <div id="geo-status" class="alert alert-info py-2 small mb-4">
+                        <i class="fas fa-spinner fa-spin me-2"></i> Obtendo localização GPS...
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg rounded-pill py-3" id="submit-btn" disabled>
+                            <i class="fas fa-save me-2"></i> Salvar Auditoria
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .border-dashed { border-style: dashed !important; border-color: #ddd !important; }
+    .cursor-pointer { cursor: pointer; }
+    .upload-area:hover { background-color: #f0f0f0 !important; }
+</style>
+
+{% block scripts %}
+<script>
+    const geoStatus = document.getElementById('geo-status');
+    const submitBtn = document.getElementById('submit-btn');
+    const latInput = document.getElementById('latitude');
+    const lonInput = document.getElementById('longitude');
+
+    function previewImage(input) {
+        const previewDiv = document.getElementById('image-preview');
+        const previewImg = previewDiv.querySelector('img');
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                previewDiv.classList.remove('d-none');
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function getLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    latInput.value = position.coords.latitude;
+                    lonInput.value = position.coords.longitude;
+                    geoStatus.classList.replace('alert-info', 'alert-success');
+                    geoStatus.innerHTML = '<i class="fas fa-check-circle me-2"></i> GPS Ativo!';
+                    submitBtn.disabled = false;
+                },
+                (error) => {
+                    geoStatus.classList.replace('alert-info', 'alert-danger');
+                    geoStatus.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i> Erro no GPS. Verifique as permissões.';
+                    submitBtn.disabled = false; // Permitir salvar mesmo sem GPS se necessário, ou manter travado
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
+        } else {
+            geoStatus.classList.replace('alert-info', 'alert-danger');
+            geoStatus.innerHTML = 'GPS não suportado.';
+        }
+    }
+
+    window.onload = getLocation;
+</script>
+{% endblock %}
+{% endblock %}

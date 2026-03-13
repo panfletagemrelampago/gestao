@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{% block title %}Gestão Promocional{% endblock %}</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('main.dashboard') }}">
+                <i class="fas fa-bullhorn me-2"></i>
+                <span>Auditoria<span class="d-none d-sm-inline"> Promocional</span></span>
+            </a>
+            
+            <button class="navbar-toggler shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}" href="{{ url_for('main.dashboard') }}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'mapa' in request.endpoint %}active{% endif %}" href="{{ url_for('mapa.index') }}">Mapa</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'acoes' in request.endpoint %}active{% endif %}" href="{{ url_for('acoes.listar') }}">Ações</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {% if 'auditorias' in request.endpoint %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-camera me-1 d-none d-lg-inline opacity-75"></i>Auditoria
+                        </a>
+                        <ul class="dropdown-menu border-0 shadow-lg">
+                            <li><a class="dropdown-item py-2" href="{{ url_for('auditorias.listar') }}"><i class="fas fa-list me-2 opacity-50"></i> Registros</a></li>
+                            <li><a class="dropdown-item py-2" href="{{ url_for('auditorias.registrar') }}"><i class="fas fa-camera me-2 opacity-50"></i> Registrar Foto</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item py-2" href="{{ url_for('acoes.listar') }}"><i class="fas fa-clock me-2 opacity-50"></i> Turnos por Ação</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'materiais' in request.endpoint %}active{% endif %}" href="{{ url_for('materiais.listar') }}">Materiais</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'vagas' in request.endpoint %}active{% endif %}" href="{{ url_for('vagas.listar') }}">Vagas</a>
+                    </li>
+                    {% if current_user.tipo_usuario == 'admin' %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown">
+                            Cadastros
+                        </a>
+                        <ul class="dropdown-menu border-0 shadow-lg">
+                            <li><a class="dropdown-item py-2" href="{{ url_for('clientes.listar') }}"><i class="fas fa-briefcase me-2 opacity-50"></i> Clientes</a></li>
+                            <li><a class="dropdown-item py-2" href="{{ url_for('equipe.listar') }}"><i class="fas fa-users me-2 opacity-50"></i> Equipe</a></li>
+                            <li><a class="dropdown-item py-2" href="{{ url_for('veiculos.listar') }}"><i class="fas fa-car me-2 opacity-50"></i> Veículos</a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                    {% endif %}
+                </ul>
+                
+                <ul class="navbar-nav align-items-lg-center">
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle bg-white bg-opacity-10 rounded-pill px-3" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle me-1"></i> {{ current_user.nome_exibicao }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg">
+                            <li><a class="dropdown-item py-2 text-danger" href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt me-2"></i> Sair</a></li>
+                        </ul>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="btn btn-laranja rounded-pill px-4" href="{{ url_for('auth.login') }}">Login</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container py-4 min-vh-100">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4">
+                        <div class="d-flex align-items-center small">
+                            <i class="fas {% if category == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %} me-2"></i>
+                            {{ message }}
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Modal de Visualização (Imagens e Documentos) -->
+    <div id="imageModal" style="display: none;">
+        <span class="modal-close">&times;</span>
+        <div id="modalBody" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+            <img id="imageModalContent" src="" style="display: none;">
+            <iframe id="docModalContent" src="" style="display: none; width: 90%; height: 80%; border: none; border-radius: 8px; background: white;"></iframe>
+            
+            <div class="modal-controls" id="modalControls">
+                <button class="modal-btn" onclick="zoomImage(0.2)"><i class="fas fa-search-plus"></i></button>
+                <button class="modal-btn" onclick="zoomImage(-0.2)"><i class="fas fa-search-minus"></i></button>
+                <button class="modal-btn" onclick="resetZoom()"><i class="fas fa-sync-alt"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer mt-auto py-4 bg-white border-top">
+        <div class="container text-center">
+            <p class="text-muted mb-0 x-small fw-medium">
+                &copy; 2026 <span class="text-vinho fw-bold">Gestão Promocional</span> - Auditoria e Rastreamento
+            </p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Modal Script -->
+    <script>
+        let currentScale = 1;
+        const modal = document.getElementById('imageModal');
+        const modalImg = document.getElementById('imageModalContent');
+        const modalDoc = document.getElementById('docModalContent');
+        const modalControls = document.getElementById('modalControls');
+        const closeBtn = document.querySelector('.modal-close');
+
+        function openModal(src, type = 'image') {
+            modal.style.display = "flex";
+            document.body.style.overflow = 'hidden';
+            
+            if (type === 'image') {
+                modalImg.src = src;
+                modalImg.style.display = "block";
+                modalDoc.style.display = "none";
+                modalControls.style.display = "flex";
+                currentScale = 1;
+                modalImg.style.transform = `scale(${currentScale})`;
+            } else {
+                modalDoc.src = src;
+                modalDoc.style.display = "block";
+                modalImg.style.display = "none";
+                modalControls.style.display = "none"; // Zoom não funciona bem em iframe de PDF nativo
+            }
+        }
+
+        closeBtn.onclick = function() {
+            modal.style.display = "none";
+            modalImg.src = "";
+            modalDoc.src = "";
+            document.body.style.overflow = 'auto';
+        }
+
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+                modalImg.src = "";
+                modalDoc.src = "";
+                document.body.style.overflow = 'auto';
+            }
+        }
+
+        function zoomImage(delta) {
+            currentScale += delta;
+            if (currentScale < 0.5) currentScale = 0.5;
+            if (currentScale > 3) currentScale = 3;
+            modalImg.style.transform = `scale(${currentScale})`;
+        }
+
+        function resetZoom() {
+            currentScale = 1;
+            modalImg.style.transform = `scale(${currentScale})`;
+        }
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Material{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+```
+<h2 class="fw-bold mb-4">
+    Editar <span class="text-vinho">Material</span>
+</h2>
+
+<form method="POST" enctype="multipart/form-data">
+
+    <div class="row g-3">
+
+        <div class="col-md-6">
+            <label class="form-label">Empresa</label>
+            <input type="text"
+                   name="empresa"
+                   class="form-control"
+                   value="{{ material.empresa }}"
+                   required>
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Quantidade</label>
+            <input type="number"
+                   name="quantidade"
+                   class="form-control"
+                   value="{{ material.quantidade }}">
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Data Início</label>
+            <input type="date"
+                   name="data_inicio"
+                   class="form-control"
+                   value="{{ material.data_inicio }}">
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Data Término</label>
+            <input type="date"
+                   name="data_termino"
+                   class="form-control"
+                   value="{{ material.data_termino }}">
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Nome da Campanha</label>
+            <input type="text"
+                   name="nome_campanha"
+                   class="form-control"
+                   value="{{ material.nome_campanha }}">
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Responsável</label>
+            <input type="text"
+                   name="responsavel"
+                   class="form-control"
+                   value="{{ material.responsavel }}">
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Documento</label>
+            <input type="file"
+                   name="documento"
+                   class="form-control">
+            {% if material.documento_url %}
+            <small class="text-muted">
+                Documento atual:
+                <a href="{{ material.documento_url }}" target="_blank">Visualizar</a>
+            </small>
+            {% endif %}
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Imagem</label>
+            <input type="file"
+                   name="imagem"
+                   class="form-control">
+            {% if material.imagem_url %}
+            <div class="mt-2">
+                <img src="{{ material.imagem_url }}"
+                     class="img-fluid rounded"
+                     style="max-height:120px;">
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <div class="mt-4 d-flex flex-column flex-md-row justify-content-center gap-3">
+
+        <button type="submit" class="btn btn-success px-4">
+            <i class="fas fa-save me-2"></i>
+            Salvar Alterações
+        </button>
+
+        <a href="{{ url_for('materiais.listar') }}" class="btn btn-secondary px-4">
+            Cancelar
+        </a>
+
+    </div>
+
+</form>
+```
+
+</div>
+
+{% endblock %}

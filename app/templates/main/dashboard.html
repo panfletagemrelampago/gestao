@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Gestão Promocional{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="fw-bold mb-1">Painel de <span class="text-vinho">Controle</span></h2>
+        <p class="text-muted small">Gestão operacional e auditoria em tempo real.</p>
+    </div>
+</div>
+
+<!-- Widgets de Estatísticas -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="card stat-widget h-100">
+            <div class="stat-icon bg-vinho bg-opacity-10">
+                <i class="fas fa-rocket text-white"></i>
+            </div>
+            <h4 class="fw-bold mb-0">{{ acoes_dia|length }}</h4>
+            <small class="text-muted d-block">Ações</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="card stat-widget h-100">
+            <div class="stat-icon bg-primary bg-opacity-10">
+                <i class="fas fa-users text-primary"></i>
+            </div>
+            <h4 class="fw-bold mb-0">{{ equipes_ativas }}</h4>
+            <small class="text-muted d-block">Equipes</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="card stat-widget h-100">
+            <div class="stat-icon bg-laranja bg-opacity-10">
+                <i class="fas fa-car text-laranja"></i>
+            </div>
+            <h4 class="fw-bold mb-0">{{ veiculos_em_campo }}</h4>
+            <small class="text-muted d-block">Veículos</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="card stat-widget h-100">
+            <div class="stat-icon bg-info bg-opacity-10">
+                <i class="fas fa-camera-retro text-info"></i>
+            </div>
+            <h4 class="fw-bold mb-0">{{ ultimas_auditorias|length }}</h4>
+            <small class="text-muted d-block">Auditorias</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="card stat-widget h-100">
+            <div class="stat-icon bg-success bg-opacity-10">
+                <i class="fas fa-boxes-stacked text-success"></i>
+            </div>
+            <h4 class="fw-bold mb-0">{{ total_materiais }}</h4>
+            <small class="text-muted d-block">Materiais</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="card stat-widget h-100">
+            <div class="stat-icon bg-warning bg-opacity-10">
+                <i class="fas fa-user-tie text-warning"></i>
+            </div>
+            <h4 class="fw-bold mb-0">{{ total_vagas }}</h4>
+            <small class="text-muted d-block">Candidatos</small>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Operações em Campo -->
+    <div class="col-12 col-lg-8">
+        <div class="card overflow-hidden">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold"><i class="fas fa-tasks me-2 text-vinho"></i> Operações Ativas</h6>
+                <a href="{{ url_for('acoes.listar') }}" class="btn btn-sm btn-light rounded-pill px-3">Ver Todas</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="bg-light">
+                            <tr class="small">
+                                <th class="ps-3">Local</th>
+                                <th class="d-none d-md-table-cell">Cidade</th>
+                                <th>Status</th>
+                                <th class="pe-3">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for acao in acoes_dia %}
+                            <tr>
+                                <td class="ps-3">
+                                    <div class="fw-bold small">{{ acao.local_alvo }}</div>
+                                    <small class="text-muted d-md-none">{{ acao.cidade }}</small>
+                                </td>
+                                <td class="d-none d-md-table-cell small">{{ acao.cidade }}</td>
+                                <td><span class="badge bg-primary bg-opacity-10 text-primary rounded-pill small">{{ acao.status }}</span></td>
+                                <td class="pe-3">
+                                    <a href="{{ url_for('mapa.index') }}" class="btn btn-sm btn-outline-primary rounded-circle"><i class="fas fa-location-dot"></i></a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center py-5">
+                                    <p class="text-muted mb-0 small">Nenhuma ação ativa para hoje.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Últimas Auditorias -->
+    <div class="col-12 col-lg-4">
+        <div class="card overflow-hidden">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold"><i class="fas fa-camera-retro me-2 text-laranja"></i> Auditorias Recentes</h6>
+            </div>
+            <div class="card-body p-0">
+                {% if ultimas_auditorias %}
+                <div class="list-group list-group-flush">
+                    {% for auditoria in ultimas_auditorias %}
+                    <div class="list-group-item p-3 border-0">
+                        <div class="d-flex align-items-center">
+                            <img src="{{ auditoria.foto_url }}" class="rounded-3 me-3 cursor-pointer" onclick="openModal('{{ auditoria.foto_url }}')" style="width: 50px; height: 50px; object-fit: cover;">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-0 fw-bold small text-truncate">{{ auditoria.acao.local_alvo }}</h6>
+                                <p class="mb-0 x-small text-muted">{{ auditoria.data_hora.strftime('%H:%M - %d/%m/%y') }}</p>
+                            </div>
+                            <a href="{{ url_for('auditorias.listar') }}" class="btn btn-sm btn-light rounded-circle"><i class="fas fa-chevron-right"></i></a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <p class="text-muted px-4 small">Sem auditorias registradas hoje.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .cursor-pointer { cursor: pointer; }
+    .x-small { font-size: 0.75rem; }
+</style>
+{% endblock %}

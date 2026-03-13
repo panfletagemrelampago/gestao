@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Equipe - Gestão Promocional{% endblock %}
+
+{% block content %}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+
+    <div>
+        <h2 class="fw-bold mb-0">
+            Equipe de <span class="text-vinho">Campo</span>
+        </h2>
+        <p class="text-muted small mb-0">
+            Gerencie os promotores e líderes de equipe.
+        </p>
+    </div>
+
+    <div class="header-actions">
+        <a href="{{ url_for('equipe.novo') }}" class="btn btn-primary shadow-sm">
+            <i class="fas fa-plus me-2"></i> Novo Membro
+        </a>
+    </div>
+
+</div>
+
+
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+
+    <div class="card-body p-0">
+
+        <div class="table-responsive">
+
+            <table class="table table-hover mb-0 align-middle table-responsive-mobile">
+
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Cargo</th>
+                        <th>Contato</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for membro in equipes %}
+
+                    <tr>
+
+                        <td data-label="Nome">
+                            <div class="text-end text-md-center fw-bold text-vinho">
+                                {{ membro.nome }}
+                            </div>
+                        </td>
+
+                        <td data-label="Cargo">
+                            <div class="text-end text-md-center">
+                                {{ membro.cargo }}
+                            </div>
+                        </td>
+
+                        <td data-label="Contato">
+                            <div class="text-end text-md-center">
+                                {{ membro.telefone }}
+                            </div>
+                        </td>
+
+                        <td data-label="Status">
+                            <div class="d-flex justify-content-end justify-content-md-center">
+
+                                <span class="badge
+                                {% if membro.status %}bg-success text-success{% else %}bg-danger text-danger{% endif %}
+                                bg-opacity-10 rounded-pill px-3">
+
+                                    {% if membro.status %}
+                                        Ativo
+                                    {% else %}
+                                        Inativo
+                                    {% endif %}
+
+                                </span>
+
+                            </div>
+                        </td>
+
+                        <td data-label="Ações">
+
+                            <div class="d-flex justify-content-end justify-content-md-center gap-2">
+
+                                <!-- EDITAR -->
+                                <a href="{{ url_for('equipe.editar', id=membro.id) }}"
+                                   class="btn btn-sm btn-outline-secondary btn-action-square">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+
+                                <!-- EXCLUIR -->
+                                <form action="{{ url_for('equipe.excluir', id=membro.id) }}"
+                                      method="POST"
+                                      class="d-inline">
+
+                                    <button type="submit"
+                                            class="btn btn-sm btn-outline-danger btn-action-square"
+                                            onclick="return confirm('Excluir este membro?')">
+
+                                        <i class="fas fa-trash"></i>
+
+                                    </button>
+
+                                </form>
+
+                            </div>
+
+                        </td>
+
+                    </tr>
+
+                    {% else %}
+
+                    <tr>
+                        <td colspan="5" class="text-center py-5">
+
+                            <i class="fas fa-users fa-3x text-muted mb-3 opacity-25"></i>
+
+                            <p class="text-muted">
+                                Nenhum membro cadastrado.
+                            </p>
+
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

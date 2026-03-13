@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Clientes - Gestão Promocional{% endblock %}
+
+{% block content %}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="fw-bold mb-0">Gestão de <span class="text-vinho">Clientes</span></h2>
+        <p class="text-muted small mb-0">Administre as empresas parceiras e seus contatos.</p>
+    </div>
+    <div class="header-actions">
+        <a href="{{ url_for('clientes.novo') }}" class="btn btn-primary shadow-sm">
+            <i class="fas fa-plus me-2"></i> Novo Cliente
+        </a>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle table-responsive-mobile">
+                <thead>
+                    <tr>
+                        <th>Empresa</th>
+                        <th>Responsável</th>
+                        <th>Contato</th>
+                        <th>Localização</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cliente in clientes %}
+                    <tr>
+                        <td data-label="Empresa">
+                            <div class="text-end text-md-center fw-bold text-vinho">{{ cliente.nome_empresa }}</div>
+                        </td>
+
+```
+                    <td data-label="Responsável">
+                        <div class="text-end text-md-center">{{ cliente.responsavel }}</div>
+                    </td>
+
+                    <td data-label="Contato">
+                        <div class="text-end text-md-center">
+                            <div class="small">{{ cliente.email }}</div>
+                            <div class="x-small text-muted">{{ cliente.telefone }}</div>
+                        </div>
+                    </td>
+
+                    <td data-label="Localização">
+                        <div class="text-end text-md-center">
+                            <small>{{ cliente.cidade }} - {{ cliente.estado }}</small>
+                        </div>
+                    </td>
+
+                    <td data-label="Status">
+                        <div class="d-flex justify-content-end justify-content-md-center">
+                            <span class="badge {% if cliente.status %}bg-success{% else %}bg-danger{% endif %} bg-opacity-10 {% if cliente.status %}text-success{% else %}text-danger{% endif %} rounded-pill px-3">
+                                {% if cliente.status %}Ativo{% else %}Inativo{% endif %}
+                            </span>
+                        </div>
+                    </td>
+
+                    <td data-label="Ações">
+                        <div class="d-flex justify-content-end justify-content-md-center gap-2">
+
+                            <!-- BOTÃO EDITAR -->
+                            <a href="{{ url_for('clientes.editar', id=cliente.id) }}"
+                               class="btn btn-sm btn-outline-secondary btn-action-square">
+                                <i class="fas fa-edit"></i>
+                            </a>
+
+                            <!-- BOTÃO EXCLUIR -->
+                            <form action="{{ url_for('clientes.excluir', id=cliente.id) }}" method="POST" class="d-inline">
+                                <button type="submit"
+                                        class="btn btn-sm btn-outline-danger btn-action-square"
+                                        onclick="return confirm('Excluir este cliente?')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+
+                        </div>
+                    </td>
+
+                </tr>
+
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center py-5">
+                        <i class="fas fa-briefcase fa-3x text-muted mb-3 opacity-25"></i>
+                        <p class="text-muted">Nenhum cliente cadastrado.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+
+            </tbody>
+        </table>
+    </div>
+</div>
+```
+
+</div>
+{% endblock %}

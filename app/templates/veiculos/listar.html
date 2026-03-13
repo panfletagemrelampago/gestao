@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Veículos - Gestão Promocional{% endblock %}
+
+{% block content %}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+
+    <div>
+        <h2 class="fw-bold mb-0">
+            Gestão de <span class="text-vinho">Frota</span>
+        </h2>
+        <p class="text-muted small mb-0">
+            Controle os veículos utilizados nas ações promocionais.
+        </p>
+    </div>
+
+    <div class="header-actions">
+        <a href="{{ url_for('veiculos.novo') }}" class="btn btn-primary shadow-sm">
+            <i class="fas fa-plus me-2"></i> Novo Veículo
+        </a>
+    </div>
+
+</div>
+
+
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+
+    <div class="card-body p-0">
+
+        <div class="table-responsive">
+
+            <table class="table table-hover mb-0 align-middle table-responsive-mobile">
+
+                <thead>
+                    <tr>
+                        <th>Veículo</th>
+                        <th>Placa</th>
+                        <th>Cor</th>
+                        <th>Motorista</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for veiculo in veiculos %}
+
+                    <tr>
+
+                        <td data-label="Veículo">
+                            <div class="text-end text-md-center fw-bold text-vinho">
+                                {{ veiculo.marca }} {{ veiculo.modelo }}
+                            </div>
+                        </td>
+
+                        <td data-label="Placa">
+                            <div class="text-end text-md-center">
+                                {{ veiculo.placa }}
+                            </div>
+                        </td>
+
+                        <td data-label="Cor">
+                            <div class="text-end text-md-center">
+                                {{ veiculo.cor }}
+                            </div>
+                        </td>
+
+                        <td data-label="Motorista">
+                            <div class="text-end text-md-center">
+                                {{ veiculo.motorista.nome if veiculo.motorista else 'Nenhum' }}
+                            </div>
+                        </td>
+
+                        <td data-label="Status">
+                            <div class="d-flex justify-content-end justify-content-md-center">
+
+                                <span class="badge
+                                {% if veiculo.status %}bg-success text-success{% else %}bg-warning text-warning{% endif %}
+                                bg-opacity-10 rounded-pill px-3">
+
+                                    {% if veiculo.status %}
+                                        Disponível
+                                    {% else %}
+                                        Em Uso
+                                    {% endif %}
+
+                                </span>
+
+                            </div>
+                        </td>
+
+                        <td data-label="Ações">
+
+                            <div class="d-flex justify-content-end justify-content-md-center gap-2">
+
+                                <!-- EDITAR -->
+                                <a href="{{ url_for('veiculos.editar', id=veiculo.id) }}"
+                                   class="btn btn-sm btn-outline-secondary btn-action-square">
+
+                                    <i class="fas fa-edit"></i>
+
+                                </a>
+
+                                <!-- EXCLUIR -->
+                                <form action="{{ url_for('veiculos.excluir', id=veiculo.id) }}"
+                                      method="POST"
+                                      class="d-inline">
+
+                                    <button type="submit"
+                                            class="btn btn-sm btn-outline-danger btn-action-square"
+                                            onclick="return confirm('Excluir este veículo?')">
+
+                                        <i class="fas fa-trash"></i>
+
+                                    </button>
+
+                                </form>
+
+                            </div>
+
+                        </td>
+
+                    </tr>
+
+                    {% else %}
+
+                    <tr>
+
+                        <td colspan="6" class="text-center py-5">
+
+                            <i class="fas fa-car fa-3x text-muted mb-3 opacity-25"></i>
+
+                            <p class="text-muted">
+                                Nenhum veículo cadastrado.
+                            </p>
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

@@ -114,19 +114,22 @@ L.tileLayer(
 "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
 ).addTo(map)
 
+// FeatureGroup para desenhos editáveis
+const drawnItems = new L.FeatureGroup().addTo(map);
+
 const layers={
 rastros:L.layerGroup().addTo(map),
 fotos:L.layerGroup().addTo(map),
-areas:L.layerGroup().addTo(map),
-desenho:new L.FeatureGroup().addTo(map),
+areas:drawnItems, // Usar drawnItems para áreas para permitir edição
+desenho:drawnItems,
 historico:L.layerGroup().addTo(map)
 }
 
 function carregarAreasSalvas(){
-    layers.areas.clearLayers()
     fetch("/api/mapa/areas")
     .then(r=>r.json())
     .then(data=>{
+        layers.areas.clearLayers()
         data.forEach(area=>{
             const geojsonLayer=L.geoJSON(area.geojson,{
                 style:{
@@ -136,11 +139,16 @@ function carregarAreasSalvas(){
                     fillOpacity:0.3
                 }
             })
-            geojsonLayer.bindPopup(`
-                <b>Área</b><br>
-                Criada em: ${new Date(area.criado_em).toLocaleString()}
-            `)
-            layers.areas.addLayer(geojsonLayer)
+
+            // Extrair a camada real do GeoJSON para adicionar ao FeatureGroup
+            geojsonLayer.eachLayer(function(layer) {
+                layer.options.areaId = area.id; // Armazenar ID para referência
+                layer.bindPopup(`
+                    <b>Área: ${area.nome}</b><br>
+                    Criada em: ${new Date(area.criado_em).toLocaleString()}
+                `);
+                layers.areas.addLayer(layer);
+            });
         })
     })
 }
@@ -151,7 +159,7 @@ function carregarDadosGPS(){
     .then(data=>{
         layers.rastros.clearLayers()
         let online=0
-        
+
         data.forEach(pos=>{
             online++
             const marker=L.circleMarker(
@@ -165,7 +173,7 @@ function carregarDadosGPS(){
                 }
             )
             marker.addTo(layers.rastros)
-            
+
             marker.bindPopup(`
                 <div style="line-height:1.2;">
                     <strong>${pos.user_nome}</strong><br>
@@ -175,10 +183,10 @@ function carregarDadosGPS(){
                 </div>
             `)
         })
-        
+
         document.getElementById("stats-rastros").innerHTML =
         "Usuários Ativos: <strong>"+online+"</strong>"
-        
+
         document.getElementById("stats-ultima-atualizacao").textContent =
         "Sincronizado: "+new Date().toLocaleTimeString("pt-BR")
     })
@@ -238,18 +246,60 @@ const drawControl=new L.Control.Draw({
 
 map.addControl(drawControl)
 
+// Evento: Criação de nova área
 map.on(L.Draw.Event.CREATED, function(e){
     const layer=e.layer
-    layers.desenho.addLayer(layer)
     const geojson=layer.toGeoJSON()
-    
-    // Opcional: Salvar automaticamente a área desenhada
+
     fetch("/api/mapa/areas", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({geojson: geojson})
-    }).then(() => carregarAreasSalvas())
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === "sucesso") {
+            layer.options.areaId = data.id;
+            layers.desenho.addLayer(layer);
+            console.log("Área salva com ID:", data.id);
+        }
+    })
 })
+
+// Evento: Edição de áreas existentes
+map.on(L.Draw.Event.EDITED, function(e) {
+    const layersEdited = e.layers;
+    layersEdited.eachLayer(function(layer) {
+        const areaId = layer.options.areaId;
+        if (areaId) {
+            const geojson = layer.toGeoJSON();
+            fetch(`/api/mapa/areas/${areaId}`, {
+                method: "PUT",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({geojson: geojson})
+            })
+            .then(r => r.json())
+            .then(data => console.log("Área atualizada:", areaId))
+            .catch(err => console.error("Erro ao atualizar área:", err));
+        }
+    });
+});
+
+// Evento: Exclusão de áreas
+map.on(L.Draw.Event.DELETED, function(e) {
+    const layersDeleted = e.layers;
+    layersDeleted.eachLayer(function(layer) {
+        const areaId = layer.options.areaId;
+        if (areaId) {
+            fetch(`/api/mapa/areas/${areaId}`, {
+                method: "DELETE"
+            })
+            .then(r => r.json())
+            .then(data => console.log("Área removida:", areaId))
+            .catch(err => console.error("Erro ao remover área:", err));
+        }
+    });
+});
 
 carregarAreasSalvas()
 carregarDadosGPS()

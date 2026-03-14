@@ -192,6 +192,73 @@
         }
     </script>
 
+    {% if current_user.is_authenticated %}
+    <!-- Rastreamento GPS via Geolocation API -->
+    <script>
+        (function() {
+            let watchId = null;
+            const updateInterval = 10000; // 10 segundos
+            let lastUpdate = 0;
+
+            function sendPosition(position) {
+                const now = Date.now();
+                if (now - lastUpdate < updateInterval) return;
+                
+                lastUpdate = now;
+                const data = {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    accuracy: position.coords.accuracy
+                };
+
+                fetch('/api/gps', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => response.json())
+                .then(result => {
+                    console.log('GPS enviado:', result);
+                })
+                .catch(error => {
+                    console.error('Erro ao enviar GPS:', error);
+                });
+            }
+
+            function handleError(error) {
+                let msg = "";
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        msg = "Usuário negou a solicitação de Geolocalização.";
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        msg = "As informações de localização não estão disponíveis.";
+                        break;
+                    case error.TIMEOUT:
+                        msg = "A solicitação para obter a localização do usuário expirou.";
+                        break;
+                    case error.UNKNOWN_ERROR:
+                        msg = "Ocorreu um erro desconhecido.";
+                        break;
+                }
+                console.warn("Erro GPS: " + msg);
+            }
+
+            if ("geolocation" in navigator) {
+                watchId = navigator.geolocation.watchPosition(sendPosition, handleError, {
+                    enableHighAccuracy: true,
+                    maximumAge: 30000,
+                    timeout: 27000
+                });
+            } else {
+                console.error("Geolocalização não é suportada pelo seu navegador.");
+            }
+        })();
+    </script>
+    {% endif %}
+
     {% block scripts %}{% endblock %}
 </body>
 </html>

@@ -38,10 +38,7 @@ class Config:
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    # Configuração da API do Traccar
-    TRACCAR_URL = os.environ.get("TRACCAR_URL")
-    TRACCAR_USER = os.environ.get("TRACCAR_USER")
-    TRACCAR_PASSWORD = os.environ.get("TRACCAR_PASSWORD")
+
 
     # Configuração da API do Cloudinary
     CLOUDINARY_CLOUD_NAME = os.environ.get("CLOUDINARY_CLOUD_NAME")

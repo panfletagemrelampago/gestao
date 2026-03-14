@@ -1,12 +1,13 @@
 """
 Blueprint da API REST do sistema de gestão promocional.
-Fornece endpoints para receber dados do GPS (Traccar), gerenciar turnos,
+Fornece endpoints para receber dados do GPS (Browser Geolocation), gerenciar turnos,
 áreas de atuação, fotos geolocalizadas e dados do mapa Leaflet.
 """
 import json
 from flask import Blueprint, jsonify, request, current_app
 from flask_login import login_required, current_user
 from app.models.posicao_gps import PosicaoGps
+from app.models.gps_position import GpsPosition
 from app.models.auditoria import Auditoria
 from app.models.veiculo import Veiculo
 from app.models.acao_promocional import AcaoPromocional
@@ -24,65 +25,96 @@ api_bp = Blueprint('api', __name__)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# GPS
+# GPS (Geolocation API)
 # ─────────────────────────────────────────────────────────────────────────────
 
-@api_bp.route('/gps/receber', methods=['POST'])
+@api_bp.route('/gps', methods=['POST'])
+@login_required
 def receber_gps():
     """
-    Endpoint para receber dados GPS do Traccar via webhook.
-    Aceita JSON com campos: deviceId, latitude, longitude, speed,
-    batteryLevel e fixTime. Aplica filtro de ruído antes de persistir.
+    Endpoint para receber dados GPS do navegador via Geolocation API.
+    Recebe JSON: { latitude, longitude, accuracy }
     """
     data = request.json
     if not data:
         return jsonify({"erro": "Nenhum dado recebido"}), 400
 
-    device_id = data.get('deviceId')
     lat = data.get('latitude')
     lon = data.get('longitude')
-    speed = data.get('speed', 0)
-    battery = data.get('batteryLevel')
-    fix_time_str = data.get('fixTime')
+    acc = data.get('accuracy')
 
-    if not all([device_id, lat, lon]):
-        return jsonify({"erro": "Campos obrigatórios faltando: deviceId, latitude, longitude"}), 400
+    if lat is None or lon is None:
+        return jsonify({"erro": "Latitude e longitude são obrigatórios"}), 400
 
-    try:
-        fix_time = datetime.fromisoformat(fix_time_str.replace('Z', '+00:00'))
-    except Exception:
-        fix_time = datetime.utcnow()
+    nova_posicao = GpsPosition(
+        user_id=current_user.id,
+        latitude=lat,
+        longitude=lon,
+        accuracy=acc,
+        created_at=datetime.utcnow()
+    )
+    db.session.add(nova_posicao)
+    db.session.commit()
 
-    posicao = GpsService.process_and_save_position(device_id, lat, lon, speed, battery, fix_time)
-
-    if posicao:
-        return jsonify({"status": "sucesso", "id": posicao.id}), 201
-    else:
-        return jsonify({"status": "ignorado", "motivo": "filtro de ruído aplicado"}), 200
+    return jsonify({"status": "sucesso", "id": nova_posicao.id}), 201
 
 
-@api_bp.route('/gps/historico/<int:device_id>', methods=['GET'])
+@api_bp.route('/gps/latest', methods=['GET'])
 @login_required
-def historico_gps(device_id):
-    """Retorna o histórico de posições GPS de um dispositivo. Parâmetros: horas (padrão 24)."""
+def gps_latest():
+    """
+    Retorna as últimas posições de todos os usuários ativos nas últimas 24 horas.
+    """
+    tempo_limite = datetime.utcnow() - timedelta(hours=24)
+    
+    # Subquery para pegar a última posição de cada usuário
+    subquery = db.session.query(
+        GpsPosition.user_id,
+        db.func.max(GpsPosition.created_at).label('max_created_at')
+    ).filter(GpsPosition.created_at >= tempo_limite).group_by(GpsPosition.user_id).subquery()
+
+    ultimas_posicoes = db.session.query(GpsPosition).join(
+        subquery,
+        db.and_(
+            GpsPosition.user_id == subquery.c.user_id,
+            GpsPosition.created_at == subquery.c.max_created_at
+        )
+    ).all()
+
+    return jsonify([
+        {
+            "user_id": p.user_id,
+            "user_nome": p.user.nome_exibicao,
+            "latitude": p.latitude,
+            "longitude": p.longitude,
+            "accuracy": p.accuracy,
+            "created_at": p.created_at.isoformat()
+        }
+        for p in ultimas_posicoes
+    ])
+
+
+@api_bp.route('/gps/historico/<int:user_id>', methods=['GET'])
+@login_required
+def historico_gps(user_id):
+    """Retorna o histórico de posições GPS de um usuário. Parâmetros: horas (padrão 24)."""
     horas = request.args.get('horas', 24, type=int)
     tempo_limite = datetime.utcnow() - timedelta(hours=horas)
 
-    posicoes = PosicaoGps.query.filter(
-        PosicaoGps.device_id == device_id,
-        PosicaoGps.data_hora >= tempo_limite
-    ).order_by(PosicaoGps.data_hora.asc()).all()
+    posicoes = GpsPosition.query.filter(
+        GpsPosition.user_id == user_id,
+        GpsPosition.created_at >= tempo_limite
+    ).order_by(GpsPosition.created_at.asc()).all()
 
     return jsonify({
-        "device_id": device_id,
+        "user_id": user_id,
         "total_pontos": len(posicoes),
         "pontos": [
             {
                 "lat": p.latitude,
                 "lon": p.longitude,
-                "velocidade": p.velocidade,
-                "bateria": p.bateria,
-                "data_hora": p.data_hora.isoformat()
+                "accuracy": p.accuracy,
+                "created_at": p.created_at.isoformat()
             }
             for p in posicoes
         ]

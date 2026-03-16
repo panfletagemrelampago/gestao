@@ -9,25 +9,59 @@ class User(UserMixin, db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
 
-    nome_exibicao = db.Column(db.String(100), nullable=False)
-
-    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
-
-    # HASH DA SENHA
-    senha_hash = db.Column(db.Text, nullable=False)
-
-    tipo_usuario = db.Column(
-        db.Enum("admin", "equipe", "cliente", name="user_types"),
+    nome_exibicao = db.Column(
+        db.String(100),
         nullable=False
     )
 
-    device_id = db.Column(db.Integer, nullable=True)
+    email = db.Column(
+        db.String(120),
+        unique=True,
+        nullable=False,
+        index=True
+    )
 
-    tema_preferido = db.Column(db.String(20), default="light")
+    # HASH DA SENHA
+    senha_hash = db.Column(
+        db.Text,
+        nullable=False
+    )
 
-    ativo = db.Column(db.Boolean, default=True)
+    # TIPOS DE USUÁRIO
+    tipo_usuario = db.Column(
+        db.Enum(
+            "admin",
+            "diretoria",
+            "cliente",
+            "motorista",
+            name="user_types"
+        ),
+        nullable=False
+    )
 
-    data_criacao = db.Column(db.DateTime, default=datetime.utcnow)
+    # ID DO DISPOSITIVO (caso use rastreamento)
+    device_id = db.Column(
+        db.Integer,
+        nullable=True
+    )
+
+    # PREFERÊNCIA DE TEMA
+    tema_preferido = db.Column(
+        db.String(20),
+        default="light"
+    )
+
+    # STATUS DO USUÁRIO
+    ativo = db.Column(
+        db.Boolean,
+        default=True
+    )
+
+    # DATA DE CRIAÇÃO
+    data_criacao = db.Column(
+        db.DateTime,
+        default=datetime.utcnow
+    )
 
     # -------------------------
     # SENHA

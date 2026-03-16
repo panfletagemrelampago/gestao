@@ -1,6 +1,9 @@
-# Ambiente virtual
+# Ambiente virtual (Pastas)
+.venv/
 venv/
 env/
+
+# Configurações de Ambiente (Arquivos de chaves/senhas)
 .env
 
 # Python

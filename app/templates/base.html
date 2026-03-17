@@ -30,19 +30,45 @@
 
 <div class="collapse navbar-collapse" id="navbarNav">
 
+{% set ep = request.endpoint or '' %}
+
 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
 {% if current_user.is_authenticated %}
 
 <li class="nav-item">
-<a class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}" href="{{ url_for('main.dashboard') }}">Dashboard</a>
+<a class="nav-link {% if ep == 'main.dashboard' %}active{% endif %}" href="{{ url_for('main.dashboard') }}">
+Dashboard
+</a>
 </li>
 
 <li class="nav-item">
-<a class="nav-link {% if 'mapa' in request.endpoint %}active{% endif %}" href="{{ url_for('mapa.index') }}">Mapa</a>
+<a class="nav-link {% if 'mapa' in ep %}active{% endif %}" href="{{ url_for('mapa.index') }}">
+Mapa
+</a>
 </li>
 
 <li class="nav-item">
-<a class="nav-link {% if 'acoes' in request.endpoint %}active{% endif %}" href="{{ url_for('acoes.listar') }}">Ações</a>
+<a class="nav-link {% if 'acoes' in ep %}active{% endif %}" href="{{ url_for('acoes.listar') }}">
+Ações
+</a>
+</li>
+
+<li class="nav-item">
+<a class="nav-link {% if 'vagas' in ep %}active{% endif %}" href="{{ url_for('vagas.listar') }}">
+Vagas
+</a>
+</li>
+
+<li class="nav-item">
+<a class="nav-link {% if 'equipes' in ep %}active{% endif %}" href="{{ url_for('equipes.listar') }}">
+Equipes
+</a>
+</li>
+
+<li class="nav-item">
+<a class="nav-link {% if 'materiais' in ep %}active{% endif %}" href="{{ url_for('materiais.listar') }}">
+Materiais
+</a>
 </li>
 
 {% endif %}
@@ -50,19 +76,29 @@
 
 <ul class="navbar-nav align-items-lg-center">
 {% if current_user.is_authenticated %}
+
 <li class="nav-item dropdown">
 <a class="nav-link dropdown-toggle bg-white bg-opacity-10 rounded-pill px-3" href="#" data-bs-toggle="dropdown">
 <i class="fas fa-user-circle me-1"></i> {{ current_user.nome_exibicao }}
 </a>
 
 <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg">
-<li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">Sair</a></li>
+<li>
+<a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">
+Sair
+</a>
+</li>
 </ul>
 </li>
+
 {% else %}
+
 <li class="nav-item">
-<a class="btn btn-laranja rounded-pill px-4" href="{{ url_for('auth.login') }}">Login</a>
+<a class="btn btn-laranja rounded-pill px-4" href="{{ url_for('auth.login') }}">
+Login
+</a>
 </li>
+
 {% endif %}
 </ul>
 
@@ -118,13 +154,11 @@ const lat = position.coords.latitude
 const lon = position.coords.longitude
 const acc = position.coords.accuracy
 
-// 🚫 ignorar precisão ruim
 if(acc > 40){
 console.log("Ignorado: precisão ruim", acc)
 return
 }
 
-// 🚫 intervalo mínimo (8s)
 if(now - lastSendTime < 8000){
 return
 }
@@ -138,19 +172,16 @@ lat,
 lon
 )
 
-// 🚫 ignorar ponto parado (menos de 5m)
 if(dist < 5){
 return
 }
 
-// 🚫 ignorar salto absurdo
 if(dist > 120){
 console.log("Ignorado: salto GPS", dist)
 return
 }
 }
 
-// salvar localmente
 lastPosition = {lat, lon}
 lastSendTime = now
 
@@ -163,7 +194,6 @@ longitude: lon,
 accuracy: acc
 })
 })
-
 .then(()=>console.log("GPS OK"))
 .catch(err=>console.error("Erro GPS", err))
 

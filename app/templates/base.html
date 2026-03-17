@@ -19,7 +19,7 @@
 <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
 <div class="container">
 
-<a class="navbar-brand d-flex align-items-center" href="{{ url_for('main.dashboard') }}">
+<a class="navbar-brand d-flex align-items-center" href="/dashboard">
 <i class="fas fa-bullhorn me-2"></i>
 <span>Auditoria<span class="d-none d-sm-inline"> Promocional</span></span>
 </a>
@@ -36,39 +36,31 @@
 {% if current_user.is_authenticated %}
 
 <li class="nav-item">
-<a class="nav-link {% if ep == 'main.dashboard' %}active{% endif %}" href="{{ url_for('main.dashboard') }}">
-Dashboard
-</a>
+<a class="nav-link" href="/dashboard">Dashboard</a>
 </li>
 
 <li class="nav-item">
-<a class="nav-link {% if 'mapa' in ep %}active{% endif %}" href="{{ url_for('mapa.index') }}">
-Mapa
-</a>
+<a class="nav-link" href="/mapa/">Mapa</a>
 </li>
 
 <li class="nav-item">
-<a class="nav-link {% if 'acoes' in ep %}active{% endif %}" href="{{ url_for('acoes.listar') }}">
-Ações
-</a>
+<a class="nav-link" href="/acoes">Ações</a>
 </li>
 
 <li class="nav-item">
-<a class="nav-link {% if 'vagas' in ep %}active{% endif %}" href="{{ url_for('vagas.listar') }}">
-Vagas
-</a>
+<a class="nav-link" href="/vagas">Vagas</a>
 </li>
 
 <li class="nav-item">
-<a class="nav-link {% if 'equipes' in ep %}active{% endif %}" href="{{ url_for('equipes.listar') }}">
-Equipes
-</a>
+<a class="nav-link" href="/equipes">Equipes</a>
 </li>
 
 <li class="nav-item">
-<a class="nav-link {% if 'materiais' in ep %}active{% endif %}" href="{{ url_for('materiais.listar') }}">
-Materiais
-</a>
+<a class="nav-link" href="/materiais">Materiais</a>
+</li>
+
+<li class="nav-item">
+<a class="nav-link" href="/clientes">Clientes</a>
 </li>
 
 {% endif %}
@@ -84,7 +76,7 @@ Materiais
 
 <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg">
 <li>
-<a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">
+<a class="dropdown-item text-danger" href="/auth/logout">
 Sair
 </a>
 </li>
@@ -94,7 +86,7 @@ Sair
 {% else %}
 
 <li class="nav-item">
-<a class="btn btn-laranja rounded-pill px-4" href="{{ url_for('auth.login') }}">
+<a class="btn btn-laranja rounded-pill px-4" href="/auth/login">
 Login
 </a>
 </li>
@@ -154,14 +146,8 @@ const lat = position.coords.latitude
 const lon = position.coords.longitude
 const acc = position.coords.accuracy
 
-if(acc > 40){
-console.log("Ignorado: precisão ruim", acc)
-return
-}
-
-if(now - lastSendTime < 8000){
-return
-}
+if(acc > 40) return
+if(now - lastSendTime < 8000) return
 
 if(lastPosition){
 
@@ -172,14 +158,8 @@ lat,
 lon
 )
 
-if(dist < 5){
-return
-}
-
-if(dist > 120){
-console.log("Ignorado: salto GPS", dist)
-return
-}
+if(dist < 5) return
+if(dist > 120) return
 }
 
 lastPosition = {lat, lon}
@@ -194,8 +174,6 @@ longitude: lon,
 accuracy: acc
 })
 })
-.then(()=>console.log("GPS OK"))
-.catch(err=>console.error("Erro GPS", err))
 
 }
 

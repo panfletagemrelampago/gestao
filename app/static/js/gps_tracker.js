@@ -12,11 +12,10 @@ function iniciarGPS() {
         erroGPS,
         {
             enableHighAccuracy: true,
-            maximumAge: 0,
-            timeout: 5000
+            maximumAge: 2000,
+            timeout: 10000
         }
     )
-
 }
 
 let ultimoEnvio = 0
@@ -25,7 +24,6 @@ function enviarPosicao(position){
 
     const agora = Date.now()
 
-    // evita enviar mais de 1 posição a cada 5 segundos
     if(agora - ultimoEnvio < 5000){
         return
     }
@@ -35,6 +33,12 @@ function enviarPosicao(position){
     const latitude = position.coords.latitude
     const longitude = position.coords.longitude
     const accuracy = position.coords.accuracy
+
+    // filtro de precisão
+    if(accuracy > 40){
+        console.log("GPS ignorado por baixa precisão:", accuracy)
+        return
+    }
 
     console.log("Enviando posição:", latitude, longitude)
 
@@ -57,7 +61,6 @@ function enviarPosicao(position){
     .catch(error => {
         console.error("Erro de conexão:", error)
     })
-
 }
 
 function erroGPS(err){

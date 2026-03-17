@@ -6,7 +6,6 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
 
 <style>
-
 #map{
 height:70vh;
 width:100%;
@@ -54,15 +53,11 @@ border-radius:50%;
 margin-right:5px;
 vertical-align:middle;
 }
-
 </style>
 {% endblock %}
 
-
 {% block content %}
-
 <div class="position-relative">
-
 <div id="map"></div>
 
 <div id="painel-controle">
@@ -102,10 +97,7 @@ Usuários Ativos: <strong>0</strong>
 
 </div>
 </div>
-
 {% endblock %}
-
-
 
 {% block scripts %}
 
@@ -121,11 +113,7 @@ L.tileLayer(
 {maxZoom:19}
 ).addTo(map)
 
-
-
 const drawnItems = new L.FeatureGroup().addTo(map)
-
-
 
 const layers={
 rastros:L.layerGroup().addTo(map),
@@ -135,20 +123,74 @@ desenho:drawnItems,
 historico:L.layerGroup().addTo(map)
 }
 
+// =============================
+// DISTÂNCIA (Haversine)
+// =============================
+function distancia(lat1, lon1, lat2, lon2){
+const R = 6371000
+const dLat = (lat2-lat1)*Math.PI/180
+const dLon = (lon2-lon1)*Math.PI/180
 
+const a =
+Math.sin(dLat/2)*Math.sin(dLat/2) +
+Math.cos(lat1*Math.PI/180) *
+Math.cos(lat2*Math.PI/180) *
+Math.sin(dLon/2)*Math.sin(dLon/2)
 
+return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+}
+
+// =============================
+// RASTRO PROFISSIONAL
+// =============================
+function desenharRastro(pontos){
+
+let filtrados=[]
+let ultimo=null
+
+pontos.forEach(p=>{
+
+const lat = p.latitude || p.lat
+const lng = p.longitude || p.lon || p.lng
+const acc = p.accuracy || 0
+
+// ignora gps ruim
+if(acc > 50) return
+
+if(ultimo){
+const dist = distancia(ultimo.lat, ultimo.lng, lat, lng)
+
+// ignora salto absurdo
+if(dist > 120) return
+}
+
+filtrados.push([lat,lng])
+ultimo = {lat,lng}
+})
+
+if(filtrados.length < 2) return
+
+const linha = L.polyline(filtrados,{
+color:'#8E0000',
+weight:5,
+opacity:0.85,
+lineJoin:'round'
+})
+
+linha.addTo(layers.historico)
+map.fitBounds(linha.getBounds())
+}
+
+// =============================
+// ÁREAS
+// =============================
 function carregarAreasSalvas(){
-
 fetch("/api/mapa/areas")
-
 .then(r=>r.json())
-
 .then(data=>{
-
 layers.areas.clearLayers()
 
 data.forEach(area=>{
-
 const geojsonLayer=L.geoJSON(area.geojson,{
 style:{
 color:"#0d6efd",
@@ -159,36 +201,24 @@ fillOpacity:0.3
 })
 
 geojsonLayer.eachLayer(function(layer){
-
 layer.options.areaId = area.id
-
-layer.bindPopup(`
-<b>Área: ${area.nome}</b><br>
-Criada em: ${new Date(area.criado_em).toLocaleString()}
-`)
-
+layer.bindPopup(`<b>${area.nome}</b>`)
 layers.areas.addLayer(layer)
-
 })
-
 })
-
 })
-
 }
 
-
-
+// =============================
+// GPS ONLINE
+// =============================
 function carregarDadosGPS(){
 
 fetch("/api/gps/latest")
-
 .then(r=>r.json())
-
 .then(data=>{
 
 layers.rastros.clearLayers()
-
 let online=0
 
 data.forEach(pos=>{
@@ -211,252 +241,92 @@ fillOpacity:1
 marker.addTo(layers.rastros)
 
 marker.bindPopup(`
-<div style="line-height:1.2;">
 <strong>${pos.user_nome}</strong><br>
-<b>Precisão:</b> ${pos.accuracy ? pos.accuracy.toFixed(1)+'m' : '--'}<br>
-<small>Atualizado: ${new Date(pos.created_at).toLocaleString("pt-BR")}</small><br>
-<button class="btn btn-sm btn-link p-0 mt-1" onclick="verHistorico(${pos.user_id})">Ver Rastro</button>
-</div>
+Precisão: ${pos.accuracy || '--'}<br>
+<button onclick="verHistorico(${pos.user_id})">
+Ver Rastro
+</button>
 `)
-
 })
 
 document.getElementById("stats-rastros").innerHTML =
 "Usuários Ativos: <strong>"+online+"</strong>"
 
 document.getElementById("stats-ultima-atualizacao").textContent =
-"Sincronizado: "+new Date().toLocaleTimeString("pt-BR")
-
+"Atualizado agora"
 })
-
 }
 
-
-
+// =============================
+// HISTÓRICO (CORRIGIDO)
+// =============================
 function verHistorico(userId){
 
 fetch(`/api/gps/historico/${userId}`)
-
 .then(r=>r.json())
-
 .then(data=>{
 
 layers.historico.clearLayers()
 
-if(!data) return
-
-let pontos = []
+let pontos=[]
 
 if(Array.isArray(data)){
-pontos = data
+pontos=data
 }else if(data.pontos){
-pontos = data.pontos
+pontos=data.pontos
 }
 
-if(pontos.length > 1){
-
-const latlngs = pontos.map(p => [
-p.latitude || p.lat,
-p.longitude || p.lon
-])
-
-const polyline=L.polyline(latlngs,{
-color:'#8E0000',
-weight:4,
-opacity:0.7
+desenharRastro(pontos)
 })
-
-polyline.addTo(layers.historico)
-
-map.fitBounds(polyline.getBounds())
-
 }
 
+// =============================
+// TOGGLES
+// =============================
+document.getElementById("toggle-rastros").addEventListener("change",function(){
+this.checked ? map.addLayer(layers.rastros) : map.removeLayer(layers.rastros)
 })
 
-}
-
-
-
-document.getElementById("toggle-rastros")
-
-.addEventListener("change",function(){
-
-this.checked
-? map.addLayer(layers.rastros)
-: map.removeLayer(layers.rastros)
-
+document.getElementById("toggle-fotos").addEventListener("change",function(){
+this.checked ? map.addLayer(layers.fotos) : map.removeLayer(layers.fotos)
 })
 
-
-
-document.getElementById("toggle-fotos")
-
-.addEventListener("change",function(){
-
-this.checked
-? map.addLayer(layers.fotos)
-: map.removeLayer(layers.fotos)
-
+document.getElementById("toggle-areas").addEventListener("change",function(){
+this.checked ? map.addLayer(layers.areas) : map.removeLayer(layers.areas)
 })
 
-
-
-document.getElementById("toggle-areas")
-
-.addEventListener("change",function(){
-
-this.checked
-? map.addLayer(layers.areas)
-: map.removeLayer(layers.areas)
-
-})
-
-
-
+// =============================
+// DRAW
+// =============================
 const drawControl=new L.Control.Draw({
-
 draw:{
-
-polygon:{
-allowIntersection:false,
-showArea:true,
-shapeOptions:{color:"#0d6efd"}
-},
-
+polygon:{allowIntersection:false,shapeOptions:{color:"#0d6efd"}},
 rectangle:true,
-
 circle:false,
-
 marker:false,
-
 polyline:false,
-
 circlemarker:false
-
 },
-
-edit:{
-featureGroup:layers.desenho
-}
-
+edit:{featureGroup:layers.desenho}
 })
 
 map.addControl(drawControl)
 
-
-
-map.on(L.Draw.Event.CREATED,function(e){
-
-const layer=e.layer
-const geojson=layer.toGeoJSON()
-
-fetch("/api/mapa/areas",{
-
-method:"POST",
-
-headers:{"Content-Type":"application/json"},
-
-body:JSON.stringify({geojson:geojson})
-
-})
-
-.then(r=>r.json())
-
-.then(data=>{
-
-if(data.status==="sucesso"){
-
-layer.options.areaId=data.id
-
-layers.desenho.addLayer(layer)
-
-}
-
-})
-
-})
-
-
-
-map.on(L.Draw.Event.EDITED,function(e){
-
-const layersEdited=e.layers
-
-layersEdited.eachLayer(function(layer){
-
-const areaId=layer.options.areaId
-
-if(areaId){
-
-const geojson=layer.toGeoJSON()
-
-fetch(`/api/mapa/areas/${areaId}`,{
-
-method:"PUT",
-
-headers:{"Content-Type":"application/json"},
-
-body:JSON.stringify({geojson:geojson})
-
-})
-
-}
-
-})
-
-})
-
-
-
-map.on(L.Draw.Event.DELETED,function(e){
-
-const layersDeleted=e.layers
-
-layersDeleted.eachLayer(function(layer){
-
-const areaId=layer.options.areaId
-
-if(areaId){
-
-fetch(`/api/mapa/areas/${areaId}`,{
-
-method:"DELETE"
-
-})
-
-}
-
-})
-
-})
-
-
-
+// =============================
 carregarAreasSalvas()
-
 carregarDadosGPS()
-
 setInterval(carregarDadosGPS,10000)
 
 </script>
 
-
-
 <script src="{{ url_for('static', filename='js/gps_tracker.js') }}"></script>
 
 <script>
-
 document.addEventListener("DOMContentLoaded",function(){
-
 if(typeof iniciarGPS==="function"){
-
 iniciarGPS()
-
 }
-
 })
-
 </script>
 
 {% endblock %}

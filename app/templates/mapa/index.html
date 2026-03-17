@@ -6,6 +6,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
 
 <style>
+
 #map{
 height:70vh;
 width:100%;
@@ -53,12 +54,15 @@ border-radius:50%;
 margin-right:5px;
 vertical-align:middle;
 }
+
 </style>
 {% endblock %}
+
 
 {% block content %}
 
 <div class="position-relative">
+
 <div id="map"></div>
 
 <div id="painel-controle">
@@ -101,6 +105,8 @@ Usuários Ativos: <strong>0</strong>
 
 {% endblock %}
 
+
+
 {% block scripts %}
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -111,200 +117,345 @@ Usuários Ativos: <strong>0</strong>
 const map = L.map("map").setView([-15.5668,-56.0568],13)
 
 L.tileLayer(
-"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+{maxZoom:19}
 ).addTo(map)
 
-// FeatureGroup para desenhos editáveis
-const drawnItems = new L.FeatureGroup().addTo(map);
+
+
+const drawnItems = new L.FeatureGroup().addTo(map)
+
+
 
 const layers={
 rastros:L.layerGroup().addTo(map),
 fotos:L.layerGroup().addTo(map),
-areas:drawnItems, // Usar drawnItems para áreas para permitir edição
+areas:drawnItems,
 desenho:drawnItems,
 historico:L.layerGroup().addTo(map)
 }
 
-function carregarAreasSalvas(){
-    fetch("/api/mapa/areas")
-    .then(r=>r.json())
-    .then(data=>{
-        layers.areas.clearLayers()
-        data.forEach(area=>{
-            const geojsonLayer=L.geoJSON(area.geojson,{
-                style:{
-                    color:"#0d6efd",
-                    weight:3,
-                    opacity:0.8,
-                    fillOpacity:0.3
-                }
-            })
 
-            // Extrair a camada real do GeoJSON para adicionar ao FeatureGroup
-            geojsonLayer.eachLayer(function(layer) {
-                layer.options.areaId = area.id; // Armazenar ID para referência
-                layer.bindPopup(`
-                    <b>Área: ${area.nome}</b><br>
-                    Criada em: ${new Date(area.criado_em).toLocaleString()}
-                `);
-                layers.areas.addLayer(layer);
-            });
-        })
-    })
+
+function carregarAreasSalvas(){
+
+fetch("/api/mapa/areas")
+
+.then(r=>r.json())
+
+.then(data=>{
+
+layers.areas.clearLayers()
+
+data.forEach(area=>{
+
+const geojsonLayer=L.geoJSON(area.geojson,{
+style:{
+color:"#0d6efd",
+weight:3,
+opacity:0.8,
+fillOpacity:0.3
 }
+})
+
+geojsonLayer.eachLayer(function(layer){
+
+layer.options.areaId = area.id
+
+layer.bindPopup(`
+<b>Área: ${area.nome}</b><br>
+Criada em: ${new Date(area.criado_em).toLocaleString()}
+`)
+
+layers.areas.addLayer(layer)
+
+})
+
+})
+
+})
+
+}
+
+
 
 function carregarDadosGPS(){
-    fetch("/api/gps/latest")
-    .then(r=>r.json())
-    .then(data=>{
-        layers.rastros.clearLayers()
-        let online=0
 
-        data.forEach(pos=>{
-            online++
-            const marker=L.circleMarker(
-                [pos.latitude,pos.longitude],
-                {
-                    radius:8,
-                    fillColor:"#8E0000",
-                    color:"#fff",
-                    weight:2,
-                    fillOpacity:1
-                }
-            )
-            marker.addTo(layers.rastros)
+fetch("/api/gps/latest")
 
-            marker.bindPopup(`
-                <div style="line-height:1.2;">
-                    <strong>${pos.user_nome}</strong><br>
-                    <b>Precisão:</b> ${pos.accuracy ? pos.accuracy.toFixed(1) + 'm' : '--'}<br>
-                    <small>Atualizado: ${new Date(pos.created_at).toLocaleString("pt-BR")}</small><br>
-                    <button class="btn btn-sm btn-link p-0 mt-1" onclick="verHistorico(${pos.user_id})">Ver Rastro</button>
-                </div>
-            `)
-        })
+.then(r=>r.json())
 
-        document.getElementById("stats-rastros").innerHTML =
-        "Usuários Ativos: <strong>"+online+"</strong>"
+.then(data=>{
 
-        document.getElementById("stats-ultima-atualizacao").textContent =
-        "Sincronizado: "+new Date().toLocaleTimeString("pt-BR")
-    })
+layers.rastros.clearLayers()
+
+let online=0
+
+data.forEach(pos=>{
+
+if(!pos.latitude || !pos.longitude) return
+
+online++
+
+const marker=L.circleMarker(
+[pos.latitude,pos.longitude],
+{
+radius:8,
+fillColor:"#8E0000",
+color:"#fff",
+weight:2,
+fillOpacity:1
+}
+)
+
+marker.addTo(layers.rastros)
+
+marker.bindPopup(`
+<div style="line-height:1.2;">
+<strong>${pos.user_nome}</strong><br>
+<b>Precisão:</b> ${pos.accuracy ? pos.accuracy.toFixed(1)+'m' : '--'}<br>
+<small>Atualizado: ${new Date(pos.created_at).toLocaleString("pt-BR")}</small><br>
+<button class="btn btn-sm btn-link p-0 mt-1" onclick="verHistorico(${pos.user_id})">Ver Rastro</button>
+</div>
+`)
+
+})
+
+document.getElementById("stats-rastros").innerHTML =
+"Usuários Ativos: <strong>"+online+"</strong>"
+
+document.getElementById("stats-ultima-atualizacao").textContent =
+"Sincronizado: "+new Date().toLocaleTimeString("pt-BR")
+
+})
+
 }
 
-function verHistorico(userId) {
-    fetch(`/api/gps/historico/${userId}`)
-    .then(r=>r.json())
-    .then(data=>{
-        layers.historico.clearLayers()
-        if (data.pontos && data.pontos.length > 1) {
-            const latlngs = data.pontos.map(p => [p.lat, p.lon])
-            const polyline = L.polyline(latlngs, {color: '#8E0000', weight: 3, opacity: 0.6}).addTo(layers.historico)
-            map.fitBounds(polyline.getBounds())
-        }
-    })
+
+
+function verHistorico(userId){
+
+fetch(`/api/gps/historico/${userId}`)
+
+.then(r=>r.json())
+
+.then(data=>{
+
+layers.historico.clearLayers()
+
+if(!data) return
+
+let pontos = []
+
+if(Array.isArray(data)){
+pontos = data
+}else if(data.pontos){
+pontos = data.pontos
 }
+
+if(pontos.length > 1){
+
+const latlngs = pontos.map(p => [
+p.latitude || p.lat,
+p.longitude || p.lon
+])
+
+const polyline=L.polyline(latlngs,{
+color:'#8E0000',
+weight:4,
+opacity:0.7
+})
+
+polyline.addTo(layers.historico)
+
+map.fitBounds(polyline.getBounds())
+
+}
+
+})
+
+}
+
+
 
 document.getElementById("toggle-rastros")
+
 .addEventListener("change",function(){
-    this.checked
-    ? map.addLayer(layers.rastros)
-    : map.removeLayer(layers.rastros)
+
+this.checked
+? map.addLayer(layers.rastros)
+: map.removeLayer(layers.rastros)
+
 })
+
+
 
 document.getElementById("toggle-fotos")
+
 .addEventListener("change",function(){
-    this.checked
-    ? map.addLayer(layers.fotos)
-    : map.removeLayer(layers.fotos)
+
+this.checked
+? map.addLayer(layers.fotos)
+: map.removeLayer(layers.fotos)
+
 })
+
+
 
 document.getElementById("toggle-areas")
+
 .addEventListener("change",function(){
-    this.checked
-    ? map.addLayer(layers.areas)
-    : map.removeLayer(layers.areas)
+
+this.checked
+? map.addLayer(layers.areas)
+: map.removeLayer(layers.areas)
+
 })
 
+
+
 const drawControl=new L.Control.Draw({
-    draw:{
-        polygon:{
-            allowIntersection:false,
-            showArea:true,
-            shapeOptions:{color:"#0d6efd"}
-        },
-        rectangle:true,
-        circle:false,
-        marker:false,
-        polyline:false,
-        circlemarker:false
-    },
-    edit:{
-        featureGroup:layers.desenho
-    }
+
+draw:{
+
+polygon:{
+allowIntersection:false,
+showArea:true,
+shapeOptions:{color:"#0d6efd"}
+},
+
+rectangle:true,
+
+circle:false,
+
+marker:false,
+
+polyline:false,
+
+circlemarker:false
+
+},
+
+edit:{
+featureGroup:layers.desenho
+}
+
 })
 
 map.addControl(drawControl)
 
-// Evento: Criação de nova área
-map.on(L.Draw.Event.CREATED, function(e){
-    const layer=e.layer
-    const geojson=layer.toGeoJSON()
 
-    fetch("/api/mapa/areas", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({geojson: geojson})
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.status === "sucesso") {
-            layer.options.areaId = data.id;
-            layers.desenho.addLayer(layer);
-            console.log("Área salva com ID:", data.id);
-        }
-    })
+
+map.on(L.Draw.Event.CREATED,function(e){
+
+const layer=e.layer
+const geojson=layer.toGeoJSON()
+
+fetch("/api/mapa/areas",{
+
+method:"POST",
+
+headers:{"Content-Type":"application/json"},
+
+body:JSON.stringify({geojson:geojson})
+
 })
 
-// Evento: Edição de áreas existentes
-map.on(L.Draw.Event.EDITED, function(e) {
-    const layersEdited = e.layers;
-    layersEdited.eachLayer(function(layer) {
-        const areaId = layer.options.areaId;
-        if (areaId) {
-            const geojson = layer.toGeoJSON();
-            fetch(`/api/mapa/areas/${areaId}`, {
-                method: "PUT",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({geojson: geojson})
-            })
-            .then(r => r.json())
-            .then(data => console.log("Área atualizada:", areaId))
-            .catch(err => console.error("Erro ao atualizar área:", err));
-        }
-    });
-});
+.then(r=>r.json())
 
-// Evento: Exclusão de áreas
-map.on(L.Draw.Event.DELETED, function(e) {
-    const layersDeleted = e.layers;
-    layersDeleted.eachLayer(function(layer) {
-        const areaId = layer.options.areaId;
-        if (areaId) {
-            fetch(`/api/mapa/areas/${areaId}`, {
-                method: "DELETE"
-            })
-            .then(r => r.json())
-            .then(data => console.log("Área removida:", areaId))
-            .catch(err => console.error("Erro ao remover área:", err));
-        }
-    });
-});
+.then(data=>{
+
+if(data.status==="sucesso"){
+
+layer.options.areaId=data.id
+
+layers.desenho.addLayer(layer)
+
+}
+
+})
+
+})
+
+
+
+map.on(L.Draw.Event.EDITED,function(e){
+
+const layersEdited=e.layers
+
+layersEdited.eachLayer(function(layer){
+
+const areaId=layer.options.areaId
+
+if(areaId){
+
+const geojson=layer.toGeoJSON()
+
+fetch(`/api/mapa/areas/${areaId}`,{
+
+method:"PUT",
+
+headers:{"Content-Type":"application/json"},
+
+body:JSON.stringify({geojson:geojson})
+
+})
+
+}
+
+})
+
+})
+
+
+
+map.on(L.Draw.Event.DELETED,function(e){
+
+const layersDeleted=e.layers
+
+layersDeleted.eachLayer(function(layer){
+
+const areaId=layer.options.areaId
+
+if(areaId){
+
+fetch(`/api/mapa/areas/${areaId}`,{
+
+method:"DELETE"
+
+})
+
+}
+
+})
+
+})
+
+
 
 carregarAreasSalvas()
+
 carregarDadosGPS()
 
-setInterval(carregarDadosGPS, 10000)
+setInterval(carregarDadosGPS,10000)
+
+</script>
+
+
+
+<script src="{{ url_for('static', filename='js/gps_tracker.js') }}"></script>
+
+<script>
+
+document.addEventListener("DOMContentLoaded",function(){
+
+if(typeof iniciarGPS==="function"){
+
+iniciarGPS()
+
+}
+
+})
 
 </script>
 

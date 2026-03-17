@@ -150,17 +150,16 @@ let ultimo=null
 
 pontos.forEach(p=>{
 
-const lat = p.latitude || p.lat
-const lng = p.longitude || p.lon || p.lng
+const lat = parseFloat(p.latitude || p.lat)
+const lng = parseFloat(p.longitude || p.lon || p.lng)
 const acc = p.accuracy || 0
 
-// ignora gps ruim
+if(!lat || !lng) return
+
 if(acc > 50) return
 
 if(ultimo){
 const dist = distancia(ultimo.lat, ultimo.lng, lat, lng)
-
-// ignora salto absurdo
 if(dist > 120) return
 }
 
@@ -210,7 +209,7 @@ layers.areas.addLayer(layer)
 }
 
 // =============================
-// GPS ONLINE
+// GPS ONLINE (CORRIGIDO)
 // =============================
 function carregarDadosGPS(){
 
@@ -219,16 +218,22 @@ fetch("/api/gps/latest")
 .then(data=>{
 
 layers.rastros.clearLayers()
+
+const lista = Array.isArray(data) ? data : [data]
+
 let online=0
 
-data.forEach(pos=>{
+lista.forEach(pos=>{
 
-if(!pos.latitude || !pos.longitude) return
+const lat = parseFloat(pos.latitude)
+const lng = parseFloat(pos.longitude)
+
+if(!lat || !lng) return
 
 online++
 
 const marker=L.circleMarker(
-[pos.latitude,pos.longitude],
+[lat,lng],
 {
 radius:8,
 fillColor:"#8E0000",
@@ -241,7 +246,7 @@ fillOpacity:1
 marker.addTo(layers.rastros)
 
 marker.bindPopup(`
-<strong>${pos.user_nome}</strong><br>
+<strong>${pos.user_nome || 'Usuário'}</strong><br>
 Precisão: ${pos.accuracy || '--'}<br>
 <button onclick="verHistorico(${pos.user_id})">
 Ver Rastro
@@ -255,10 +260,13 @@ document.getElementById("stats-rastros").innerHTML =
 document.getElementById("stats-ultima-atualizacao").textContent =
 "Atualizado agora"
 })
+.catch(err=>{
+console.error("Erro ao carregar GPS:", err)
+})
 }
 
 // =============================
-// HISTÓRICO (CORRIGIDO)
+// HISTÓRICO
 // =============================
 function verHistorico(userId){
 
@@ -315,7 +323,7 @@ map.addControl(drawControl)
 // =============================
 carregarAreasSalvas()
 carregarDadosGPS()
-setInterval(carregarDadosGPS,10000)
+setInterval(carregarDadosGPS,5000)
 
 </script>
 

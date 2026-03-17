@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, jsonify
 from flask_login import login_required, current_user
 from app.models.acao_promocional import AcaoPromocional
 from app.models.cliente import Cliente
-from app.models.gps_position import GpsPosition
+from app.models.posicao_gps import PosicaoGps
 from app.extensions import db
 import math
 
@@ -39,8 +39,8 @@ def index():
 def gps_latest():
 
     logs = (
-        GpsPosition.query
-        .order_by(GpsPosition.created_at.desc())
+        PosicaoGps.query
+        .order_by(PosicaoGps.data_hora.desc())
         .limit(50)
         .all()
     )
@@ -54,11 +54,11 @@ def gps_latest():
             continue
 
         resultado.append({
-            "user_id": log.user_id,
+            "device_id": log.device_id,
             "latitude": log.latitude,
             "longitude": log.longitude,
             "accuracy": log.accuracy,
-            "created_at": log.created_at.isoformat()
+            "data_hora": log.data_hora.isoformat()
         })
 
     return jsonify(resultado)
@@ -67,14 +67,14 @@ def gps_latest():
 # =============================
 # HISTÓRICO GPS (RASTRO)
 # =============================
-@mapa_bp.route("/api/gps/historico/<int:user_id>")
+@mapa_bp.route("/api/gps/historico/<string:device_id>")
 @login_required
-def gps_historico(user_id):
+def gps_historico(device_id):
 
     logs = (
-        GpsPosition.query
-        .filter_by(user_id=user_id)
-        .order_by(GpsPosition.created_at.asc())
+        PosicaoGps.query
+        .filter_by(device_id=device_id)
+        .order_by(PosicaoGps.data_hora.asc())
         .limit(500)
         .all()
     )
@@ -123,7 +123,7 @@ def gps_historico(user_id):
             "lat": log.latitude,
             "lng": log.longitude,
             "accuracy": log.accuracy,
-            "time": log.created_at.timestamp()
+            "time": log.data_hora.timestamp()
         })
 
         ultimo = atual

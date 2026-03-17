@@ -7,95 +7,95 @@
 
 <style>
 #map{
-height:70vh;
-width:100%;
-border-radius:12px;
-box-shadow:var(--shadow-md);
-z-index:1;
+    height:70vh;
+    width:100%;
+    border-radius:12px;
+    box-shadow:var(--shadow-md);
+    z-index:1;
 }
 
 .leaflet-popup-content img{
-max-width:220px;
-border-radius:6px;
-margin-top:6px;
-display:block;
+    max-width:220px;
+    border-radius:6px;
+    margin-top:6px;
+    display:block;
 }
 
 #painel-controle{
-position:absolute;
-top:80px;
-right:10px;
-z-index:1000;
-width:270px;
-background:white;
-border-radius:12px;
-box-shadow:var(--shadow-md);
-padding:14px;
-font-size:13px;
-max-height:calc(70vh - 20px);
-overflow-y:auto;
+    position:absolute;
+    top:80px;
+    right:10px;
+    z-index:1000;
+    width:270px;
+    background:white;
+    border-radius:12px;
+    box-shadow:var(--shadow-md);
+    padding:14px;
+    font-size:13px;
+    max-height:calc(70vh - 20px);
+    overflow-y:auto;
 }
 
 .layer-toggle{
-cursor:pointer;
-user-select:none;
+    cursor:pointer;
+    user-select:none;
 }
 
 .layer-toggle input{
-margin-right:6px;
+    margin-right:6px;
 }
 
 .cor-legenda{
-display:inline-block;
-width:14px;
-height:14px;
-border-radius:50%;
-margin-right:5px;
-vertical-align:middle;
+    display:inline-block;
+    width:14px;
+    height:14px;
+    border-radius:50%;
+    margin-right:5px;
+    vertical-align:middle;
 }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="position-relative">
-<div id="map"></div>
+    <div id="map"></div>
 
-<div id="painel-controle">
+    <div id="painel-controle">
 
-<div class="fw-bold mb-2" style="color:#8E0000;">
-<i class="fas fa-layer-group me-1"></i>
-Camadas
-</div>
+        <div class="fw-bold mb-2" style="color:#8E0000;">
+            <i class="fas fa-layer-group me-1"></i>
+            Camadas
+        </div>
 
-<label class="layer-toggle d-block mb-1">
-<input type="checkbox" id="toggle-rastros" checked>
-<span class="cor-legenda" style="background:#8E0000;"></span>
-Usuários Online (GPS)
-</label>
+        <label class="layer-toggle d-block mb-1">
+            <input type="checkbox" id="toggle-rastros" checked>
+            <span class="cor-legenda" style="background:#8E0000;"></span>
+            Usuários Online (GPS)
+        </label>
 
-<label class="layer-toggle d-block mb-1">
-<input type="checkbox" id="toggle-fotos" checked>
-<span class="cor-legenda" style="background:#FF9E0C;"></span>
-Fotos de Campo
-</label>
+        <label class="layer-toggle d-block mb-1">
+            <input type="checkbox" id="toggle-fotos" checked>
+            <span class="cor-legenda" style="background:#FF9E0C;"></span>
+            Fotos de Campo
+        </label>
 
-<label class="layer-toggle d-block mb-1">
-<input type="checkbox" id="toggle-areas" checked>
-<span class="cor-legenda" style="background:#0d6efd;border-radius:2px;"></span>
-Áreas de Atuação
-</label>
+        <label class="layer-toggle d-block mb-1">
+            <input type="checkbox" id="toggle-areas" checked>
+            <span class="cor-legenda" style="background:#0d6efd;border-radius:2px;"></span>
+            Áreas de Atuação
+        </label>
 
-<hr class="my-2">
+        <hr class="my-2">
 
-<div id="stats-rastros" class="small">
-Usuários Ativos: <strong>0</strong>
-</div>
+        <div id="stats-rastros" class="small">
+            Usuários Ativos: <strong>0</strong>
+        </div>
 
-<div id="stats-ultima-atualizacao" class="small text-muted mt-1">
-—
-</div>
+        <div id="stats-ultima-atualizacao" class="small text-muted mt-1">
+            —
+        </div>
 
-</div>
+    </div>
 </div>
 {% endblock %}
 
@@ -105,236 +105,459 @@ Usuários Ativos: <strong>0</strong>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 
 <script>
+// =============================
+// CONFIGURAÇÃO GLOBAL
+// =============================
+const map = L.map("map").setView([-15.5668, -56.0568], 13);
 
-const map = L.map("map").setView([-15.5668,-56.0568],13)
+// Camadas agrupadas para controle
+const layers = {
+    base: L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap'
+    }).addTo(map),
+    rastros: L.layerGroup().addTo(map),
+    trajetos: L.layerGroup().addTo(map),
+    veiculos: L.layerGroup().addTo(map),
+    fotos: L.layerGroup().addTo(map),
+    areas: new L.FeatureGroup().addTo(map)
+};
 
-L.tileLayer(
-"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-{maxZoom:19}
-).addTo(map)
+// Array para controle de camadas dinâmicas (permitir limpeza)
+let camadasAtuais = [];
 
-const drawnItems = new L.FeatureGroup().addTo(map)
+// Paleta de cores para diferenciar usuários
+const coresUsuarios = [
+    '#8E0000', '#0d6efd', '#198754', '#ffc107',
+    '#dc3545', '#6f42c1', '#d63384', '#fd7e14'
+];
 
-const layers={
-rastros:L.layerGroup().addTo(map),
-fotos:L.layerGroup().addTo(map),
-areas:drawnItems,
-desenho:drawnItems,
-historico:L.layerGroup().addTo(map)
+// Cache para cores consistentes por user_id
+const corPorUsuario = new Map();
+
+// =============================
+// UTILITÁRIOS
+// =============================
+
+/**
+ * Retorna cor consistente para um usuário
+ */
+function getCorUsuario(userId) {
+    if (!corPorUsuario.has(userId)) {
+        const index = corPorUsuario.size % coresUsuarios.length;
+        corPorUsuario.set(userId, coresUsuarios[index]);
+    }
+    return corPorUsuario.get(userId);
+}
+
+/**
+ * Limpa todas as camadas dinâmicas do mapa
+ */
+function limparCamadasAnteriores() {
+    // Remove polylines e markers anteriores
+    camadasAtuais.forEach(camada => {
+        if (camada && map.hasLayer(camada)) {
+            map.removeLayer(camada);
+        }
+    });
+    camadasAtuais = [];
+
+    // Limpa também os layerGroups específicos
+    layers.rastros.clearLayers();
+    layers.trajetos.clearLayers();
+    layers.veiculos.clearLayers();
+}
+
+/**
+ * Formata timestamp para exibição
+ */
+function formatarTimestamp(timestamp) {
+    if (!timestamp) return 'N/A';
+    const data = new Date(timestamp);
+    return data.toLocaleString('pt-BR');
 }
 
 // =============================
-// DISTÂNCIA (Haversine)
+// FUNÇÃO PRINCIPAL
 // =============================
-function distancia(lat1, lon1, lat2, lon2){
-const R = 6371000
-const dLat = (lat2-lat1)*Math.PI/180
-const dLon = (lon2-lon1)*Math.PI/180
 
-const a =
-Math.sin(dLat/2)*Math.sin(dLat/2) +
-Math.cos(lat1*Math.PI/180) *
-Math.cos(lat2*Math.PI/180) *
-Math.sin(dLon/2)*Math.sin(dLon/2)
+async function carregarDadosMapa() {
+    try {
+        const response = await fetch("/api/mapa/dados");
 
-return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        // Validação de dados
+        if (!data || typeof data !== 'object') {
+            console.warn("Dados inválidos recebidos da API");
+            return;
+        }
+
+        // Limpa camadas anteriores antes de redesenhar
+        limparCamadasAnteriores();
+
+        let totalUsuarios = 0;
+        let totalVeiculos = 0;
+
+        // =============================
+        // PROCESSAR RASTROS GPS
+        // =============================
+        if (data.rastros_gps && typeof data.rastros_gps === 'object') {
+            const usuarios = Object.keys(data.rastros_gps);
+            totalUsuarios = usuarios.length;
+
+            usuarios.forEach((userId) => {
+                const pontos = data.rastros_gps[userId];
+
+                // Validação: precisa ser array com pelo menos 1 ponto
+                if (!Array.isArray(pontos) || pontos.length === 0) {
+                    console.warn(`Usuário ${userId}: sem pontos válidos`);
+                    return;
+                }
+
+                // Converter pontos em array de coordenadas [lat, lng]
+                const coordenadas = pontos
+                    .map(p => {
+                        const lat = parseFloat(p.latitude ?? p.lat);
+                        const lng = parseFloat(p.longitude ?? p.lon ?? p.lng);
+                        return (lat && lng && !isNaN(lat) && !isNaN(lng)) ? [lat, lng] : null;
+                    })
+                    .filter(coord => coord !== null);
+
+                if (coordenadas.length === 0) {
+                    console.warn(`Usuário ${userId}: nenhuma coordenada válida`);
+                    return;
+                }
+
+                const cor = getCorUsuario(userId);
+                const ultimoPonto = coordenadas[coordenadas.length - 1];
+                const primeiroPonto = coordenadas[0];
+
+                // 1. Criar linha do trajeto (polyline) - SÓ SE TIVER 2+ PONTOS
+                if (coordenadas.length >= 2) {
+                    const polyline = L.polyline(coordenadas, {
+                        color: cor,
+                        weight: 4,
+                        opacity: 0.8,
+                        lineJoin: 'round',
+                        dashArray: null,
+                        className: `trajeto-usuario-${userId}`
+                    }).addTo(layers.trajetos);
+
+                    // Adiciona popup na linha
+                    polyline.bindPopup(`
+                        <div style="min-width: 150px;">
+                            <strong style="color: ${cor};">● Usuário ${userId}</strong><br>
+                            <small>Pontos: ${coordenadas.length}</small><br>
+                            <small>Início: ${formatarTimestamp(pontos[0]?.timestamp)}</small><br>
+                            <small>Fim: ${formatarTimestamp(pontos[pontos.length - 1]?.timestamp)}</small>
+                        </div>
+                    `);
+
+                    camadasAtuais.push(polyline);
+                }
+
+                // 2. Marcador no último ponto (posição atual)
+                const markerAtual = L.circleMarker(ultimoPonto, {
+                    radius: 8,
+                    fillColor: cor,
+                    color: '#fff',
+                    weight: 3,
+                    fillOpacity: 1,
+                    className: `marker-atual-usuario-${userId}`
+                }).addTo(layers.rastros);
+
+                // Popup com informações do usuário
+                const popupContent = `
+                    <div style="min-width: 180px;">
+                        <strong style="color: ${cor}; font-size: 14px;">● Usuário ${userId}</strong>
+                        <hr style="margin: 8px 0; border-color: #eee;">
+                        <b>Posição Atual</b><br>
+                        <small>Lat: ${ultimoPonto[0].toFixed(6)}</small><br>
+                        <small>Lng: ${ultimoPonto[1].toFixed(6)}</small><br>
+                        <small>Total de pontos: ${pontos.length}</small><br>
+                        <small>Atualizado: ${formatarTimestamp(pontos[pontos.length - 1]?.timestamp)}</small>
+                        ${coordenadas.length >= 2 ? `<br><small style="color: #666;">Distância percorrida: ~${calcularDistanciaTotal(coordenadas).toFixed(0)}m</small>` : ''}
+                    </div>
+                `;
+
+                markerAtual.bindPopup(popupContent);
+                camadasAtuais.push(markerAtual);
+
+                // 3. Marcador no primeiro ponto (início do trajeto) - apenas se diferente do último
+                if (coordenadas.length >= 2 &&
+                    (primeiroPonto[0] !== ultimoPonto[0] || primeiroPonto[1] !== ultimoPonto[1])) {
+
+                    const markerInicio = L.circleMarker(primeiroPonto, {
+                        radius: 6,
+                        fillColor: cor,
+                        color: '#fff',
+                        weight: 2,
+                        fillOpacity: 0.5,
+                        dashArray: '3, 3'
+                    }).addTo(layers.rastros);
+
+                    markerInicio.bindPopup(`
+                        <div style="min-width: 150px;">
+                            <strong style="color: ${cor};">Início do trajeto</strong><br>
+                            <small>Usuário ${userId}</small><br>
+                            <small>${formatarTimestamp(pontos[0]?.timestamp)}</small>
+                        </div>
+                    `);
+
+                    camadasAtuais.push(markerInicio);
+                }
+            });
+        }
+
+        // =============================
+        // PROCESSAR VEÍCULOS
+        // =============================
+        if (Array.isArray(data.veiculos) && data.veiculos.length > 0) {
+            totalVeiculos = data.veiculos.length;
+
+            data.veiculos.forEach((veiculo, index) => {
+                // Usar posição do veículo se disponível, senão posição padrão para teste
+                const lat = parseFloat(veiculo.latitude ?? veiculo.lat ?? -15.5668);
+                const lng = parseFloat(veiculo.longitude ?? veiculo.lon ?? veiculo.lng ?? -56.0568 + (index * 0.001));
+
+                if (isNaN(lat) || isNaN(lng)) {
+                    console.warn(`Veículo ${veiculo.modelo || index}: coordenadas inválidas`);
+                    return;
+                }
+
+                // Ícone personalizado para veículo
+                const iconeVeiculo = L.divIcon({
+                    className: 'custom-vehicle-marker',
+                    html: `<div style="
+                        background: #0d6efd;
+                        width: 32px;
+                        height: 32px;
+                        border-radius: 50%;
+                        border: 3px solid white;
+                        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: white;
+                        font-size: 16px;
+                    ">🚗</div>`,
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 16]
+                });
+
+                const markerVeiculo = L.marker([lat, lng], { icon: iconeVeiculo })
+                    .addTo(layers.veiculos);
+
+                markerVeiculo.bindPopup(`
+                    <div style="min-width: 150px;">
+                        <strong>🚗 ${veiculo.modelo || 'Veículo'}</strong><br>
+                        <small>Placa: ${veiculo.placa || 'N/A'}</small><br>
+                        <small>Lat: ${lat.toFixed(6)}</small><br>
+                        <small>Lng: ${lng.toFixed(6)}</small>
+                    </div>
+                `);
+
+                camadasAtuais.push(markerVeiculo);
+            });
+        }
+
+        // =============================
+        // ATUALIZAR ESTATÍSTICAS
+        // =============================
+        atualizarEstatisticas(totalUsuarios, totalVeiculos);
+
+        // Ajustar visualização se houver dados
+        if (camadasAtuais.length > 0) {
+            ajustarVisualizacao();
+        }
+
+        console.log(`[${new Date().toLocaleTimeString()}] Mapa atualizado: ${totalUsuarios} usuários, ${totalVeiculos} veículos`);
+
+    } catch (error) {
+        console.error("Erro ao carregar dados do mapa:", error);
+        atualizarEstatisticas(0, 0, true);
+    }
 }
 
 // =============================
-// RASTRO PROFISSIONAL
+// FUNÇÕES AUXILIARES
 // =============================
-function desenharRastro(pontos){
 
-let filtrados=[]
-let ultimo=null
-
-pontos.forEach(p=>{
-
-const lat = parseFloat(p.latitude || p.lat)
-const lng = parseFloat(p.longitude || p.lon || p.lng)
-const acc = p.accuracy || 0
-
-if(!lat || !lng) return
-
-if(acc > 50) return
-
-if(ultimo){
-const dist = distancia(ultimo.lat, ultimo.lng, lat, lng)
-if(dist > 120) return
+/**
+ * Calcula distância total percorrida (em metros)
+ */
+function calcularDistanciaTotal(coordenadas) {
+    let total = 0;
+    for (let i = 1; i < coordenadas.length; i++) {
+        total += distancia(
+            coordenadas[i-1][0], coordenadas[i-1][1],
+            coordenadas[i][0], coordenadas[i][1]
+        );
+    }
+    return total;
 }
 
-filtrados.push([lat,lng])
-ultimo = {lat,lng}
-})
+/**
+ * Fórmula de Haversine para calcular distância entre coordenadas
+ */
+function distancia(lat1, lon1, lat2, lon2) {
+    const R = 6371000; // Raio da Terra em metros
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
 
-if(filtrados.length < 2) return
+    const a =
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
+        Math.sin(dLon/2) * Math.sin(dLon/2);
 
-const linha = L.polyline(filtrados,{
-color:'#8E0000',
-weight:5,
-opacity:0.85,
-lineJoin:'round'
-})
-
-linha.addTo(layers.historico)
-map.fitBounds(linha.getBounds())
+    return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-// =============================
-// ÁREAS
-// =============================
-function carregarAreasSalvas(){
-fetch("/api/mapa/areas")
-.then(r=>r.json())
-.then(data=>{
-layers.areas.clearLayers()
+/**
+ * Atualiza painel de estatísticas
+ */
+function atualizarEstatisticas(usuarios, veiculos, erro = false) {
+    const statsDiv = document.getElementById("stats-rastros");
+    const updateDiv = document.getElementById("stats-ultima-atualizacao");
 
-data.forEach(area=>{
-const geojsonLayer=L.geoJSON(area.geojson,{
-style:{
-color:"#0d6efd",
-weight:3,
-opacity:0.8,
-fillOpacity:0.3
-}
-})
+    if (statsDiv) {
+        if (erro) {
+            statsDiv.innerHTML = '<span style="color: #dc3545;">⚠ Erro ao carregar dados</span>';
+        } else {
+            statsDiv.innerHTML = `
+                Usuários Ativos: <strong>${usuarios}</strong><br>
+                <small>Veículos: ${veiculos}</small>
+            `;
+        }
+    }
 
-geojsonLayer.eachLayer(function(layer){
-layer.options.areaId = area.id
-layer.bindPopup(`<b>${area.nome}</b>`)
-layers.areas.addLayer(layer)
-})
-})
-})
+    if (updateDiv) {
+        updateDiv.textContent = erro ?
+            'Tentando reconectar...' :
+            `Atualizado: ${new Date().toLocaleTimeString('pt-BR')}`;
+    }
 }
 
-// =============================
-// GPS ONLINE (CORRIGIDO)
-// =============================
-function carregarDadosGPS(){
-
-fetch("/api/gps/latest")
-.then(r=>r.json())
-.then(data=>{
-
-layers.rastros.clearLayers()
-
-const lista = Array.isArray(data) ? data : [data]
-
-let online=0
-
-lista.forEach(pos=>{
-
-const lat = parseFloat(pos.latitude)
-const lng = parseFloat(pos.longitude)
-
-if(!lat || !lng) return
-
-online++
-
-const marker=L.circleMarker(
-[lat,lng],
-{
-radius:8,
-fillColor:"#8E0000",
-color:"#fff",
-weight:2,
-fillOpacity:1
-}
-)
-
-marker.addTo(layers.rastros)
-
-marker.bindPopup(`
-<strong>${pos.user_nome || 'Usuário'}</strong><br>
-Precisão: ${pos.accuracy || '--'}<br>
-<button onclick="verHistorico(${pos.user_id})">
-Ver Rastro
-</button>
-`)
-})
-
-document.getElementById("stats-rastros").innerHTML =
-"Usuários Ativos: <strong>"+online+"</strong>"
-
-document.getElementById("stats-ultima-atualizacao").textContent =
-"Atualizado agora"
-})
-.catch(err=>{
-console.error("Erro ao carregar GPS:", err)
-})
+/**
+ * Ajusta o mapa para mostrar todos os elementos
+ */
+function ajustarVisualizacao() {
+    try {
+        const bounds = L.featureGroup(camadasAtuais).getBounds();
+        if (bounds.isValid()) {
+            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+        }
+    } catch (e) {
+        console.warn("Não foi possível ajustar visualização:", e);
+    }
 }
 
 // =============================
-// HISTÓRICO
+// CONTROLES DE CAMADAS (TOGGLES)
 // =============================
-function verHistorico(userId){
 
-fetch(`/api/gps/historico/${userId}`)
-.then(r=>r.json())
-.then(data=>{
+function inicializarToggles() {
+    const toggleRastros = document.getElementById("toggle-rastros");
+    const toggleFotos = document.getElementById("toggle-fotos");
+    const toggleAreas = document.getElementById("toggle-areas");
 
-layers.historico.clearLayers()
+    if (toggleRastros) {
+        toggleRastros.addEventListener("change", function() {
+            const ativo = this.checked;
+            ativo ? map.addLayer(layers.rastros) : map.removeLayer(layers.rastros);
+            ativo ? map.addLayer(layers.trajetos) : map.removeLayer(layers.trajetos);
+            ativo ? map.addLayer(layers.veiculos) : map.removeLayer(layers.veiculos);
+        });
+    }
 
-let pontos=[]
+    if (toggleFotos) {
+        toggleFotos.addEventListener("change", function() {
+            this.checked ? map.addLayer(layers.fotos) : map.removeLayer(layers.fotos);
+        });
+    }
 
-if(Array.isArray(data)){
-pontos=data
-}else if(data.pontos){
-pontos=data.pontos
+    if (toggleAreas) {
+        toggleAreas.addEventListener("change", function() {
+            this.checked ? map.addLayer(layers.areas) : map.removeLayer(layers.areas);
+        });
+    }
 }
 
-desenharRastro(pontos)
-})
+// =============================
+// DRAW CONTROLS (ÁREAS)
+// =============================
+
+function inicializarDrawControl() {
+    const drawControl = new L.Control.Draw({
+        draw: {
+            polygon: {
+                allowIntersection: false,
+                shapeOptions: { color: "#0d6efd" }
+            },
+            rectangle: true,
+            circle: false,
+            marker: false,
+            polyline: false,
+            circlemarker: false
+        },
+        edit: { featureGroup: layers.areas }
+    });
+
+    map.addControl(drawControl);
+
+    // Evento ao criar nova área
+    map.on(L.Draw.Event.CREATED, function(event) {
+        const layer = event.layer;
+        layers.areas.addLayer(layer);
+
+        // Aqui você pode enviar para o backend
+        const geojson = layer.toGeoJSON();
+        console.log("Nova área criada:", geojson);
+
+        // Exemplo: enviar para backend
+        // fetch("/api/mapa/areas", {
+        //     method: "POST",
+        //     headers: { "Content-Type": "application/json" },
+        //     body: JSON.stringify(geojson)
+        // });
+    });
 }
 
 // =============================
-// TOGGLES
+// INICIALIZAÇÃO
 // =============================
-document.getElementById("toggle-rastros").addEventListener("change",function(){
-this.checked ? map.addLayer(layers.rastros) : map.removeLayer(layers.rastros)
-})
 
-document.getElementById("toggle-fotos").addEventListener("change",function(){
-this.checked ? map.addLayer(layers.fotos) : map.removeLayer(layers.fotos)
-})
+document.addEventListener("DOMContentLoaded", function() {
+    // Inicializa controles
+    inicializarToggles();
+    inicializarDrawControl();
 
-document.getElementById("toggle-areas").addEventListener("change",function(){
-this.checked ? map.addLayer(layers.areas) : map.removeLayer(layers.areas)
-})
+    // Carrega dados iniciais
+    carregarDadosMapa();
 
-// =============================
-// DRAW
-// =============================
-const drawControl=new L.Control.Draw({
-draw:{
-polygon:{allowIntersection:false,shapeOptions:{color:"#0d6efd"}},
-rectangle:true,
-circle:false,
-marker:false,
-polyline:false,
-circlemarker:false
-},
-edit:{featureGroup:layers.desenho}
-})
+    // Atualiza a cada 5 segundos
+    setInterval(carregarDadosMapa, 5000);
 
-map.addControl(drawControl)
+    console.log("🗺️ Mapa de Auditoria inicializado");
+});
 
-// =============================
-carregarAreasSalvas()
-carregarDadosGPS()
-setInterval(carregarDadosGPS,5000)
-
+// Expor função global para debug (opcional)
+window.recarregarMapa = carregarDadosMapa;
 </script>
 
 <script src="{{ url_for('static', filename='js/gps_tracker.js') }}"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded",function(){
-if(typeof iniciarGPS==="function"){
-iniciarGPS()
-}
-})
+    if(typeof iniciarGPS==="function"){
+        iniciarGPS();
+    }
+});
 </script>
 
 {% endblock %}

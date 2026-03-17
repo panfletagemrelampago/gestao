@@ -13,5 +13,3 @@ from app.models.turno import Turno
 from app.models.area_atuacao import AreaAtuacao
 from app.models.foto_auditoria import FotoAuditoria
 from app.models.mapa_area import MapaArea
-
-from app.models.gps_position import GpsPosition

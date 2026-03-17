@@ -1,73 +1,76 @@
-# Sistema de Gestão Promocional e Auditoria
+======================================================================
+           SISTEMA DE GESTAO PROMOCIONAL E AUDITORIA
+======================================================================
 
-Sistema web profissional para auditoria de marketing promocional e panfletagem, com rastreamento GPS em tempo real e prova de cobertura geolocalizada.
+Sistema web profissional para auditoria de marketing promocional e 
+panfletagem, com rastreamento GPS em tempo real e prova de cobertura 
+geolocalizada atraves de uma infraestrutura propria de monitoramento.
 
-## Funcionalidades Principais
+----------------------------------------------------------------------
+1. FUNCIONALIDADES PRINCIPAIS
+----------------------------------------------------------------------
 
-- **Rastreamento GPS**: Integração com a API do Traccar para monitoramento das equipes em campo.
-- **Auditoria Geolocalizada**: Registro de fotos de evidência com coordenadas GPS e upload automático para Cloudinary.
-- **Mapa Interativo**: Visualização em tempo real de rastros, veículos e auditorias usando Leaflet.js.
-- **Gestão de Campanhas**: Controle completo de ações promocionais, clientes, equipes e veículos.
-- **Multi-Nível de Acesso**: Interfaces customizadas para Administradores, Equipes de Campo e Clientes.
+- Rastreamento GPS Proprio: Monitoramento continuo das equipes em 
+  campo via API interna de geolocalizacao.
+- Auditoria Geolocalizada: Registro de fotos de evidencia com 
+  coordenadas GPS capturadas no momento da acao e upload para Cloudinary.
+- Mapa Interativo: Visualizacao em tempo real de rastros, usuarios 
+  ativos e areas de atuacao usando Leaflet.js.
+- Gestao de Campanhas: Controle completo de acoes promocionais, 
+  clientes, equipes, veiculos e turnos.
+- Filtro de Precisao: Logica de filtragem de coordenadas para garantir 
+  rastros limpos e precisos no mapa.
 
-## Tecnologias Utilizadas
+----------------------------------------------------------------------
+2. TECNOLOGIAS UTILIZADAS
+----------------------------------------------------------------------
 
-- **Backend**: Python 3.11+ com Flask
-- **Banco de Dados**: SQLAlchemy (SQLite/PostgreSQL)
-- **Frontend**: Bootstrap 5, Leaflet.js, FontAwesome
-- **Serviços Externos**: Traccar API (GPS), Cloudinary (Imagens)
+- Backend: Python 3.11+ com Flask
+- Banco de Dados: SQLAlchemy (SQLite/PostgreSQL)
+- Frontend: Bootstrap 5, Leaflet.js, FontAwesome
+- Servicos Externos: Cloudinary (Gestao de Imagens)
 
-## Instalação e Execução
+----------------------------------------------------------------------
+3. INSTALACAO E EXECUCAO
+----------------------------------------------------------------------
 
-1.  **Clone o projeto e entre no diretório**:
-    ```bash
-    cd gestao_promocional
-    ```
+3.1. Clone o projeto e entre no diretorio:
+     cd gestao_promocional
 
-2.  **Crie um ambiente virtual e instale as dependências**:
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  # Linux/macOS
-    # ou
-    venv\Scripts\activate  # Windows
-    pip install -r requirements.txt
-    ```
+3.2. Crie um ambiente virtual e instale as dependencias:
+     python -m venv .venv
+     
+     # Ativacao (Windows):
+     .venv\Scripts\activate
+     
+     # Ativacao (Linux/macOS):
+     source .venv/bin/activate
+     
+     pip install -r requirements.txt
 
-3.  **Configure as variáveis de ambiente**:
-    - Copie o arquivo `.env.example` para `.env`.
-    - Preencha as chaves do Cloudinary e as credenciais do servidor Traccar.
+3.3. Configure as variaveis de ambiente:
+     - Copie o arquivo .env.example para .env
+     - Preencha as chaves do Cloudinary e a SECRET_KEY do Flask.
 
-4.  **Inicialize o banco de dados**:
-    ```bash
-    flask db init
-    flask db migrate -m "Initial migration"
-    flask db upgrade
-    ```
+3.4. Inicialize o banco de dados:
+     O sistema cria as tabelas automaticamente ao iniciar (run.py).
+     Para migracoes futuras, utilize:
+     flask db upgrade
 
-5.  **Crie um usuário administrador inicial**:
-    Você pode usar o `flask shell` para criar o primeiro admin:
-    ```python
-    from app.models.user import User
-    from app.extensions import db
-    admin = User(nome_exibicao=\'Admin\', email=\'admin@agencia.com\', tipo_usuario=\'admin\')
-    admin.set_password(\'suasenha\')
-    db.session.add(admin)
-    db.session.commit()
-    ```
+3.5. Execute a aplicacao:
+     python run.py
+     
+     Acesse: http://localhost:10000 (ou a porta configurada)
 
-6.  **Execute a aplicação**:
-    ```bash
-    python run.py
-    ```
-    Acesse: `http://localhost:5000`
+----------------------------------------------------------------------
+4. ESTRUTURA DO PROJETO
+----------------------------------------------------------------------
 
-## Estrutura do Projeto
+- app/models/     : Tabelas do banco (User, PosicaoGps, Auditoria, etc.)
+- app/modules/    : Blueprints com a logica de rotas e APIs.
+- app/templates/  : Interface do mapa e dashboards.
+- app/static/js/  : Scripts de rastreamento (gps_tracker.js).
 
-- `app/models/`: Definições das tabelas do banco de dados.
-- `app/modules/`: Blueprints contendo a lógica das rotas por funcionalidade.
-- `app/services/`: Camada de serviços para integrações (GPS, Imagens).
-- `app/templates/`: Arquivos HTML organizados por módulo.
-- `app/static/`: Arquivos CSS e JavaScript.
-
----
-Desenvolvido por **Manus AI** - 2026
+----------------------------------------------------------------------
+Desenvolvido por Relâmpago Distribuições
+======================================================================

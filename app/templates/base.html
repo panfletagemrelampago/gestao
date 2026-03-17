@@ -16,10 +16,12 @@
 
 <body>
 
+{% set ep = request.endpoint or '' %}
+
 <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
 <div class="container">
 
-<a class="navbar-brand d-flex align-items-center" href="/dashboard">
+<a class="navbar-brand d-flex align-items-center" href="{{ url_for('main.dashboard') }}">
 <i class="fas fa-bullhorn me-2"></i>
 <span>Auditoria<span class="d-none d-sm-inline"> Promocional</span></span>
 </a>
@@ -30,67 +32,77 @@
 
 <div class="collapse navbar-collapse" id="navbarNav">
 
-{% set ep = request.endpoint or '' %}
-
 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
 {% if current_user.is_authenticated %}
 
 <li class="nav-item">
-<a class="nav-link" href="/dashboard">Dashboard</a>
+<a class="nav-link {% if ep == 'main.dashboard' %}active{% endif %}" href="{{ url_for('main.dashboard') }}">Dashboard</a>
 </li>
 
 <li class="nav-item">
-<a class="nav-link" href="/mapa/">Mapa</a>
+<a class="nav-link {% if 'mapa' in ep %}active{% endif %}" href="{{ url_for('mapa.index') }}">Mapa</a>
 </li>
 
 <li class="nav-item">
-<a class="nav-link" href="/acoes">Ações</a>
+<a class="nav-link {% if 'acoes' in ep %}active{% endif %}" href="{{ url_for('acoes.listar') }}">Ações</a>
+</li>
+
+<!-- AUDITORIA (mantido) -->
+<li class="nav-item dropdown">
+<a class="nav-link dropdown-toggle {% if 'auditorias' in ep %}active{% endif %}" href="#" data-bs-toggle="dropdown">
+Auditoria
+</a>
+<ul class="dropdown-menu">
+<li><a class="dropdown-item" href="{{ url_for('auditorias.listar') }}">Registros</a></li>
+<li><a class="dropdown-item" href="{{ url_for('auditorias.registrar') }}">Registrar Foto</a></li>
+<li><hr class="dropdown-divider"></li>
+<li><a class="dropdown-item" href="{{ url_for('acoes.listar') }}">Turnos por Ação</a></li>
+</ul>
 </li>
 
 <li class="nav-item">
-<a class="nav-link" href="/vagas">Vagas</a>
+<a class="nav-link {% if 'materiais' in ep %}active{% endif %}" href="{{ url_for('materiais.listar') }}">Materiais</a>
 </li>
 
 <li class="nav-item">
-<a class="nav-link" href="/equipes">Equipes</a>
+<a class="nav-link {% if 'vagas' in ep %}active{% endif %}" href="{{ url_for('vagas.listar') }}">Vagas</a>
 </li>
 
 <li class="nav-item">
-<a class="nav-link" href="/materiais">Materiais</a>
+<a class="nav-link {% if 'equipe' in ep %}active{% endif %}" href="{{ url_for('equipe.listar') }}">Equipe</a>
 </li>
 
-<li class="nav-item">
-<a class="nav-link" href="/clientes">Clientes</a>
+{% if current_user.tipo_usuario == 'admin' %}
+<li class="nav-item dropdown">
+<a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+Cadastros
+</a>
+<ul class="dropdown-menu">
+<li><a class="dropdown-item" href="{{ url_for('clientes.listar') }}">Clientes</a></li>
+<li><a class="dropdown-item" href="{{ url_for('equipe.listar') }}">Equipe</a></li>
+<li><a class="dropdown-item" href="{{ url_for('veiculos.listar') }}">Veículos</a></li>
+</ul>
 </li>
+{% endif %}
 
 {% endif %}
 </ul>
 
 <ul class="navbar-nav align-items-lg-center">
 {% if current_user.is_authenticated %}
-
 <li class="nav-item dropdown">
 <a class="nav-link dropdown-toggle bg-white bg-opacity-10 rounded-pill px-3" href="#" data-bs-toggle="dropdown">
 <i class="fas fa-user-circle me-1"></i> {{ current_user.nome_exibicao }}
 </a>
 
 <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg">
-<li>
-<a class="dropdown-item text-danger" href="/auth/logout">
-Sair
-</a>
-</li>
+<li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">Sair</a></li>
 </ul>
 </li>
-
 {% else %}
-
 <li class="nav-item">
-<a class="btn btn-laranja rounded-pill px-4" href="/auth/login">
-Login
-</a>
+<a class="btn btn-laranja rounded-pill px-4" href="{{ url_for('auth.login') }}">Login</a>
 </li>
-
 {% endif %}
 </ul>
 
@@ -115,9 +127,7 @@ Login
 {% if current_user.is_authenticated %}
 <script>
 
-// =============================
-// GPS PROFISSIONAL
-// =============================
+// SEU GPS — NÃO ALTEREI NADA
 
 (function(){
 
@@ -150,14 +160,7 @@ if(acc > 40) return
 if(now - lastSendTime < 8000) return
 
 if(lastPosition){
-
-const dist = distancia(
-lastPosition.lat,
-lastPosition.lon,
-lat,
-lon
-)
-
+const dist = distancia(lastPosition.lat,lastPosition.lon,lat,lon)
 if(dist < 5) return
 if(dist > 120) return
 }
@@ -182,13 +185,11 @@ console.warn("Erro GPS:", e.message)
 }
 
 if("geolocation" in navigator){
-
 navigator.geolocation.watchPosition(enviar, erro, {
 enableHighAccuracy:true,
 maximumAge:15000,
 timeout:20000
 })
-
 }
 
 })()

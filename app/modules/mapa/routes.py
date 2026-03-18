@@ -2,7 +2,8 @@ from flask import Blueprint, render_template, jsonify
 from flask_login import login_required, current_user
 from app.models.acao_promocional import AcaoPromocional
 from app.models.cliente import Cliente
-from app.models.posicao_gps import PosicaoGps
+from app.models.foto_auditoria import FotoAuditoria  # ✅ NOVO
+from app.models.posicao_gps import PosicaoGps  # (mantido, mas não central)
 from app.extensions import db
 import math
 
@@ -32,12 +33,38 @@ def index():
 
 
 # =============================
-# GPS ATUAL
+# 📸 LEGADO: FOTOS PARA O MAPA (ANTIGO)
+# =============================
+@mapa_bp.route("/api/fotos")
+@login_required
+def mapa_fotos():
+
+    fotos = FotoAuditoria.query.order_by(FotoAuditoria.data_hora.desc()).all()
+
+    resultado = []
+
+    for f in fotos:
+        resultado.append({
+            "id": f.id,
+            "lat": f.latitude,
+            "lng": f.longitude,
+            "img": f.url,
+            "descricao": f.descricao,
+            "turno_id": f.turno_id,
+            "data": f.data_hora.isoformat() if f.data_hora else None
+        })
+
+    return jsonify(resultado)
+
+
+# =============================
+# ⚠️ LEGADO: GPS ATUAL (DESATIVADO COMO PRINCIPAL)
 # =============================
 @mapa_bp.route("/api/gps/latest")
 @login_required
 def gps_latest():
 
+    # ⚠️ Mantido apenas por compatibilidade
     logs = (
         PosicaoGps.query
         .order_by(PosicaoGps.data_hora.desc())
@@ -49,7 +76,6 @@ def gps_latest():
 
     for log in logs:
 
-        # ignorar gps muito impreciso
         if log.accuracy and log.accuracy > 50:
             continue
 
@@ -65,7 +91,7 @@ def gps_latest():
 
 
 # =============================
-# HISTÓRICO GPS (RASTRO)
+# ⚠️ LEGADO: HISTÓRICO GPS (RASTRO)
 # =============================
 @mapa_bp.route("/api/gps/historico/<string:device_id>")
 @login_required
@@ -100,7 +126,6 @@ def gps_historico(device_id):
 
     for log in logs:
 
-        # filtro de precisão
         if log.accuracy and log.accuracy > 50:
             continue
 
@@ -115,7 +140,6 @@ def gps_historico(device_id):
                 atual[1]
             )
 
-            # filtrar salto absurdo
             if dist > 120:
                 continue
 
@@ -129,3 +153,17 @@ def gps_historico(device_id):
         ultimo = atual
 
     return jsonify(pontos)
+
+
+# =============================
+# 🆕 NOVO: FOTOS GEOLOCALIZADAS COM TO_DICT()
+# =============================
+@mapa_bp.route('/api/mapa/fotos')
+@login_required
+def get_fotos_mapa():
+    """
+    Retorna fotos geolocalizadas usando o método to_dict() do modelo.
+    Certifique-se de que o modelo FotoAuditoria tem o método to_dict() implementado.
+    """
+    fotos = FotoAuditoria.query.order_by(FotoAuditoria.data_hora.desc()).all()
+    return jsonify([f.to_dict() for f in fotos])

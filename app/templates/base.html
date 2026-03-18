@@ -213,5 +213,43 @@ timeout:20000
 
 {% block scripts %}{% endblock %}
 
+<script>
+function openModal(imageUrl) {
+    const modal = document.getElementById("imageModal");
+    const modalImg = document.getElementById("modalImage");
+
+    modal.style.display = "flex";
+    modalImg.src = imageUrl;
+}
+
+function closeModal() {
+    document.getElementById("imageModal").style.display = "none";
+}
+</script>
+
+<div id="imageModal" style="
+    display:none;
+    position:fixed;
+    z-index:9999;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.8);
+    justify-content:center;
+    align-items:center;
+">
+    <span onclick="closeModal()" style="
+        position:absolute;
+        top:20px;
+        right:30px;
+        font-size:30px;
+        color:#fff;
+        cursor:pointer;
+    ">&times;</span>
+
+    <img id="modalImage" style="max-width:90%; max-height:90%; border-radius:10px;">
+</div>
+
 </body>
 </html>

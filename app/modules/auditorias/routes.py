@@ -280,3 +280,22 @@ def excluir_turno(turno_id):
 
     flash('Turno excluído.', 'danger')
     return redirect(url_for('auditorias.turnos', acao_id=turno.acao_id))
+
+
+# =============================
+# 🔥 EXCLUIR AUDITORIA
+# =============================
+@auditorias_bp.route('/excluir/<int:auditoria_id>', methods=['POST'])
+@login_required
+def excluir_auditoria(auditoria_id):
+    auditoria = Auditoria.query.get_or_404(auditoria_id)
+
+    try:
+        db.session.delete(auditoria)
+        db.session.commit()
+        flash('Auditoria excluída com sucesso!', 'success')
+    except Exception:
+        db.session.rollback()
+        flash('Erro ao excluir auditoria.', 'danger')
+
+    return redirect(url_for('auditorias.listar'))

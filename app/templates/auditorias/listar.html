@@ -20,7 +20,7 @@
     <div class="col-12 col-md-6 col-lg-4">
         <div class="card border-0 shadow-sm rounded-4 overflow-hidden h-100">
             <div class="position-relative">
-                <img src="{{ auditoria.foto_url }}" class="card-img-top cursor-pointer" onclick="openModal('{{ auditoria.foto_url }}', 'image')" alt="Evidência" style="height: 220px; object-fit: cover;">
+                <img src="{{ auditoria.foto_url }}" class="card-img-top cursor-pointer" onclick="openModal('{{ auditoria.foto_url }}')" alt="Evidência" style="height: 220px; object-fit: cover;">
                 <div class="position-absolute top-0 end-0 m-2">
                     <span class="badge bg-dark bg-opacity-75 rounded-pill px-3">
                         <i class="fas fa-calendar-alt me-1"></i> {{ auditoria.data_hora.strftime('%d/%m/%Y') }}
@@ -43,6 +43,16 @@
                         <button class="btn btn-sm btn-outline-secondary btn-action-square" onclick="openModal('{{ auditoria.foto_url }}', 'image')">
                             <i class="fas fa-expand"></i>
                         </button>
+
+                        <form method="POST"
+                              action="{{ url_for('auditorias.excluir_auditoria', auditoria_id=auditoria.id) }}"
+                              onsubmit="return confirm('Tem certeza que deseja excluir esta auditoria?');">
+                            <button type="submit"
+                                    class="btn btn-sm btn-outline-danger btn-action-square"
+                                    title="Excluir">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>

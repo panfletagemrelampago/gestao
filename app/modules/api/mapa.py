@@ -1,24 +1,27 @@
 from flask import Blueprint, jsonify
 from flask_login import login_required
-from app.models.foto_auditoria import FotoAuditoria
+from app.models.auditoria import Auditoria
 
 bp = Blueprint('api_mapa', __name__)
 
 @bp.route('/api/mapa/fotos')
 @login_required
 def fotos_mapa():
-    fotos = FotoAuditoria.query.all()
+    auditorias = Auditoria.query.order_by(Auditoria.data_hora.desc()).all()
 
     resultado = []
 
-    for f in fotos:
+    for a in auditorias:
+        if not a.latitude or not a.longitude:
+            continue
+
         resultado.append({
-            "lat": f.latitude,
-            "lng": f.longitude,
-            "img": f.url,
-            "descricao": f.descricao,
-            "data": f.data_hora.isoformat() if f.data_hora else None,
-            "turno_id": f.turno_id
+            "lat": a.latitude,
+            "lng": a.longitude,
+            "img": a.foto_url,
+            "descricao": a.descricao,
+            "data": a.data_hora.isoformat() if a.data_hora else None,
+            "id": a.id
         })
 
     return jsonify(resultado)

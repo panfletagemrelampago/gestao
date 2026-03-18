@@ -61,9 +61,12 @@ def create_app(config_class=Config):
     from app.modules.api.routes import api_bp
     app.register_blueprint(api_bp, url_prefix="/api")
 
-    # 🔥 NOVO — API DO MAPA
+    # 🔥 API DO MAPA (CORRIGIDO)
     from app.modules.api.mapa import bp as mapa_api_bp
-    app.register_blueprint(mapa_api_bp, url_prefix="/api")
+
+    # 👉 IMPORTANTE: NÃO DUPLICAR /api INTERNAMENTE
+    # Se sua rota já começa com /api/mapa, NÃO precisa prefixo aqui
+    app.register_blueprint(mapa_api_bp)
 
     # MATERIAIS
     from app.modules.materiais.routes import materiais_bp

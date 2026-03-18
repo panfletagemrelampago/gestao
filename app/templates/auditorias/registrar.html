@@ -4,55 +4,58 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-12 col-lg-6">
-        <div class="d-flex align-items-center mb-4">
-            <a href="{{ url_for('auditorias.listar') }}" class="btn btn-light rounded-circle me-3"><i class="fas fa-arrow-left"></i></a>
-            <h2 class="fw-bold mb-0">Registrar <span class="text-vinho">Auditoria</span></h2>
-        </div>
-
+    <div class="col-12 col-lg-8">
         <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+            <div class="card-header bg-white border-0 py-3">
+                <h4 class="fw-bold mb-0 text-vinho">
+                    <i class="fas fa-camera me-2"></i> Registrar Auditoria
+                </h4>
+                <p class="text-muted small mb-0">Capture a evidência fotográfica e localização do trabalho.</p>
+            </div>
+
             <div class="card-body p-4">
-                <form method="POST" enctype="multipart/form-data" id="auditoria-form">
-                    <div class="mb-3">
-                        <label for="acao_id" class="form-label">Ação Promocional Ativa</label>
-                        <select class="form-select" id="acao_id" name="acao_id" required>
-                            <option value="" disabled selected>Selecione a ação...</option>
+                <form id="form-auditoria" method="POST" enctype="multipart/form-data" action="{{ url_for('auditorias.registrar') }}">
+                    <!-- Inputs Ocultos para GPS -->
+                    <input type="hidden" name="latitude" id="lat-input">
+                    <input type="hidden" name="longitude" id="lon-input">
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Selecione a Ação</label>
+                        <select name="acao_id" id="acao_id" class="form-select rounded-3 shadow-none" required>
+                            <option value="">Selecione uma ação ativa...</option>
                             {% for acao in acoes %}
-                            <option value="{{ acao.id }}">{{ acao.local_alvo }} ({{ acao.cidade }})</option>
+                            <option value="{{ acao.id }}">{{ acao.local_alvo }} ({{ acao.cliente.nome_empresa }})</option>
                             {% endfor %}
                         </select>
                     </div>
-                    
-                    <div class="mb-3">
-                        <label for="descricao" class="form-label">Descrição da Evidência</label>
-                        <textarea class="form-control" id="descricao" name="descricao" rows="2" placeholder="O que você está registrando?"></textarea>
-                    </div>
-                    
+
                     <div class="mb-4">
-                        <label for="foto" class="form-label">Foto da Evidência</label>
-                        <div class="upload-area p-4 border-2 border-dashed rounded-4 bg-light text-center cursor-pointer" onclick="document.getElementById('foto').click()">
-                            <i class="fas fa-camera fa-2x text-muted mb-2"></i>
-                            <h6 class="fw-bold mb-0">Capturar Imagem</h6>
-                            <p class="text-muted small mb-0">Toque para abrir a câmera</p>
-                            <input class="d-none" type="file" id="foto" name="foto" accept="image/*" capture="environment" required onchange="previewImage(this)">
+                        <label class="form-label fw-semibold">Foto da Evidência</label>
+                        <div class="upload-container border-2 border-dashed rounded-4 p-4 text-center bg-light position-relative">
+                            <input type="file" name="foto" id="foto-input" accept="image/*" capture="camera" class="position-absolute top-0 start-0 w-100 h-100 opacity-0 cursor-pointer" required>
+                            <div id="preview-container">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-2"></i>
+                                <p class="mb-0 text-muted small">Clique para tirar foto ou selecionar arquivo</p>
+                            </div>
+                            <img id="img-preview" class="img-fluid rounded-3 d-none" style="max-height: 300px;">
                         </div>
-                        <div id="image-preview" class="mt-3 d-none">
-                            <img src="" alt="Prévia" class="img-fluid rounded-4 shadow-sm">
-                        </div>
-                    </div>
-                    
-                    <!-- Campos ocultos para geolocalização -->
-                    <input type="hidden" id="latitude" name="latitude">
-                    <input type="hidden" id="longitude" name="longitude">
-                    
-                    <div id="geo-status" class="alert alert-info py-2 small mb-4">
-                        <i class="fas fa-spinner fa-spin me-2"></i> Obtendo localização GPS...
                     </div>
 
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary btn-lg rounded-pill py-3" id="submit-btn" disabled>
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Descrição (Opcional)</label>
+                        <textarea name="descricao" class="form-control rounded-3 shadow-none" rows="3" placeholder="Detalhes sobre a auditoria..."></textarea>
+                    </div>
+
+                    <div id="gps-status" class="alert alert-info rounded-3 py-2 px-3 mb-4 d-flex align-items-center">
+                        <div class="spinner-border spinner-border-sm me-3" role="status"></div>
+                        <span class="small">Obtendo localização GPS precisa...</span>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" id="btn-submit" class="btn btn-primary btn-lg rounded-pill shadow-sm py-3 fw-bold" disabled>
                             <i class="fas fa-save me-2"></i> Salvar Auditoria
                         </button>
+                        <a href="{{ url_for('auditorias.listar') }}" class="btn btn-link text-muted">Cancelar</a>
                     </div>
                 </form>
             </div>
@@ -61,55 +64,81 @@
 </div>
 
 <style>
-    .border-dashed { border-style: dashed !important; border-color: #ddd !important; }
+    .upload-container { transition: all 0.2s; border-style: dashed !important; border-color: #dee2e6 !important; }
+    .upload-container:hover { background-color: #f1f3f5 !important; border-color: #8E0000 !important; }
     .cursor-pointer { cursor: pointer; }
-    .upload-area:hover { background-color: #f0f0f0 !important; }
+    .text-vinho { color: #8E0000; }
 </style>
+{% endblock %}
 
 {% block scripts %}
 <script>
-    const geoStatus = document.getElementById('geo-status');
-    const submitBtn = document.getElementById('submit-btn');
-    const latInput = document.getElementById('latitude');
-    const lonInput = document.getElementById('longitude');
+    const form = document.getElementById('form-auditoria');
+    const latInput = document.getElementById('lat-input');
+    const lonInput = document.getElementById('lon-input');
+    const gpsStatus = document.getElementById('gps-status');
+    const btnSubmit = document.getElementById('btn-submit');
+    const fotoInput = document.getElementById('foto-input');
+    const previewContainer = document.getElementById('preview-container');
+    const imgPreview = document.getElementById('img-preview');
 
-    function previewImage(input) {
-        const previewDiv = document.getElementById('image-preview');
-        const previewImg = previewDiv.querySelector('img');
-        if (input.files && input.files[0]) {
+    // Preview da Imagem
+    fotoInput.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
             const reader = new FileReader();
             reader.onload = function(e) {
-                previewImg.src = e.target.result;
-                previewDiv.classList.remove('d-none');
+                imgPreview.src = e.target.result;
+                imgPreview.classList.remove('d-none');
+                previewContainer.classList.add('d-none');
             }
-            reader.readAsDataURL(input.files[0]);
+            reader.readAsDataURL(this.files[0]);
         }
-    }
+    });
 
-    function getLocation() {
-        if (navigator.geolocation) {
+    // Captura de GPS
+    function updateGPS() {
+        if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    latInput.value = position.coords.latitude;
-                    lonInput.value = position.coords.longitude;
-                    geoStatus.classList.replace('alert-info', 'alert-success');
-                    geoStatus.innerHTML = '<i class="fas fa-check-circle me-2"></i> GPS Ativo!';
-                    submitBtn.disabled = false;
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    const acc = position.coords.accuracy;
+
+                    latInput.value = lat;
+                    lonInput.value = lon;
+
+                    gpsStatus.className = 'alert alert-success rounded-3 py-2 px-3 mb-4 d-flex align-items-center';
+                    gpsStatus.innerHTML = `<i class="fas fa-check-circle me-3"></i><span class="small">GPS Localizado (Precisão: ${Math.round(acc)}m)</span>`;
+                    btnSubmit.disabled = false;
                 },
-                (error) => {
-                    geoStatus.classList.replace('alert-info', 'alert-danger');
-                    geoStatus.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i> Erro no GPS. Verifique as permissões.';
-                    submitBtn.disabled = false; // Permitir salvar mesmo sem GPS se necessário, ou manter travado
+                function(error) {
+                    let msg = "Erro ao obter GPS";
+                    if (error.code === 1) msg = "Permissão de GPS negada pelo usuário.";
+                    else if (error.code === 2) msg = "Sinal de GPS indisponível.";
+                    else if (error.code === 3) msg = "Tempo limite de GPS esgotado.";
+
+                    gpsStatus.className = 'alert alert-danger rounded-3 py-2 px-3 mb-4 d-flex align-items-center';
+                    gpsStatus.innerHTML = `<i class="fas fa-exclamation-triangle me-3"></i><span class="small">${msg}</span>`;
+                    btnSubmit.disabled = true;
                 },
-                { enableHighAccuracy: true, timeout: 10000 }
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
             );
         } else {
-            geoStatus.classList.replace('alert-info', 'alert-danger');
-            geoStatus.innerHTML = 'GPS não suportado.';
+            gpsStatus.className = 'alert alert-danger rounded-3 py-2 px-3 mb-4';
+            gpsStatus.innerHTML = 'GPS não suportado pelo navegador.';
         }
     }
 
-    window.onload = getLocation;
+    // Tentar capturar GPS ao carregar
+    updateGPS();
+
+    // Validação extra no submit
+    form.addEventListener('submit', function(e) {
+        if (!latInput.value || !lonInput.value) {
+            e.preventDefault();
+            alert('Aguarde a captura da localização GPS antes de salvar.');
+            updateGPS();
+        }
+    });
 </script>
-{% endblock %}
 {% endblock %}

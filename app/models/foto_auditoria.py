@@ -13,15 +13,15 @@ class FotoAuditoria(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
 
-    # Relacionamento com Turno (OBRIGATÓRIO)
+    # 🔥 AGORA OPCIONAL (pra não quebrar seu fluxo atual)
     turno_id = db.Column(
         db.Integer,
         db.ForeignKey('turnos.id'),
-        nullable=False,
+        nullable=True,
         index=True
     )
 
-    # Compatibilidade com Auditoria (LEGADO - opcional)
+    # Compatibilidade com Auditoria
     auditoria_id = db.Column(
         db.Integer,
         db.ForeignKey('auditorias.id'),
@@ -29,13 +29,13 @@ class FotoAuditoria(db.Model):
         index=True
     )
 
-    # URL da imagem (Cloudinary ou armazenamento local)
+    # URL da imagem
     url = db.Column(
         db.String(500),
         nullable=False
     )
 
-    # Geolocalização (ESSENCIAL)
+    # Geolocalização
     latitude = db.Column(
         db.Float,
         nullable=False,
@@ -48,44 +48,34 @@ class FotoAuditoria(db.Model):
         index=True
     )
 
-    # Informações adicionais
     descricao = db.Column(
         db.Text,
         nullable=True
     )
 
-    # Validação de área (opcional para futuras regras)
     dentro_da_area = db.Column(
         db.Boolean,
         default=None,
         nullable=True
     )
 
-    # Data/hora da captura
     data_hora = db.Column(
         db.DateTime,
         default=datetime.utcnow,
         index=True
     )
 
-    # ============================================
-    # REPRESENTAÇÃO
-    # ============================================
     def __repr__(self):
         return f'<FotoAuditoria {self.id} - Turno {self.turno_id}>'
 
-    # ============================================
-    # SERIALIZAÇÃO (PADRÃO MAPA NOVO)
-    # ============================================
+    # 🔥 PADRÃO COMPATÍVEL COM SEU MAPA
     def to_dict(self):
         return {
             "id": self.id,
-            "latitude": self.latitude,
-            "longitude": self.longitude,
-            "url": self.url,
+            "lat": self.latitude,
+            "lng": self.longitude,
+            "img": self.url,
             "descricao": self.descricao,
             "turno_id": self.turno_id,
-            "auditoria_id": self.auditoria_id,
-            "dentro_da_area": self.dentro_da_area,
-            "data_hora": self.data_hora.isoformat() if self.data_hora else None
+            "data": self.data_hora.isoformat() if self.data_hora else None
         }

@@ -15,7 +15,7 @@ def fotos_mapa():
         resultado.append({
             "lat": f.latitude,
             "lng": f.longitude,
-            "img": f.url_foto,
+            "img": f.url,
             "descricao": f.descricao,
             "data": f.data_hora.isoformat() if f.data_hora else None,
             "turno_id": f.turno_id

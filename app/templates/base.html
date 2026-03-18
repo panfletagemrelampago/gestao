@@ -47,7 +47,6 @@
 <a class="nav-link {% if 'acoes' in ep %}active{% endif %}" href="{{ url_for('acoes.listar') }}">Ações</a>
 </li>
 
-<!-- AUDITORIA (mantido) -->
 <li class="nav-item dropdown">
 <a class="nav-link dropdown-toggle {% if 'auditorias' in ep %}active{% endif %}" href="#" data-bs-toggle="dropdown">
 Auditoria
@@ -100,9 +99,11 @@ Cadastros
 </ul>
 </li>
 {% else %}
+{% if ep != 'auth.login' %}
 <li class="nav-item">
 <a class="btn btn-laranja rounded-pill px-4" href="{{ url_for('auth.login') }}">Login</a>
 </li>
+{% endif %}
 {% endif %}
 </ul>
 
@@ -126,8 +127,6 @@ Cadastros
 
 {% if current_user.is_authenticated %}
 <script>
-
-// SEU GPS — NÃO ALTEREI NADA
 
 (function(){
 

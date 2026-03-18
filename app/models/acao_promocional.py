@@ -13,7 +13,7 @@ class AcaoPromocional(db.Model):
     data = db.Column(db.Date, nullable=False)
     turno = db.Column(db.String(20), nullable=False)
     status = db.Column(db.String(50), default='Planejada')
-    lider_equipe_id = db.Column(db.Integer, db.ForeignKey('equipes.id'), nullable=False)
+    lider_equipe_id = db.Column(db.Integer, db.ForeignKey('equipes.id'), nullable=True)
     descricao = db.Column(db.Text, nullable=True)
 
     # Relacionamentos

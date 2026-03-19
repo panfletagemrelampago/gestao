@@ -17,12 +17,14 @@
             </div>
 
             <div class="card-body p-4">
-                <form id="form-auditoria" method="POST" enctype="multipart/form-data" action="{{ url_for('auditorias.registrar') }}">
+                <!-- 🔥 ALTERADO: agora envia direto para API nova -->
+                <form id="form-auditoria" method="POST" enctype="multipart/form-data" action="/api/fotos/enviar">
 
                     <input type="hidden" name="latitude" id="lat-input">
                     <input type="hidden" name="longitude" id="lon-input">
                     <input type="hidden" name="accuracy" id="acc-input">
 
+                    <!-- ✅ AÇÃO (mantida, agora é o que controla o turno automaticamente) -->
                     <div class="mb-4">
                         <label for="acao_id" class="form-label fw-semibold">Selecione a Ação</label>
                         <select name="acao_id" id="acao_id" class="form-select rounded-3 shadow-none" required>
@@ -35,20 +37,9 @@
                         </select>
                     </div>
 
-                    <div class="mb-4">
-                        <label for="turno_id" class="form-label fw-semibold">Selecione o Turno Ativo</label>
-                        <select name="turno_id" id="turno_id" class="form-select rounded-3 shadow-none" required>
-                            <option value="">Selecione o seu turno...</option>
-                            {% for turno in turnos %}
-                                <option value="{{ turno.id }}">
-                                    Turno #{{ turno.id }} - {{ turno.equipe.nome if turno.equipe else 'Equipe externa' }} 
-                                    ({{ turno.status }})
-                                </option>
-                            {% endfor %}
-                        </select>
-                        <div class="form-text small text-muted">A auditoria deve estar vinculada a um turno em aberto.</div>
-                    </div>
+                    <!-- ❌ REMOVIDO: campo de turno -->
 
+                    <!-- FOTO -->
                     <div class="mb-4">
                         <label for="foto-input" class="form-label fw-semibold">Foto da Evidência</label>
 
@@ -80,6 +71,7 @@
                         </div>
                     </div>
 
+                    <!-- DESCRIÇÃO -->
                     <div class="mb-4">
                         <label for="descricao" class="form-label fw-semibold">Descrição (Opcional)</label>
                         <textarea
@@ -91,6 +83,7 @@
                         ></textarea>
                     </div>
 
+                    <!-- GPS -->
                     <div id="gps-status" class="alert alert-info rounded-3 py-2 px-3 mb-2 d-flex align-items-center">
                         <div class="spinner-border spinner-border-sm me-3"></div>
                         <span class="small">Inicializando GPS...</span>
@@ -98,6 +91,7 @@
 
                     <div id="gps-info" class="small text-muted mb-4"></div>
 
+                    <!-- BOTÕES -->
                     <div class="d-grid gap-2">
                         <button
                             type="submit"
@@ -129,7 +123,6 @@
 
 {% block scripts %}
 <script>
-    // Mantém o script de GPS original
     const form = document.getElementById('form-auditoria');
     const latInput = document.getElementById('lat-input');
     const lonInput = document.getElementById('lon-input');
@@ -142,7 +135,6 @@
     const imgPreview = document.getElementById('img-preview');
 
     let bestPosition = null;
-    let watchId = null;
 
     fotoInput.addEventListener('change', function () {
         if (this.files && this.files[0]) {
@@ -163,7 +155,7 @@
             return;
         }
 
-        watchId = navigator.geolocation.watchPosition(
+        navigator.geolocation.watchPosition(
             function (position) {
                 const lat = position.coords.latitude;
                 const lon = position.coords.longitude;
@@ -178,16 +170,18 @@
                 if (acc <= 30) {
                     gpsStatus.className = 'alert alert-success d-flex align-items-center';
                     gpsStatus.innerHTML = `<i class="fas fa-check-circle me-2"></i> 🟢 GPS OK (${Math.round(acc)}m)`;
+
                     latInput.value = bestPosition.coords.latitude;
                     lonInput.value = bestPosition.coords.longitude;
                     accInput.value = bestPosition.coords.accuracy;
+
                     btnSubmit.disabled = false;
                 } else {
                     gpsStatus.className = 'alert alert-warning';
                     gpsStatus.innerHTML = `🟡 Melhorando precisão... (${Math.round(acc)}m)`;
                 }
             },
-            function (error) {
+            function () {
                 gpsStatus.className = 'alert alert-danger';
                 gpsStatus.innerHTML = "Erro ao obter GPS";
                 btnSubmit.disabled = true;
@@ -204,6 +198,7 @@
             alert('Aguarde o GPS estabilizar para garantir a precisão.');
             return;
         }
+
         latInput.value = bestPosition.coords.latitude;
         lonInput.value = bestPosition.coords.longitude;
         accInput.value = bestPosition.coords.accuracy;

@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from app.models.acao_promocional import AcaoPromocional
 from app.models.cliente import Cliente
 from app.models.equipe import Equipe
+from app.models.turno import Turno  # 🔥 IMPORTANTE
 from app.extensions import db
 from datetime import datetime
 
@@ -14,13 +15,20 @@ acoes_bp = Blueprint('acoes', __name__)
 def listar():
     if current_user.tipo_usuario == 'admin':
         acoes = AcaoPromocional.query.all()
+
     elif current_user.tipo_usuario == 'equipe':
-        acoes = AcaoPromocional.query.filter_by(lider_equipe_id=current_user.id).all()
+        acoes = AcaoPromocional.query.filter_by(
+            lider_equipe_id=current_user.id
+        ).all()
+
     else:
         # Cliente vê apenas suas ações
         cliente = Cliente.query.filter_by(email=current_user.email).first()
+
         if cliente:
-            acoes = AcaoPromocional.query.filter_by(cliente_id=cliente.id).all()
+            acoes = AcaoPromocional.query.filter_by(
+                cliente_id=cliente.id
+            ).all()
         else:
             acoes = []
 
@@ -47,6 +55,9 @@ def nova():
         turno = request.form.get('turno')
         lider_id = request.form.get('lider_id')
         descricao = request.form.get('descricao')
+
+        # 🔥 TRATAR lider_id (evita erro com string vazia)
+        lider_id = int(lider_id) if lider_id else None
 
         nova_acao = AcaoPromocional(
             cliente_id=cliente_id,
@@ -84,7 +95,11 @@ def atualizar_status(id):
     acao.status = novo_status
     db.session.commit()
 
-    flash(f'Status da ação {acao.local_alvo} atualizado para {novo_status}.', 'info')
+    flash(
+        f'Status da ação {acao.local_alvo} atualizado para {novo_status}.',
+        'info'
+    )
+
     return redirect(url_for('acoes.listar'))
 
 
@@ -99,8 +114,17 @@ def excluir(id):
     acao = AcaoPromocional.query.get_or_404(id)
 
     try:
+        # 🔥 1. EXCLUIR TURNOS VINCULADOS (CORREÇÃO PRINCIPAL)
+        turnos = Turno.query.filter_by(acao_id=id).all()
+
+        for turno in turnos:
+            db.session.delete(turno)
+
+        # 🔥 2. EXCLUIR AÇÃO
         db.session.delete(acao)
+
         db.session.commit()
+
         flash('Ação excluída com sucesso!', 'success')
 
     except Exception as e:

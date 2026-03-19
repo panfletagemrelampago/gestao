@@ -5,7 +5,7 @@ from datetime import datetime
 from app.extensions import db
 from app.models.acao_promocional import AcaoPromocional
 from app.models.turno import Turno
-from app.models.auditoria import Auditoria  # 🔥 CORREÇÃO PRINCIPAL
+from app.models import Auditoria  # 🔥 CORREÇÃO: Importa do pacote models, não do módulo específico
 from app.services.cloudinary_service import CloudinaryService
 
 auditorias_bp = Blueprint('auditorias', __name__, url_prefix='/auditorias')

@@ -6,57 +6,106 @@
 <div class="row justify-content-center">
     <div class="col-12 col-lg-8">
         <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+
             <div class="card-header bg-white border-0 py-3">
                 <h4 class="fw-bold mb-0 text-vinho">
                     <i class="fas fa-camera me-2"></i> Registrar Auditoria
                 </h4>
-                <p class="text-muted small mb-0">Capture a evidência fotográfica e localização do trabalho.</p>
+                <p class="text-muted small mb-0">
+                    Capture a evidência fotográfica e localização do trabalho.
+                </p>
             </div>
 
             <div class="card-body p-4">
                 <form id="form-auditoria" method="POST" enctype="multipart/form-data" action="{{ url_for('auditorias.registrar') }}">
-                    <!-- Inputs Ocultos para GPS -->
+
+                    <!-- GPS -->
                     <input type="hidden" name="latitude" id="lat-input">
                     <input type="hidden" name="longitude" id="lon-input">
+                    <input type="hidden" name="accuracy" id="acc-input">
 
+                    <!-- AÇÃO -->
                     <div class="mb-4">
-                        <label class="form-label fw-semibold">Selecione a Ação</label>
+                        <label for="acao_id" class="form-label fw-semibold">Selecione a Ação</label>
                         <select name="acao_id" id="acao_id" class="form-select rounded-3 shadow-none" required>
                             <option value="">Selecione uma ação ativa...</option>
                             {% for acao in acoes %}
-                            <option value="{{ acao.id }}">{{ acao.local_alvo }} ({{ acao.cliente.nome_empresa }})</option>
+                                <option value="{{ acao.id }}">
+                                    {{ acao.local_alvo }} ({{ acao.cliente.nome_empresa }})
+                                </option>
                             {% endfor %}
                         </select>
                     </div>
 
+                    <!-- FOTO -->
                     <div class="mb-4">
-                        <label class="form-label fw-semibold">Foto da Evidência</label>
+                        <label for="foto-input" class="form-label fw-semibold">Foto da Evidência</label>
+
                         <div class="upload-container border-2 border-dashed rounded-4 p-4 text-center bg-light position-relative">
-                            <input type="file" name="foto" id="foto-input" accept="image/*" capture="camera" class="position-absolute top-0 start-0 w-100 h-100 opacity-0 cursor-pointer" required>
+                            <input
+                                type="file"
+                                name="foto"
+                                id="foto-input"
+                                accept="image/*"
+                                capture="environment"
+                                class="position-absolute top-0 start-0 w-100 h-100 opacity-0 cursor-pointer"
+                                required
+                            >
+
                             <div id="preview-container">
                                 <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-2"></i>
-                                <p class="mb-0 text-muted small">Clique para tirar foto ou selecionar arquivo</p>
+                                <p class="mb-0 text-muted small">
+                                    Clique para tirar foto ou selecionar arquivo
+                                </p>
                             </div>
-                            <img id="img-preview" class="img-fluid rounded-3 d-none" style="max-height: 300px;">
+
+                            <img
+                                id="img-preview"
+                                src=""
+                                alt="Preview da imagem"
+                                class="img-fluid rounded-3 d-none"
+                                style="max-height: 300px;"
+                            >
                         </div>
                     </div>
 
+                    <!-- DESCRIÇÃO -->
                     <div class="mb-4">
-                        <label class="form-label fw-semibold">Descrição (Opcional)</label>
-                        <textarea name="descricao" class="form-control rounded-3 shadow-none" rows="3" placeholder="Detalhes sobre a auditoria..."></textarea>
+                        <label for="descricao" class="form-label fw-semibold">Descrição (Opcional)</label>
+                        <textarea
+                            id="descricao"
+                            name="descricao"
+                            class="form-control rounded-3 shadow-none"
+                            rows="3"
+                            placeholder="Detalhes sobre a auditoria..."
+                        ></textarea>
                     </div>
 
-                    <div id="gps-status" class="alert alert-info rounded-3 py-2 px-3 mb-4 d-flex align-items-center">
-                        <div class="spinner-border spinner-border-sm me-3" role="status"></div>
-                        <span class="small">Obtendo localização GPS precisa...</span>
+                    <!-- STATUS GPS -->
+                    <div id="gps-status" class="alert alert-info rounded-3 py-2 px-3 mb-2 d-flex align-items-center">
+                        <div class="spinner-border spinner-border-sm me-3"></div>
+                        <span class="small">Inicializando GPS...</span>
                     </div>
 
+                    <!-- INFO GPS -->
+                    <div id="gps-info" class="small text-muted mb-4"></div>
+
+                    <!-- BOTÕES -->
                     <div class="d-grid gap-2">
-                        <button type="submit" id="btn-submit" class="btn btn-primary btn-lg rounded-pill shadow-sm py-3 fw-bold" disabled>
+                        <button
+                            type="submit"
+                            id="btn-submit"
+                            class="btn btn-primary btn-lg rounded-pill shadow-sm py-3 fw-bold"
+                            disabled
+                        >
                             <i class="fas fa-save me-2"></i> Salvar Auditoria
                         </button>
-                        <a href="{{ url_for('auditorias.listar') }}" class="btn btn-link text-muted">Cancelar</a>
+
+                        <a href="{{ url_for('auditorias.listar') }}" class="btn btn-link text-muted">
+                            Cancelar
+                        </a>
                     </div>
+
                 </form>
             </div>
         </div>
@@ -64,10 +113,24 @@
 </div>
 
 <style>
-    .upload-container { transition: all 0.2s; border-style: dashed !important; border-color: #dee2e6 !important; }
-    .upload-container:hover { background-color: #f1f3f5 !important; border-color: #8E0000 !important; }
-    .cursor-pointer { cursor: pointer; }
-    .text-vinho { color: #8E0000; }
+    .upload-container {
+        transition: all 0.2s;
+        border-style: dashed !important;
+        border-color: #dee2e6 !important;
+    }
+
+    .upload-container:hover {
+        background-color: #f1f3f5 !important;
+        border-color: #8E0000 !important;
+    }
+
+    .cursor-pointer {
+        cursor: pointer;
+    }
+
+    .text-vinho {
+        color: #8E0000;
+    }
 </style>
 {% endblock %}
 
@@ -76,69 +139,123 @@
     const form = document.getElementById('form-auditoria');
     const latInput = document.getElementById('lat-input');
     const lonInput = document.getElementById('lon-input');
+    const accInput = document.getElementById('acc-input');
     const gpsStatus = document.getElementById('gps-status');
+    const gpsInfo = document.getElementById('gps-info');
     const btnSubmit = document.getElementById('btn-submit');
     const fotoInput = document.getElementById('foto-input');
     const previewContainer = document.getElementById('preview-container');
     const imgPreview = document.getElementById('img-preview');
 
-    // Preview da Imagem
-    fotoInput.addEventListener('change', function() {
+    let bestPosition = null;
+    let watchId = null;
+
+    // PREVIEW DA IMAGEM
+    fotoInput.addEventListener('change', function () {
         if (this.files && this.files[0]) {
             const reader = new FileReader();
-            reader.onload = function(e) {
+
+            reader.onload = function (e) {
                 imgPreview.src = e.target.result;
                 imgPreview.classList.remove('d-none');
                 previewContainer.classList.add('d-none');
-            }
+            };
+
             reader.readAsDataURL(this.files[0]);
         }
     });
 
-    // Captura de GPS
     function updateGPS() {
-        if ("geolocation" in navigator) {
-            navigator.geolocation.getCurrentPosition(
-                function(position) {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
-                    const acc = position.coords.accuracy;
-
-                    latInput.value = lat;
-                    lonInput.value = lon;
-
-                    gpsStatus.className = 'alert alert-success rounded-3 py-2 px-3 mb-4 d-flex align-items-center';
-                    gpsStatus.innerHTML = `<i class="fas fa-check-circle me-3"></i><span class="small">GPS Localizado (Precisão: ${Math.round(acc)}m)</span>`;
-                    btnSubmit.disabled = false;
-                },
-                function(error) {
-                    let msg = "Erro ao obter GPS";
-                    if (error.code === 1) msg = "Permissão de GPS negada pelo usuário.";
-                    else if (error.code === 2) msg = "Sinal de GPS indisponível.";
-                    else if (error.code === 3) msg = "Tempo limite de GPS esgotado.";
-
-                    gpsStatus.className = 'alert alert-danger rounded-3 py-2 px-3 mb-4 d-flex align-items-center';
-                    gpsStatus.innerHTML = `<i class="fas fa-exclamation-triangle me-3"></i><span class="small">${msg}</span>`;
-                    btnSubmit.disabled = true;
-                },
-                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-            );
-        } else {
-            gpsStatus.className = 'alert alert-danger rounded-3 py-2 px-3 mb-4';
-            gpsStatus.innerHTML = 'GPS não suportado pelo navegador.';
+        if (!("geolocation" in navigator)) {
+            gpsStatus.className = 'alert alert-danger';
+            gpsStatus.innerHTML = 'GPS não suportado.';
+            return;
         }
+
+        gpsStatus.innerHTML = `
+            <div class="spinner-border spinner-border-sm me-3"></div>
+            <span class="small">Obtendo GPS com alta precisão...</span>
+        `;
+
+        btnSubmit.disabled = true;
+
+        watchId = navigator.geolocation.watchPosition(
+            function (position) {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                const acc = position.coords.accuracy;
+
+                gpsInfo.innerHTML = `
+                    Lat: ${lat.toFixed(6)} |
+                    Lng: ${lon.toFixed(6)} |
+                    Precisão: ${Math.round(acc)}m
+                `;
+
+                if (!bestPosition || acc < bestPosition.coords.accuracy) {
+                    bestPosition = position;
+                }
+
+                if (acc <= 30) {
+                    gpsStatus.className = 'alert alert-success d-flex align-items-center';
+                    gpsStatus.innerHTML = `<i class="fas fa-check-circle me-2"></i> 🟢 GPS OK (${Math.round(acc)}m)`;
+
+                    latInput.value = bestPosition.coords.latitude;
+                    lonInput.value = bestPosition.coords.longitude;
+                    accInput.value = bestPosition.coords.accuracy;
+
+                    btnSubmit.disabled = false;
+
+                    navigator.geolocation.clearWatch(watchId);
+
+                } else if (acc <= 50) {
+                    gpsStatus.className = 'alert alert-warning';
+                    gpsStatus.innerHTML = `🟡 Melhorando precisão... (${Math.round(acc)}m)`;
+
+                } else {
+                    gpsStatus.className = 'alert alert-danger';
+                    gpsStatus.innerHTML = `🔴 GPS fraco (${Math.round(acc)}m) - Aguarde...`;
+                }
+            },
+            function (error) {
+                let msg = "Erro ao obter GPS";
+
+                if (error.code === 1) msg = "Permissão negada.";
+                else if (error.code === 2) msg = "Sem sinal.";
+                else if (error.code === 3) msg = "Timeout.";
+
+                gpsStatus.className = 'alert alert-danger';
+                gpsStatus.innerHTML = msg;
+
+                btnSubmit.disabled = true;
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 20000,
+                maximumAge: 0
+            }
+        );
     }
 
-    // Tentar capturar GPS ao carregar
     updateGPS();
 
-    // Validação extra no submit
-    form.addEventListener('submit', function(e) {
-        if (!latInput.value || !lonInput.value) {
+    form.addEventListener('submit', function (e) {
+        if (!bestPosition) {
             e.preventDefault();
-            alert('Aguarde a captura da localização GPS antes de salvar.');
-            updateGPS();
+            alert('Aguarde o GPS estabilizar.');
+            return;
         }
+
+        const acc = bestPosition.coords.accuracy;
+
+        if (acc > 50) {
+            e.preventDefault();
+            alert('GPS muito impreciso. Aguarde melhorar.');
+            return;
+        }
+
+        latInput.value = bestPosition.coords.latitude;
+        lonInput.value = bestPosition.coords.longitude;
+        accInput.value = bestPosition.coords.accuracy;
     });
 </script>
 {% endblock %}

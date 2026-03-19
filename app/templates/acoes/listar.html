@@ -64,6 +64,16 @@
                                 <a href="{{ url_for('mapa.index') }}" class="btn btn-sm btn-outline-primary btn-action-square" title="Ver no Mapa"><i class="fas fa-map-marker-alt"></i></a>
                                 <a href="{{ url_for('auditorias.turnos', acao_id=acao.id) }}" class="btn btn-sm btn-outline-success btn-action-square" title="Turnos de Campo"><i class="fas fa-clock"></i></a>
                                 <a href="{{ url_for('auditorias.relatorio', acao_id=acao.id) }}" class="btn btn-sm btn-action-square" style="background:#8E0000;color:white;border:none;" title="Relatório"><i class="fas fa-file-alt"></i></a>
+
+                                {% if current_user.tipo_usuario == 'admin' %}
+                                <form action="{{ url_for('acoes.excluir', id=acao.id) }}" method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-danger btn-action-square" title="Excluir"
+                                        onclick="return confirm('Tem certeza que deseja excluir esta ação?')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+
                                 <div class="dropdown d-inline-block">
                                     <button class="btn btn-sm btn-outline-secondary btn-action-square" type="button" data-bs-toggle="dropdown">
                                         <i class="fas fa-ellipsis-v"></i>

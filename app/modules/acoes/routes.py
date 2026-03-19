@@ -86,3 +86,26 @@ def atualizar_status(id):
 
     flash(f'Status da ação {acao.local_alvo} atualizado para {novo_status}.', 'info')
     return redirect(url_for('acoes.listar'))
+
+
+@acoes_bp.route('/excluir/<int:id>', methods=['POST'])
+@login_required
+def excluir(id):
+
+    if current_user.tipo_usuario != 'admin':
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('acoes.listar'))
+
+    acao = AcaoPromocional.query.get_or_404(id)
+
+    try:
+        db.session.delete(acao)
+        db.session.commit()
+        flash('Ação excluída com sucesso!', 'success')
+
+    except Exception as e:
+        db.session.rollback()
+        print("Erro ao excluir ação:", e)
+        flash('Erro ao excluir ação.', 'danger')
+
+    return redirect(url_for('acoes.listar'))

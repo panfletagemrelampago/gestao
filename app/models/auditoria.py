@@ -5,6 +5,7 @@ from datetime import datetime
 from app.extensions import db
 from app.models.acao_promocional import AcaoPromocional
 from app.models.turno import Turno
+from app.models.auditoria import Auditoria  # 🔥 CORREÇÃO PRINCIPAL
 from app.services.cloudinary_service import CloudinaryService
 
 auditorias_bp = Blueprint('auditorias', __name__, url_prefix='/auditorias')
@@ -50,8 +51,8 @@ def registrar():
     longitude = request.form.get('longitude', type=float)
     foto = request.files.get('foto')
 
-    # validações básicas
-    if not acao_id or not latitude or not longitude or not foto:
+    # 🔥 CORREÇÃO: validação correta (evita erro com 0.0)
+    if not acao_id or latitude is None or longitude is None or not foto:
         flash('Preencha todos os campos obrigatórios.', 'danger')
         return redirect(request.url)
 

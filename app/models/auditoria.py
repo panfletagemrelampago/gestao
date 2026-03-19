@@ -3,9 +3,9 @@ from flask_login import login_required, current_user
 from datetime import datetime
 
 from app.extensions import db
+from app.models import Auditoria  # ✅ IMPORT CORRETO
 from app.models.acao_promocional import AcaoPromocional
 from app.models.turno import Turno
-from app.models import Auditoria  # 🔥 CORREÇÃO: Importa do pacote models, não do módulo específico
 from app.services.cloudinary_service import CloudinaryService
 
 auditorias_bp = Blueprint('auditorias', __name__, url_prefix='/auditorias')
@@ -51,28 +51,28 @@ def registrar():
     longitude = request.form.get('longitude', type=float)
     foto = request.files.get('foto')
 
-    # 🔥 CORREÇÃO: validação correta (evita erro com 0.0)
+    # 🔥 VALIDAÇÃO CORRETA (evita erro com 0.0)
     if not acao_id or latitude is None or longitude is None or not foto:
         flash('Preencha todos os campos obrigatórios.', 'danger')
         return redirect(request.url)
 
     # =============================
-    # 🔥 LÓGICA DE TURNO (CORREÇÃO)
+    # 🔥 LÓGICA DE TURNO
     # =============================
     turno = None
 
-    # 1. Se veio turno_id
+    # 1. Se veio turno_id (PRIORIDADE)
     if turno_id:
         turno = Turno.query.get(turno_id)
 
-    # 2. Se não veio turno_id, tenta buscar automático
+    # 2. Fallback automático
     elif acao_id:
         turno = Turno.query.filter_by(
             acao_id=acao_id,
             status='ativo'
         ).order_by(Turno.inicio.desc()).first()
 
-        # 🔥 Se não existir, cria automaticamente
+        # 🔥 Criação automática se não existir
         if not turno:
             try:
                 turno = Turno(
@@ -88,7 +88,7 @@ def registrar():
                 flash(f'Erro ao criar turno automático: {str(e)}', 'danger')
                 return redirect(request.url)
 
-    # 3. Se ainda não tem turno
+    # 3. Falha definitiva
     if not turno:
         flash('Nenhum turno disponível. Inicie um turno.', 'danger')
         return redirect(request.url)
@@ -107,7 +107,7 @@ def registrar():
     # =============================
     try:
         nova_auditoria = Auditoria(
-            turno_id=turno.id,  # 🔥 ESSENCIAL
+            turno_id=turno.id,
             acao_id=acao_id,
             user_id=current_user.id,
             descricao=descricao,

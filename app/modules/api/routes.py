@@ -588,58 +588,25 @@ def verificar_ponto_na_area():
 def enviar_foto():
     """
     Recebe uma foto com geolocalização e a associa a um turno.
-    Agora aceita:
-    - turno_id (opcional)
-    - acao_id (recomendado para auto-associação ao turno ativo)
-    
     Verifica se a foto está dentro da área de atuação da ação.
-    Campos do formulário: turno_id (opcional), acao_id (opcional), 
-    latitude, longitude, descricao (opcional), foto (arquivo).
+    Campos do formulário: turno_id, latitude, longitude, descricao (opcional), foto (arquivo).
     """
     turno_id = request.form.get('turno_id', type=int)
-    acao_id = request.form.get('acao_id', type=int)
     lat = request.form.get('latitude', type=float)
     lon = request.form.get('longitude', type=float)
     descricao = request.form.get('descricao')
     foto = request.files.get('foto')
 
-    # Validações básicas
+    if not turno_id:
+        return jsonify({"erro": "turno_id é obrigatório"}), 400
     if lat is None or lon is None:
         return jsonify({"erro": "Localização GPS obrigatória para envio de fotos"}), 400
-
     if not foto:
         return jsonify({"erro": "Arquivo de foto é obrigatório"}), 400
 
-    # ─────────────────────────────────────────────────────────────────────────
-    # LÓGICA DE AUTO-ASSOCIAÇÃO AO TURNO (CORREÇÃO APLICADA AQUI)
-    # ─────────────────────────────────────────────────────────────────────────
-    turno = None
-
-    # 1. Se veio turno_id → usa diretamente
-    if turno_id:
-        turno = Turno.query.get(turno_id)
-        if not turno:
-            return jsonify({"erro": "Turno não encontrado"}), 404
-
-    # 2. Se NÃO veio turno_id mas veio acao_id → busca turno ativo da ação
-    elif acao_id:
-        turno = Turno.query.filter_by(
-            acao_id=acao_id,
-            status='ativo'
-        ).order_by(Turno.inicio.desc()).first()
-        
-        if not turno:
-            return jsonify({
-                "erro": "Nenhum turno ativo encontrado para esta ação. Inicie um turno antes de enviar fotos."
-            }), 400
-
-    # 3. Se não veio nem turno_id nem acao_id → erro
-    else:
-        return jsonify({
-            "erro": "Informe turno_id ou acao_id para associar a foto."
-        }), 400
-
-    # Validações do turno encontrado
+    turno = Turno.query.get(turno_id)
+    if not turno:
+        return jsonify({"erro": "Turno não encontrado"}), 404
     if turno.status == 'encerrado':
         return jsonify({"erro": "Não é possível enviar fotos para um turno encerrado"}), 400
 
@@ -647,12 +614,10 @@ def enviar_foto():
     if current_user.tipo_usuario not in ['admin', 'equipe']:
         return jsonify({"erro": "Permissão negada"}), 403
 
-    # Upload da foto para Cloudinary
     foto_url = CloudinaryService.upload_image(foto, folder="auditorias_campo")
     if not foto_url:
         return jsonify({"erro": "Falha no upload da foto"}), 500
 
-    # Verificar se o ponto está dentro da área de atuação
     dentro_da_area = None
     try:
         areas = AreaAtuacao.query.filter_by(acao_id=turno.acao_id).all()
@@ -662,9 +627,8 @@ def enviar_foto():
                 for a in areas
             )
 
-        # Criar registro da foto
         nova_foto = FotoAuditoria(
-            turno_id=turno.id,
+            turno_id=turno_id,
             url=foto_url,
             latitude=lat,
             longitude=lon,
@@ -678,12 +642,10 @@ def enviar_foto():
         return jsonify({
             "status": "sucesso",
             "foto_id": nova_foto.id,
-            "turno_id": turno.id,  # Retorna o turno_id usado (útil quando veio por acao_id)
             "url": foto_url,
             "dentro_da_area": dentro_da_area,
             "mensagem": "Foto enviada com sucesso"
         }), 201
-
     except Exception as e:
         db.session.rollback()
         return jsonify({"erro": f"Erro ao salvar foto: {str(e)}"}), 500

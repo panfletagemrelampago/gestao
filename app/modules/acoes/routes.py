@@ -3,7 +3,8 @@ from flask_login import login_required, current_user
 from app.models.acao_promocional import AcaoPromocional
 from app.models.cliente import Cliente
 from app.models.equipe import Equipe
-from app.models.turno import Turno  # 🔥 IMPORTANTE
+from app.models.turno import Turno
+from app.models.foto_auditoria import FotoAuditoria  # 🔥 NOVO
 from app.extensions import db
 from datetime import datetime
 
@@ -22,7 +23,6 @@ def listar():
         ).all()
 
     else:
-        # Cliente vê apenas suas ações
         cliente = Cliente.query.filter_by(email=current_user.email).first()
 
         if cliente:
@@ -56,7 +56,6 @@ def nova():
         lider_id = request.form.get('lider_id')
         descricao = request.form.get('descricao')
 
-        # 🔥 TRATAR lider_id (evita erro com string vazia)
         lider_id = int(lider_id) if lider_id else None
 
         nova_acao = AcaoPromocional(
@@ -87,7 +86,6 @@ def atualizar_status(id):
     acao = AcaoPromocional.query.get_or_404(id)
     novo_status = request.form.get('status')
 
-    # Verificação básica de permissão
     if current_user.tipo_usuario not in ['admin', 'equipe']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('acoes.listar'))
@@ -114,13 +112,19 @@ def excluir(id):
     acao = AcaoPromocional.query.get_or_404(id)
 
     try:
-        # 🔥 1. EXCLUIR TURNOS VINCULADOS (CORREÇÃO PRINCIPAL)
+        # 🔥 1. Buscar turnos da ação
         turnos = Turno.query.filter_by(acao_id=id).all()
 
         for turno in turnos:
+            # 🔥 2. Deletar fotos do turno
+            fotos = FotoAuditoria.query.filter_by(turno_id=turno.id).all()
+            for foto in fotos:
+                db.session.delete(foto)
+
+            # 🔥 3. Deletar turno
             db.session.delete(turno)
 
-        # 🔥 2. EXCLUIR AÇÃO
+        # 🔥 4. Deletar ação
         db.session.delete(acao)
 
         db.session.commit()

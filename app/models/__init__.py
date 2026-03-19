@@ -8,6 +8,7 @@ from app.models.acao_promocional import AcaoPromocional
 from app.models.auditoria import Auditoria
 from app.models.posicao_gps import PosicaoGps
 from app.models.vaga import Vaga
+# Novos models do módulo de auditoria de campo
 from app.models.turno import Turno
 from app.models.area_atuacao import AreaAtuacao
 from app.models.foto_auditoria import FotoAuditoria

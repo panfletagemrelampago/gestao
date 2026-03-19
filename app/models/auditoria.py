@@ -3,7 +3,6 @@ from flask_login import login_required, current_user
 from datetime import datetime
 
 from app.extensions import db
-from app.models.auditoria import Auditoria
 from app.models.acao_promocional import AcaoPromocional
 from app.models.turno import Turno
 from app.services.cloudinary_service import CloudinaryService

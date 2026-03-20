@@ -26,34 +26,24 @@
 <!-- INICIAR TURNO -->
 {% if current_user.tipo_usuario in ['admin', 'equipe'] %}
 <div class="card border-0 shadow-sm rounded-4 mb-4">
-  <div class="card-header text-white" style="background:#8E0000;">
-    Iniciar Turno
+  <div class="card-header text-white d-flex justify-content-between align-items-center" style="background:#8E0000;">
+    <h6 class="mb-0">Novo Turno de Campo</h6>
+    <span class="badge bg-white text-vinho" style="color: #8E0000 !important;">{{ acao.status }}</span>
   </div>
   <div class="card-body">
-    <form id="form-iniciar-turno">
-      <div class="row g-2">
-        <div class="col-md-4">
-          <select id="turno-equipe-id" class="form-select" required>
-            <option value="">Equipe</option>
-            {% for membro in equipes %}
-            <option value="{{ membro.id }}">{{ membro.nome }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-4">
-          <select id="turno-veiculo-id" class="form-select">
-            <option value="">Sem veículo</option>
-            {% for v in veiculos %}
-            <option value="{{ v.id }}">{{ v.placa }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-4">
-          <input type="text" id="turno-obs" class="form-control" placeholder="Observações">
-        </div>
+    <div class="row align-items-center">
+      <div class="col-md-8">
+        <p class="mb-1"><strong>Equipe:</strong> {{ acao.equipe.nome if acao.equipe else 'Não definida' }}</p>
+        <p class="mb-0 text-muted small"><strong>Veículo:</strong> {{ acao.veiculo.placa if acao.veiculo else 'A pé' }}</p>
       </div>
-      <button class="btn btn-success mt-3">Iniciar</button>
-    </form>
+      <div class="col-md-4 text-md-end mt-3 mt-md-0">
+        <form action="{{ url_for('auditorias.iniciar_turno', acao_id=acao.id) }}" method="POST">
+          <button type="submit" class="btn btn-success btn-lg rounded-pill px-4">
+            <i class="fas fa-play me-2"></i> Iniciar Turno
+          </button>
+        </form>
+      </div>
+    </div>
   </div>
 </div>
 {% endif %}
@@ -119,14 +109,14 @@ async function carregarTurnos() {
 
 async function encerrar(id){
   if(confirm('Encerrar turno?')){
-    await fetch('/turno/encerrar/' + id);
+    await fetch('/auditorias/turno/encerrar/' + id);
     carregarTurnos();
   }
 }
 
 async function excluir(id){
   if(confirm('Excluir turno?')){
-    await fetch('/turno/excluir/' + id);
+    await fetch('/auditorias/turno/excluir/' + id);
     carregarTurnos();
   }
 }
@@ -135,7 +125,7 @@ async function editar(id){
   const obs = prompt('Nova observação:');
   if(!obs) return;
 
-  await fetch('/turno/editar/' + id, {
+  await fetch('/auditorias/turno/editar/' + id, {
     method:'POST',
     headers:{'Content-Type':'application/x-www-form-urlencoded'},
     body: 'observacoes=' + encodeURIComponent(obs)
@@ -145,29 +135,8 @@ async function editar(id){
 }
 
 /* =========================
-   INICIAR
+   INICIAR (Removido fetch manual para usar form post direto)
 ========================= */
-
-document.getElementById('form-iniciar-turno')?.addEventListener('submit', async e=>{
-  e.preventDefault();
-
-  const equipe = document.getElementById('turno-equipe-id').value;
-  const veiculo = document.getElementById('turno-veiculo-id').value;
-  const obs = document.getElementById('turno-obs').value;
-
-  const form = new FormData();
-  form.append('equipe_id', equipe);
-  form.append('veiculo_id', veiculo);
-  form.append('observacoes', obs);
-
-  await fetch('/turno/iniciar/' + ACAO_ID, {
-    method:'POST',
-    body: form
-  });
-
-  e.target.reset();
-  carregarTurnos();
-});
 
 /* INIT */
 carregarTurnos();

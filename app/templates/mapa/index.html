@@ -7,51 +7,63 @@
 
 <style>
 #map{
-    height:70vh;
+    height:75vh;
     width:100%;
-    border-radius:12px;
-    box-shadow:var(--shadow-md);
+    border-radius:15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
     z-index:1;
 }
 
 .leaflet-popup-content img{
     max-width:220px;
-    border-radius:6px;
-    margin-top:6px;
+    border-radius:8px;
+    margin-top:8px;
     display:block;
 }
 
+/* PAINEL DE FILTROS REPOSICIONADO E DISCRETO */
 #painel-controle{
     position:absolute;
-    top:80px;
-    right:10px;
+    top:15px;
+    right:15px;
     z-index:1000;
-    width:270px;
-    background:white;
-    border-radius:12px;
-    box-shadow:var(--shadow-md);
-    padding:14px;
-    font-size:13px;
-    max-height:calc(70vh - 20px);
-    overflow-y:auto;
+    width:210px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    border: 1px solid rgba(0,0,0,0.05);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    padding: 15px;
+    font-size: 13px;
+    transition: all 0.3s ease;
 }
 
 .layer-toggle{
     cursor:pointer;
     user-select:none;
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    padding: 5px;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.layer-toggle:hover {
+    background: rgba(0,0,0,0.03);
 }
 
 .layer-toggle input{
-    margin-right:6px;
+    margin-right:10px;
+    cursor: pointer;
 }
 
 .cor-legenda{
     display:inline-block;
-    width:14px;
-    height:14px;
-    border-radius:50%;
-    margin-right:5px;
-    vertical-align:middle;
+    width:12px;
+    height:12px;
+    border-radius:3px;
+    margin-right:8px;
 }
 </style>
 {% endblock %}
@@ -61,27 +73,28 @@
     <div id="map"></div>
 
     <div id="painel-controle">
-        <div class="fw-bold mb-2" style="color:#8E0000;">
-            <i class="fas fa-layer-group me-1"></i>
-            Camadas
+        <div class="fw-bold mb-3 d-flex align-items-center" style="color:#8E0000;">
+            <i class="fas fa-layer-group me-2"></i>
+            Camadas do Mapa
         </div>
 
-        <label class="layer-toggle d-block mb-1">
+        <label class="layer-toggle">
             <input type="checkbox" id="toggle-fotos" checked>
-            <span class="cor-legenda" style="background:#FF9E0C;"></span>
+            <span class="cor-legenda" style="background:#FF9E0C; border-radius: 50%;"></span>
             Fotos de Campo
         </label>
 
-        <label class="layer-toggle d-block mb-1">
+        <label class="layer-toggle">
             <input type="checkbox" id="toggle-areas" checked>
-            <span class="cor-legenda" style="background:#0d6efd;border-radius:2px;"></span>
+            <span class="cor-legenda" style="background:#0d6efd;"></span>
             Áreas de Atuação
         </label>
 
-        <hr class="my-2">
+        <hr class="my-3 opacity-10">
 
-        <div id="stats-fotos" class="small">
-            Fotos no mapa: <strong>0</strong>
+        <div id="stats-fotos" class="small text-muted d-flex justify-content-between align-items-center">
+            <span>Fotos no mapa:</span>
+            <strong class="text-dark">0</strong>
         </div>
     </div>
 </div>
@@ -93,9 +106,9 @@
 
 <script>
 // =============================
-// CONFIGURAÇÃO GLOBAL
+// CONFIGURAÇÃO GLOBAL DO MAPA
 // =============================
-const map = L.map("map"); // Sem setView fixo - será definido dinamicamente
+const map = L.map("map").setView([-15.5668, -56.0568], 13);
 
 const layers = {
     base: L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -103,147 +116,129 @@ const layers = {
         attribution: '© OpenStreetMap'
     }).addTo(map),
     fotos: L.layerGroup().addTo(map),
-    areas: new L.FeatureGroup().addTo(map)
+    areas: L.featureGroup().addTo(map)
 };
-
-// =============================
-// UTILITÁRIOS
-// =============================
-function formatarTimestamp(timestamp) {
-    if (!timestamp) return 'N/A';
-    const data = new Date(timestamp);
-    return data.toLocaleString('pt-BR');
-}
 
 // 🔒 Previne XSS em conteúdo dinâmico
 function escapeHTML(str) {
     return str?.replace(/[&<>"']/g, m => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[m])) || '';
 }
 
 // =============================
-// CARREGAR FOTOS (PRODUÇÃO)
+// CARREGAR FOTOS DE CAMPO
 // =============================
 async function carregarFotos() {
     try {
         const response = await fetch('/api/mapa/fotos');
-
-        if (!response.ok) throw new Error("Erro ao buscar fotos");
-
         const fotos = await response.json();
         layers.fotos.clearLayers();
 
-        // Coleta coordenadas válidas para centralização
         const coordenadasValidas = [];
 
         fotos.forEach(foto => {
             if (!foto.lat || !foto.lng) return;
-
             coordenadasValidas.push([foto.lat, foto.lng]);
 
             const marker = L.marker([foto.lat, foto.lng]).addTo(layers.fotos);
+            
+            const dataFormatada = foto.data ? new Date(foto.data).toLocaleString('pt-BR') : 'N/A';
 
             const popup = `
                 <div style="width:200px">
-                    <img src="${foto.img}"
-                         onerror="this.src='/static/img/placeholder.png'; this.onerror=null;"
-                         style="width:100%; border-radius:8px;"
-                         alt="Foto de auditoria" />
-                    <p><strong>${escapeHTML(foto.descricao) || 'Sem descrição'}</strong></p>
-                    <p>${formatarTimestamp(foto.data)}</p>
-                    <p>Turno: ${foto.turno_id}</p>
+                    <img src="${foto.img}" style="width:100%; border-radius:8px;" />
+                    <p class="mt-2 mb-1"><strong>${escapeHTML(foto.descricao) || 'Sem descrição'}</strong></p>
+                    <p class="mb-1 small text-muted"><i class="far fa-calendar-alt me-1"></i> ${dataFormatada}</p>
+                    <p class="mb-0 small text-primary fw-bold"><i class="fas fa-clock me-1"></i> Turno: ${foto.turno_id}</p>
                 </div>
             `;
-
             marker.bindPopup(popup);
         });
 
-        // Atualiza contador
         const statsDiv = document.getElementById("stats-fotos");
-        if (statsDiv) {
-            statsDiv.innerHTML = `Fotos no mapa: <strong>${fotos.length}</strong>`;
-        }
+        if (statsDiv) statsDiv.querySelector('strong').innerText = fotos.length;
 
-        // 🎯 Centralização dinâmica (UX)
         if (coordenadasValidas.length > 0) {
-            const bounds = L.latLngBounds(coordenadasValidas);
-            map.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 });
-        } else {
-            // Fallback caso não haja fotos
-            map.setView([-15.5668, -56.0568], 13);
+            map.fitBounds(L.latLngBounds(coordenadasValidas), { padding: [50, 50], maxZoom: 16 });
         }
-
     } catch (err) {
         console.error("Erro ao carregar fotos:", err);
-        // Fallback em caso de erro
-        map.setView([-15.5668, -56.0568], 13);
     }
 }
 
 // =============================
-// CONTROLES DE CAMADAS
+// CARREGAR ÁREAS DE ATUAÇÃO
 // =============================
-function inicializarToggles() {
-    const toggleFotos = document.getElementById("toggle-fotos");
-    const toggleAreas = document.getElementById("toggle-areas");
+async function carregarAreas() {
+    try {
+        const response = await fetch('/api/mapa/areas');
+        const areas = await response.json();
+        layers.areas.clearLayers();
 
-    if (toggleFotos) {
-        toggleFotos.addEventListener("change", (e) => {
-            e.target.checked ? map.addLayer(layers.fotos) : map.removeLayer(layers.fotos);
-        });
-    }
+        areas.forEach(area => {
+            if (!area.geojson) return;
 
-    if (toggleAreas) {
-        toggleAreas.addEventListener("change", function() {
-            this.checked ? map.addLayer(layers.areas) : map.removeLayer(layers.areas);
+            const geoLayer = L.geoJSON(area.geojson, {
+                style: {
+                    color: area.cor || "#0d6efd",
+                    weight: 3,
+                    opacity: 0.8,
+                    fillOpacity: 0.15
+                }
+            }).addTo(layers.areas);
+
+            geoLayer.bindPopup(`
+                <div style="min-width:150px">
+                    <h6 class="mb-1 fw-bold text-primary">${escapeHTML(area.nome)}</h6>
+                    <p class="mb-0 small">${escapeHTML(area.descricao) || 'Sem descrição'}</p>
+                </div>
+            `);
         });
+    } catch (err) {
+        console.error("Erro ao carregar áreas:", err);
     }
 }
 
 // =============================
-// DRAW CONTROLS (ÁREAS)
+// CONTROLES DE DESENHO (LEAFLET.DRAW)
 // =============================
 function inicializarDrawControl() {
     const drawControl = new L.Control.Draw({
         draw: {
-            polygon: {
-                allowIntersection: false,
-                shapeOptions: { color: "#0d6efd" }
-            },
-            rectangle: true,
-            circle: false,
-            marker: false,
-            polyline: false,
-            circlemarker: false
+            polygon: { allowIntersection: false, shapeOptions: { color: "#0d6efd" } },
+            rectangle: { shapeOptions: { color: "#0d6efd" } },
+            circle: false, marker: false, polyline: false, circlemarker: false
         },
         edit: { featureGroup: layers.areas }
     });
-
     map.addControl(drawControl);
 
     map.on(L.Draw.Event.CREATED, function(event) {
         const layer = event.layer;
         layers.areas.addLayer(layer);
-        console.log("Nova área criada:", layer.toGeoJSON());
+        // Aqui você pode adicionar um fetch POST para salvar a área no banco
+        console.log("Área criada:", layer.toGeoJSON());
     });
 }
 
 // =============================
-// INICIALIZAÇÃO
+// INICIALIZAÇÃO E TOGGLES
 // =============================
 document.addEventListener("DOMContentLoaded", function() {
-    inicializarToggles();
+    document.getElementById("toggle-fotos").addEventListener("change", (e) => {
+        e.target.checked ? map.addLayer(layers.fotos) : map.removeLayer(layers.fotos);
+    });
+
+    document.getElementById("toggle-areas").addEventListener("change", (e) => {
+        e.target.checked ? map.addLayer(layers.areas) : map.removeLayer(layers.areas);
+    });
+
     inicializarDrawControl();
     carregarFotos();
-
-    console.log("🗺️ Mapa de Auditoria inicializado");
+    carregarAreas();
 });
 
-window.recarregarFotos = carregarFotos;
+window.recarregarMapa = () => { carregarFotos(); carregarAreas(); };
 </script>
 {% endblock %}

@@ -35,7 +35,6 @@
     box-shadow: 0 8px 32px rgba(0,0,0,0.15);
     padding: 15px;
     font-size: 13px;
-    transition: all 0.3s ease;
 }
 
 .layer-toggle{
@@ -49,14 +48,8 @@
     transition: background 0.2s;
 }
 
-.layer-toggle:hover {
-    background: rgba(0,0,0,0.03);
-}
-
-.layer-toggle input{
-    margin-right:10px;
-    cursor: pointer;
-}
+.layer-toggle:hover { background: rgba(0,0,0,0.03); }
+.layer-toggle input{ margin-right:10px; cursor: pointer; }
 
 .cor-legenda{
     display:inline-block;
@@ -119,7 +112,6 @@ const layers = {
     areas: L.featureGroup().addTo(map)
 };
 
-// 🔒 Previne XSS em conteúdo dinâmico
 function escapeHTML(str) {
     return str?.replace(/[&<>"']/g, m => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -134,7 +126,6 @@ async function carregarFotos() {
         const response = await fetch('/api/mapa/fotos');
         const fotos = await response.json();
         layers.fotos.clearLayers();
-
         const coordenadasValidas = [];
 
         fotos.forEach(foto => {
@@ -142,29 +133,18 @@ async function carregarFotos() {
             coordenadasValidas.push([foto.lat, foto.lng]);
 
             const marker = L.marker([foto.lat, foto.lng]).addTo(layers.fotos);
-            
-            const dataFormatada = foto.data ? new Date(foto.data).toLocaleString('pt-BR') : 'N/A';
-
             const popup = `
                 <div style="width:200px">
                     <img src="${foto.img}" style="width:100%; border-radius:8px;" />
                     <p class="mt-2 mb-1"><strong>${escapeHTML(foto.descricao) || 'Sem descrição'}</strong></p>
-                    <p class="mb-1 small text-muted"><i class="far fa-calendar-alt me-1"></i> ${dataFormatada}</p>
                     <p class="mb-0 small text-primary fw-bold"><i class="fas fa-clock me-1"></i> Turno: ${foto.turno_id}</p>
-                </div>
-            `;
+                </div>`;
             marker.bindPopup(popup);
         });
 
-        const statsDiv = document.getElementById("stats-fotos");
-        if (statsDiv) statsDiv.querySelector('strong').innerText = fotos.length;
-
-        if (coordenadasValidas.length > 0) {
-            map.fitBounds(L.latLngBounds(coordenadasValidas), { padding: [50, 50], maxZoom: 16 });
-        }
-    } catch (err) {
-        console.error("Erro ao carregar fotos:", err);
-    }
+        document.getElementById("stats-fotos").querySelector('strong').innerText = fotos.length;
+        if (coordenadasValidas.length > 0) map.fitBounds(L.latLngBounds(coordenadasValidas), { padding: [50, 50], maxZoom: 16 });
+    } catch (err) { console.error("Erro ao carregar fotos:", err); }
 }
 
 // =============================
@@ -178,30 +158,17 @@ async function carregarAreas() {
 
         areas.forEach(area => {
             if (!area.geojson) return;
-
             const geoLayer = L.geoJSON(area.geojson, {
-                style: {
-                    color: area.cor || "#0d6efd",
-                    weight: 3,
-                    opacity: 0.8,
-                    fillOpacity: 0.15
-                }
+                style: { color: area.cor || "#0d6efd", weight: 3, opacity: 0.8, fillOpacity: 0.15 }
             }).addTo(layers.areas);
 
-            geoLayer.bindPopup(`
-                <div style="min-width:150px">
-                    <h6 class="mb-1 fw-bold text-primary">${escapeHTML(area.nome)}</h6>
-                    <p class="mb-0 small">${escapeHTML(area.descricao) || 'Sem descrição'}</p>
-                </div>
-            `);
+            geoLayer.bindPopup(`<strong>${escapeHTML(area.nome)}</strong><br><small>${escapeHTML(area.descricao) || ''}</small>`);
         });
-    } catch (err) {
-        console.error("Erro ao carregar áreas:", err);
-    }
+    } catch (err) { console.error("Erro ao carregar áreas:", err); }
 }
 
 // =============================
-// CONTROLES DE DESENHO (LEAFLET.DRAW)
+// CONTROLES DE DESENHO E SALVAMENTO
 // =============================
 function inicializarDrawControl() {
     const drawControl = new L.Control.Draw({
@@ -217,19 +184,36 @@ function inicializarDrawControl() {
     map.on(L.Draw.Event.CREATED, function(event) {
         const layer = event.layer;
         layers.areas.addLayer(layer);
-        // Aqui você pode adicionar um fetch POST para salvar a área no banco
-        console.log("Área criada:", layer.toGeoJSON());
+        
+        // 🔥 SALVAR AUTOMATICAMENTE NO BANCO DE DADOS
+        const geojson = layer.toGeoJSON();
+        const urlParams = new URLSearchParams(window.location.search);
+        const acao_id = urlParams.get('acao_id') || 1; // Pega o ID da ação da URL
+        
+        fetch('/api/mapa/areas/salvar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                acao_id: acao_id,
+                geojson: geojson,
+                nome: `Área ${new Date().toLocaleTimeString('pt-BR')}`,
+                descricao: 'Área delimitada via mapa',
+                cor: '#0d6efd'
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.sucesso) console.log('✅ Área salva permanentemente!');
+            else alert('Erro ao salvar área: ' + data.erro);
+        })
+        .catch(err => console.error('Erro na requisição:', err));
     });
 }
 
-// =============================
-// INICIALIZAÇÃO E TOGGLES
-// =============================
 document.addEventListener("DOMContentLoaded", function() {
     document.getElementById("toggle-fotos").addEventListener("change", (e) => {
         e.target.checked ? map.addLayer(layers.fotos) : map.removeLayer(layers.fotos);
     });
-
     document.getElementById("toggle-areas").addEventListener("change", (e) => {
         e.target.checked ? map.addLayer(layers.areas) : map.removeLayer(layers.areas);
     });
@@ -238,7 +222,6 @@ document.addEventListener("DOMContentLoaded", function() {
     carregarFotos();
     carregarAreas();
 });
-
-window.recarregarMapa = () => { carregarFotos(); carregarAreas(); };
 </script>
 {% endblock %}
+

@@ -63,29 +63,31 @@ def registrar():
 
         if not all([acao_id, lat, lon, foto]):
             flash('Preencha todos os campos obrigatórios e tire uma foto.', 'warning')
-            return redirect(url_for('auditorias.registrar'))
+            return redirect(url_for('auditorias.registrar', acao_id=acao_id))
 
         try:
             lat = float(lat)
             lon = float(lon)
         except ValueError:
             flash('Erro ao capturar localização.', 'danger')
-            return redirect(url_for('auditorias.registrar'))
+            return redirect(url_for('auditorias.registrar', acao_id=acao_id))
 
-        # 🔥 TURNO ATIVO
+        # 🔥 TURNO ATIVO (GARANTIR EXISTÊNCIA)
         turno_ativo = Turno.query.filter_by(
             acao_id=acao_id,
             status='ativo'
         ).first()
 
         if not turno_ativo:
-            flash('Nenhum turno ativo encontrado. Inicie um turno.', 'warning')
-            return redirect(url_for('auditorias.registrar'))
+            # Criar automaticamente se não existir
+            turno_ativo = Turno(acao_id=acao_id, status='ativo')
+            db.session.add(turno_ativo)
+            db.session.commit()
 
         foto_url = CloudinaryService.upload_image(foto)
         if not foto_url:
             flash('Erro ao enviar imagem.', 'danger')
-            return redirect(url_for('auditorias.registrar'))
+            return redirect(url_for('auditorias.registrar', acao_id=acao_id))
 
         try:
             nova_auditoria = Auditoria(
@@ -114,7 +116,7 @@ def registrar():
         except Exception as e:
             db.session.rollback()
             flash(f'Erro: {str(e)}', 'danger')
-            return redirect(url_for('auditorias.registrar'))
+            return redirect(url_for('auditorias.registrar', acao_id=acao_id))
 
         flash('Auditoria registrada!', 'success')
         return redirect(url_for('auditorias.listar'))
@@ -181,11 +183,8 @@ def relatorio(acao_id):
 @auditorias_bp.route('/turno/iniciar/<int:acao_id>', methods=['POST'])
 @login_required
 def iniciar_turno(acao_id):
-    existente = Turno.query.filter_by(acao_id=acao_id, status='ativo').first()
-
-    if existente:
-        flash('Já existe turno ativo.', 'warning')
-        return redirect(url_for('auditorias.turnos', acao_id=acao_id))
+    # Encerrar turnos anteriores antes de iniciar um novo
+    Turno.query.filter_by(acao_id=acao_id, status='ativo').update({'status': 'encerrado', 'fim': datetime.utcnow()})
 
     turno = Turno(
         acao_id=acao_id,
@@ -201,32 +200,7 @@ def iniciar_turno(acao_id):
     return redirect(url_for('auditorias.turnos', acao_id=acao_id))
 
 
-@auditorias_bp.route('/turno/pausar/<int:turno_id>')
-@login_required
-def pausar_turno(turno_id):
-    turno = Turno.query.get_or_404(turno_id)
 
-    if turno.status != 'ativo':
-        flash('Só turno ativo pode ser pausado.', 'warning')
-        return redirect(url_for('auditorias.turnos', acao_id=turno.acao_id))
-
-    turno.status = 'pausado'
-    db.session.commit()
-
-    flash('Turno pausado.', 'info')
-    return redirect(url_for('auditorias.turnos', acao_id=turno.acao_id))
-
-
-@auditorias_bp.route('/turno/retomar/<int:turno_id>')
-@login_required
-def retomar_turno(turno_id):
-    turno = Turno.query.get_or_404(turno_id)
-
-    turno.status = 'ativo'
-    db.session.commit()
-
-    flash('Turno retomado.', 'success')
-    return redirect(url_for('auditorias.turnos', acao_id=turno.acao_id))
 
 
 @auditorias_bp.route('/turno/encerrar/<int:turno_id>')

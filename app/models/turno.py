@@ -30,7 +30,7 @@ class Turno(db.Model):
     inicio = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     fim = db.Column(db.DateTime, nullable=True)
     status = db.Column(
-        db.Enum('ativo', 'pausado', 'encerrado', name='turno_status'),
+        db.String(20),
         nullable=False,
         default='ativo'
     )

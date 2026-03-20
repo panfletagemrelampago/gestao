@@ -183,13 +183,19 @@ def relatorio(acao_id):
 @auditorias_bp.route('/turno/iniciar/<int:acao_id>', methods=['POST'])
 @login_required
 def iniciar_turno(acao_id):
-    # Encerrar turnos anteriores antes de iniciar um novo
-    Turno.query.filter_by(acao_id=acao_id, status='ativo').update({'status': 'encerrado', 'fim': datetime.utcnow()})
+    acao = AcaoPromocional.query.get_or_404(acao_id)
 
+    # Encerrar turnos anteriores antes de iniciar um novo
+    Turno.query.filter_by(acao_id=acao_id, status='ativo').update({
+        'status': 'encerrado', 
+        'fim': datetime.utcnow()
+    })
+
+    # Criar o turno herdando dados da ação
     turno = Turno(
         acao_id=acao_id,
-        equipe_id=request.form.get('equipe_id'),
-        veiculo_id=request.form.get('veiculo_id'),
+        equipe_id=acao.equipe_id,
+        veiculo_id=acao.veiculo_id,
         status='ativo'
     )
 

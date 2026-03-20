@@ -30,7 +30,7 @@
                         <select name="acao_id" id="acao_id" class="form-select rounded-3 shadow-none" required>
                             <option value="">Selecione uma ação ativa...</option>
                             {% for acao in acoes %}
-                                <option value="{{ acao.id }}">
+                                <option value="{{ acao.id }}" {% if request.args.get('acao_id')|int == acao.id %}selected{% endif %}>
                                     {{ acao.local_alvo }} ({{ acao.cliente.nome_empresa }})
                                 </option>
                             {% endfor %}

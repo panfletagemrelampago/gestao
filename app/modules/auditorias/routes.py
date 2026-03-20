@@ -50,9 +50,18 @@ def listar():
 @auditorias_bp.route('/registrar', methods=['GET', 'POST'])
 @login_required
 def registrar():
+    # Buscar ações agrupadas por cliente para o seletor melhorado
     acoes_ativas = AcaoPromocional.query.filter(
         AcaoPromocional.status.in_(['Planejada', 'Em Andamento'])
-    ).all()
+    ).order_by(AcaoPromocional.cliente_id, AcaoPromocional.data.desc()).all()
+
+    # Agrupar por cliente
+    clientes_acoes = {}
+    for acao in acoes_ativas:
+        cliente_nome = acao.cliente.nome_empresa if acao.cliente else 'Sem Cliente'
+        if cliente_nome not in clientes_acoes:
+            clientes_acoes[cliente_nome] = []
+        clientes_acoes[cliente_nome].append(acao)
 
     if request.method == 'POST':
         acao_id = request.form.get('acao_id')
@@ -141,7 +150,7 @@ def registrar():
         flash('Auditoria registrada!', 'success')
         return redirect(url_for('auditorias.listar'))
 
-    return render_template('auditorias/registrar.html', acoes=acoes_ativas)
+    return render_template('auditorias/registrar.html', acoes=acoes_ativas, clientes_acoes=clientes_acoes)
 
 
 # =============================
@@ -242,6 +251,7 @@ def iniciar_turno(acao_id):
     flash('Turno iniciado!', 'success')
     return redirect(url_for('auditorias.turnos', acao_id=acao_id))
 
+
 @auditorias_bp.route('/turno/encerrar/<int:turno_id>')
 @login_required
 def encerrar_turno(turno_id):
@@ -249,17 +259,41 @@ def encerrar_turno(turno_id):
     turno.status = 'encerrado'
     turno.fim = datetime.utcnow()
     db.session.commit()
-    flash('Turno encerrado.', 'success')
-    return redirect(url_for('auditorias.turnos', acao_id=turno.acao_id))
+    # Retornar JSON para compatibilidade com fetch() do frontend
+    return jsonify({'status': 'sucesso', 'mensagem': 'Turno encerrado.'})
+
+
+@auditorias_bp.route('/turno/retomar/<int:turno_id>')
+@login_required
+def retomar_turno(turno_id):
+    """Retoma um turno que estava pausado/encerrado, reativando-o."""
+    turno = Turno.query.get_or_404(turno_id)
+    acao_id = turno.acao_id
+
+    # Encerrar qualquer turno ativo antes de retomar este
+    Turno.query.filter_by(acao_id=acao_id, status='ativo').update({
+        'status': 'encerrado',
+        'fim': datetime.utcnow()
+    })
+
+    # Retomar o turno selecionado
+    turno.status = 'ativo'
+    turno.fim = None  # Limpa o horário de fim ao retomar
+    db.session.commit()
+
+    return jsonify({'status': 'sucesso', 'mensagem': 'Turno retomado com sucesso.'})
+
 
 @auditorias_bp.route('/turno/cancelar/<int:turno_id>')
 @login_required
 def cancelar_turno(turno_id):
     turno = Turno.query.get_or_404(turno_id)
+    acao_id = turno.acao_id
     db.session.delete(turno)
     db.session.commit()
     flash('Turno cancelado.', 'danger')
-    return redirect(url_for('auditorias.turnos', acao_id=turno.acao_id))
+    return redirect(url_for('auditorias.turnos', acao_id=acao_id))
+
 
 @auditorias_bp.route('/turno/editar/<int:turno_id>', methods=['POST'])
 @login_required
@@ -272,14 +306,20 @@ def editar_turno(turno_id):
     flash('Turno atualizado.', 'success')
     return redirect(url_for('auditorias.turnos', acao_id=turno.acao_id))
 
+
 @auditorias_bp.route('/turno/excluir/<int:turno_id>')
 @login_required
 def excluir_turno(turno_id):
     turno = Turno.query.get_or_404(turno_id)
-    db.session.delete(turno)
-    db.session.commit()
-    flash('Turno excluído.', 'danger')
-    return redirect(url_for('auditorias.turnos', acao_id=turno.acao_id))
+    acao_id = turno.acao_id
+    try:
+        db.session.delete(turno)
+        db.session.commit()
+        return jsonify({'status': 'sucesso', 'mensagem': 'Turno excluído.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'erro', 'mensagem': str(e)}), 500
+
 
 @auditorias_bp.route('/excluir/<int:auditoria_id>', methods=['POST'])
 @login_required

@@ -369,11 +369,41 @@ fetch('/api/mapa/dados/acao/{{ acao.id }}')
 
     // Ajustar zoom para mostrar tudo
     setTimeout(() => {
-        const allL = L.featureGroup([layersRel.rastros, layersRel.fotos, layersRel.areas]);
-        if (allL.getLayers().length > 0) {
-          try { mapaRel.fitBounds(allL.getBounds(), { padding: [40, 40] }); } catch(e) {}
+        const bounds = [];
+        
+        // Coletar todos os pontos de rastros
+        layersRel.rastros.eachLayer(layer => {
+            if (layer instanceof L.Polyline) bounds.push(layer.getBounds());
+        });
+        
+        // Coletar todos os pontos de fotos
+        layersRel.fotos.eachLayer(layer => {
+            if (layer instanceof L.CircleMarker) bounds.push(layer.getLatLng());
+        });
+        
+        // Coletar todas as áreas
+        layersRel.areas.eachLayer(layer => {
+            if (layer.getBounds) bounds.push(layer.getBounds());
+        });
+
+        if (bounds.length > 0) {
+            const group = L.featureGroup();
+            // Adiciona marcadores invisíveis para criar um bounds consolidado
+            bounds.forEach(b => {
+                if (b instanceof L.LatLngBounds) {
+                    L.marker(b.getSouthWest()).addTo(group);
+                    L.marker(b.getNorthEast()).addTo(group);
+                } else {
+                    L.marker(b).addTo(group);
+                }
+            });
+            try { 
+                mapaRel.fitBounds(group.getBounds(), { padding: [50, 50], maxZoom: 16 }); 
+            } catch(e) {
+                console.error("Erro ao ajustar bounds:", e);
+            }
         }
-    }, 500);
+    }, 800);
   })
   .catch(err => console.error('Erro ao carregar dados do mapa:', err));
 

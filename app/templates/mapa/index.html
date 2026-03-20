@@ -65,6 +65,17 @@
     border-radius:3px;
     margin-right:8px;
 }
+
+/* Toast de notificação */
+#toast-mapa {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    min-width: 280px;
+    display: none;
+}
 </style>
 {% endblock %}
 
@@ -96,8 +107,16 @@
             <span>Fotos no mapa:</span>
             <strong class="text-dark">0</strong>
         </div>
+        <div id="stats-areas" class="small text-muted d-flex justify-content-between align-items-center mt-1">
+            <span>Áreas salvas:</span>
+            <strong class="text-dark" id="count-areas">0</strong>
+        </div>
     </div>
 </div>
+
+<!-- Toast de notificação -->
+<div id="toast-mapa" class="alert shadow-lg border-0 rounded-3 text-center fw-semibold"></div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -119,11 +138,25 @@ const layers = {
     areas: L.featureGroup().addTo(map)
 };
 
+// Mapa de layers para controle de exclusão (area_id -> layer)
+const areaLayerMap = {};
+
 // 🔒 Previne XSS em conteúdo dinâmico
 function escapeHTML(str) {
     return str?.replace(/[&<>"']/g, m => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[m])) || '';
+}
+
+// =============================
+// TOAST DE NOTIFICAÇÃO
+// =============================
+function mostrarToast(mensagem, tipo = 'success') {
+    const toast = document.getElementById('toast-mapa');
+    toast.className = `alert alert-${tipo} shadow-lg border-0 rounded-3 text-center fw-semibold`;
+    toast.textContent = mensagem;
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, 3000);
 }
 
 // =============================
@@ -168,7 +201,7 @@ async function carregarFotos() {
 }
 
 // =============================
-// CARREGAR ÁREAS DE ATUAÇÃO
+// CARREGAR ÁREAS DE ATUAÇÃO (com persistência)
 // =============================
 async function carregarAreas() {
     try {
@@ -176,8 +209,14 @@ async function carregarAreas() {
         const areas = await response.json();
         layers.areas.clearLayers();
 
+        // Limpar mapa de layers
+        Object.keys(areaLayerMap).forEach(k => delete areaLayerMap[k]);
+
+        let totalAreas = 0;
+
         areas.forEach(area => {
             if (!area.geojson) return;
+            totalAreas++;
 
             const geoLayer = L.geoJSON(area.geojson, {
                 style: {
@@ -188,15 +227,105 @@ async function carregarAreas() {
                 }
             }).addTo(layers.areas);
 
+            // Guardar referência para exclusão futura
+            if (area.id) {
+                areaLayerMap[area.id] = geoLayer;
+            }
+
+            const nomeArea = escapeHTML(area.nome) || 'Área sem nome';
+            const descArea = escapeHTML(area.descricao) || 'Sem descrição';
+
+            {% if current_user.tipo_usuario in ['admin', 'equipe'] %}
             geoLayer.bindPopup(`
-                <div style="min-width:150px">
-                    <h6 class="mb-1 fw-bold text-primary">${escapeHTML(area.nome)}</h6>
-                    <p class="mb-0 small">${escapeHTML(area.descricao) || 'Sem descrição'}</p>
+                <div style="min-width:180px">
+                    <h6 class="mb-1 fw-bold text-primary">${nomeArea}</h6>
+                    <p class="mb-2 small">${descArea}</p>
+                    <button onclick="excluirArea(${area.id})" class="btn btn-sm btn-danger w-100 rounded-pill">
+                        <i class="fas fa-trash me-1"></i> Excluir Área
+                    </button>
                 </div>
             `);
+            {% else %}
+            geoLayer.bindPopup(`
+                <div style="min-width:150px">
+                    <h6 class="mb-1 fw-bold text-primary">${nomeArea}</h6>
+                    <p class="mb-0 small">${descArea}</p>
+                </div>
+            `);
+            {% endif %}
         });
+
+        // Atualizar contador
+        const countEl = document.getElementById('count-areas');
+        if (countEl) countEl.textContent = totalAreas;
+
     } catch (err) {
         console.error("Erro ao carregar áreas:", err);
+    }
+}
+
+// =============================
+// SALVAR ÁREA NO BANCO
+// =============================
+async function salvarArea(layer) {
+    const geojson = layer.toGeoJSON();
+    const nome = prompt('Nome para esta área (opcional):', 'Área ' + new Date().toLocaleDateString('pt-BR'));
+    
+    // Se o usuário cancelou o prompt, ainda salva com nome padrão
+    const nomeArea = (nome !== null && nome.trim() !== '') ? nome.trim() : 'Área ' + new Date().toLocaleDateString('pt-BR');
+
+    try {
+        mostrarToast('Salvando área...', 'info');
+
+        const response = await fetch('/api/mapa/areas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                nome: nomeArea,
+                geojson: geojson
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.status === 'sucesso') {
+            mostrarToast('✅ Área "' + nomeArea + '" salva com sucesso!', 'success');
+            // Recarregar áreas para obter o ID correto e popup de exclusão
+            await carregarAreas();
+        } else {
+            mostrarToast('❌ Erro ao salvar área: ' + (data.erro || 'Tente novamente.'), 'danger');
+            // Remover o layer temporário em caso de erro
+            layers.areas.removeLayer(layer);
+        }
+    } catch (err) {
+        console.error("Erro ao salvar área:", err);
+        mostrarToast('❌ Erro de comunicação ao salvar área.', 'danger');
+        layers.areas.removeLayer(layer);
+    }
+}
+
+// =============================
+// EXCLUIR ÁREA DO BANCO
+// =============================
+async function excluirArea(areaId) {
+    if (!confirm('Deseja excluir esta área permanentemente?')) return;
+
+    try {
+        const response = await fetch('/api/mapa/areas/' + areaId, {
+            method: 'DELETE'
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.status === 'sucesso') {
+            mostrarToast('✅ Área excluída com sucesso!', 'success');
+            await carregarAreas();
+        } else {
+            mostrarToast('❌ Erro ao excluir área: ' + (data.erro || 'Tente novamente.'), 'danger');
+        }
+    } catch (err) {
+        console.error("Erro ao excluir área:", err);
+        mostrarToast('❌ Erro de comunicação ao excluir área.', 'danger');
     }
 }
 
@@ -204,6 +333,7 @@ async function carregarAreas() {
 // CONTROLES DE DESENHO (LEAFLET.DRAW)
 // =============================
 function inicializarDrawControl() {
+    {% if current_user.tipo_usuario in ['admin', 'equipe'] %}
     const drawControl = new L.Control.Draw({
         draw: {
             polygon: { allowIntersection: false, shapeOptions: { color: "#0d6efd" } },
@@ -214,12 +344,58 @@ function inicializarDrawControl() {
     });
     map.addControl(drawControl);
 
+    // Evento: nova área desenhada → salvar no banco
     map.on(L.Draw.Event.CREATED, function(event) {
         const layer = event.layer;
         layers.areas.addLayer(layer);
-        // Aqui você pode adicionar um fetch POST para salvar a área no banco
-        console.log("Área criada:", layer.toGeoJSON());
+        salvarArea(layer);
     });
+
+    // Evento: área editada → atualizar no banco (se tiver ID)
+    map.on(L.Draw.Event.EDITED, function(event) {
+        event.layers.eachLayer(function(layer) {
+            // Encontrar o ID da área correspondente
+            const areaId = Object.keys(areaLayerMap).find(id => {
+                const existingLayer = areaLayerMap[id];
+                return existingLayer && existingLayer.hasLayer && existingLayer.hasLayer(layer);
+            });
+
+            if (areaId) {
+                fetch('/api/mapa/areas/' + areaId, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ geojson: layer.toGeoJSON() })
+                }).then(() => {
+                    mostrarToast('✅ Área atualizada!', 'success');
+                }).catch(err => {
+                    console.error('Erro ao atualizar área:', err);
+                    mostrarToast('❌ Erro ao atualizar área.', 'danger');
+                });
+            }
+        });
+    });
+
+    // Evento: área deletada via controle de edição
+    map.on(L.Draw.Event.DELETED, function(event) {
+        event.layers.eachLayer(function(layer) {
+            const areaId = Object.keys(areaLayerMap).find(id => {
+                const existingLayer = areaLayerMap[id];
+                return existingLayer && existingLayer.hasLayer && existingLayer.hasLayer(layer);
+            });
+
+            if (areaId) {
+                fetch('/api/mapa/areas/' + areaId, {
+                    method: 'DELETE'
+                }).then(() => {
+                    mostrarToast('✅ Área excluída!', 'success');
+                    delete areaLayerMap[areaId];
+                }).catch(err => {
+                    console.error('Erro ao excluir área:', err);
+                });
+            }
+        });
+    });
+    {% endif %}
 }
 
 // =============================
@@ -242,4 +418,3 @@ document.addEventListener("DOMContentLoaded", function() {
 window.recarregarMapa = () => { carregarFotos(); carregarAreas(); };
 </script>
 {% endblock %}
-

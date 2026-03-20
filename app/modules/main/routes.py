@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for
+from flask import Blueprint, render_template, redirect, url_for, jsonify
 from flask_login import login_required, current_user
 from app.models.acao_promocional import AcaoPromocional
 from app.models.equipe import Equipe
@@ -6,6 +6,8 @@ from app.models.veiculo import Veiculo
 from app.models.auditoria import Auditoria
 from app.models.material import Material
 from app.models.vaga import Vaga
+from app.extensions import db
+from sqlalchemy import text
 import datetime
 
 main_bp = Blueprint('main', __name__)
@@ -39,3 +41,34 @@ def dashboard():
                            total_materiais=total_materiais,
                            total_vagas=total_vagas,
                            date=datetime.date)
+
+@main_bp.route('/fix-database-emergency')
+def fix_database_emergency():
+    """
+    Rota de emergência para corrigir o banco de dados no Render Free.
+    Cria a coluna nome_campanha e ajusta o ON DELETE CASCADE.
+    """
+    try:
+        # 1. Adicionar a coluna nome_campanha
+        db.session.execute(text("ALTER TABLE acoes_promocionais ADD COLUMN IF NOT EXISTS nome_campanha VARCHAR(255)"))
+        db.session.commit()
+
+        # 2. Ajustar ON DELETE CASCADE
+        sql_fix_fk = """
+        DO $$ 
+        BEGIN 
+            ALTER TABLE fotos_auditoria DROP CONSTRAINT IF EXISTS fotos_auditoria_turno_id_fkey;
+            ALTER TABLE fotos_auditoria 
+            ADD CONSTRAINT fotos_auditoria_turno_id_fkey 
+            FOREIGN KEY (turno_id) 
+            REFERENCES turnos(id) 
+            ON DELETE CASCADE;
+        END $$;
+        """
+        db.session.execute(text(sql_fix_fk))
+        db.session.commit()
+        
+        return "✅ Banco de dados corrigido com sucesso! <a href='/dashboard'>Voltar para o Dashboard</a>"
+    except Exception as e:
+        db.session.rollback()
+        return f"❌ Erro ao corrigir banco: {str(e)}"

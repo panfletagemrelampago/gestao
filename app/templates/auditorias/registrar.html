@@ -24,22 +24,66 @@
                     <input type="hidden" name="longitude" id="lon-input">
                     <input type="hidden" name="accuracy" id="acc-input">
 
-                    <!-- AÇÃO -->
+                    <!-- SELEÇÃO DE CAMPANHA (agrupada por Cliente → Ação) -->
                     <div class="mb-4">
-                        <label for="acao_id" class="form-label fw-semibold">Selecione a Ação</label>
+                        <label for="acao_id" class="form-label fw-semibold">
+                            <i class="fas fa-bullhorn me-1 text-vinho"></i> Selecione a Campanha
+                        </label>
+
+                        {% if clientes_acoes %}
                         <select name="acao_id" id="acao_id" class="form-select rounded-3 shadow-none" required>
-                            <option value="">Selecione uma ação ativa...</option>
-                            {% for acao in acoes %}
-                                <option value="{{ acao.id }}" {% if request.args.get('acao_id')|int == acao.id %}selected{% endif %}>
-                                    {{ acao.local_alvo }} ({{ acao.cliente.nome_empresa }})
+                            <option value="">— Selecione o cliente e a ação —</option>
+                            {% for cliente_nome, acoes_cliente in clientes_acoes.items() %}
+                            <optgroup label="🏢 {{ cliente_nome }}">
+                                {% for acao in acoes_cliente %}
+                                <option value="{{ acao.id }}"
+                                    {% if request.args.get('acao_id')|int == acao.id %}selected{% endif %}>
+                                    📍 {{ acao.local_alvo }}
+                                    {% if acao.bairro %} — {{ acao.bairro }}{% endif %}
+                                    ({{ acao.data.strftime('%d/%m/%Y') }})
+                                    {% if acao.tipo_servico %} · {{ acao.tipo_servico }}{% endif %}
+                                    · {{ acao.status }}
                                 </option>
+                                {% endfor %}
+                            </optgroup>
                             {% endfor %}
                         </select>
+
+                        <!-- Informações da ação selecionada -->
+                        <div id="info-acao" class="mt-2 p-3 bg-light rounded-3 d-none">
+                            <div class="row g-2 small">
+                                <div class="col-6">
+                                    <span class="text-muted">Cliente:</span>
+                                    <strong id="info-cliente">—</strong>
+                                </div>
+                                <div class="col-6">
+                                    <span class="text-muted">Data:</span>
+                                    <strong id="info-data">—</strong>
+                                </div>
+                                <div class="col-6">
+                                    <span class="text-muted">Local:</span>
+                                    <strong id="info-local">—</strong>
+                                </div>
+                                <div class="col-6">
+                                    <span class="text-muted">Status:</span>
+                                    <strong id="info-status">—</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% else %}
+                        <div class="alert alert-warning rounded-3 py-2 px-3 small">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Nenhuma ação ativa no momento. Contate o administrador.
+                        </div>
+                        {% endif %}
                     </div>
 
                     <!-- FOTO -->
                     <div class="mb-4">
-                        <label for="foto-input" class="form-label fw-semibold">Foto da Evidência</label>
+                        <label for="foto-input" class="form-label fw-semibold">
+                            <i class="fas fa-image me-1 text-vinho"></i> Foto da Evidência
+                        </label>
 
                         <div class="upload-container border-2 border-dashed rounded-4 p-4 text-center bg-light position-relative">
                             <input
@@ -71,7 +115,9 @@
 
                     <!-- DESCRIÇÃO -->
                     <div class="mb-4">
-                        <label for="descricao" class="form-label fw-semibold">Descrição (Opcional)</label>
+                        <label for="descricao" class="form-label fw-semibold">
+                            <i class="fas fa-align-left me-1 text-vinho"></i> Descrição (Opcional)
+                        </label>
                         <textarea
                             id="descricao"
                             name="descricao"
@@ -136,6 +182,45 @@
 
 {% block scripts %}
 <script>
+    // ── Dados das ações para exibição de informações ──────────────────────────
+    const acoesData = {
+        {% for acao in acoes %}
+        {{ acao.id }}: {
+            cliente: "{{ acao.cliente.nome_empresa | e }}",
+            local: "{{ acao.local_alvo | e }}",
+            data: "{{ acao.data.strftime('%d/%m/%Y') }}",
+            status: "{{ acao.status }}",
+            tipo: "{{ acao.tipo_servico | e }}"
+        },
+        {% endfor %}
+    };
+
+    // ── Seletor de ação: mostrar informações ao selecionar ────────────────────
+    const selectAcao = document.getElementById('acao_id');
+    const infoAcao = document.getElementById('info-acao');
+
+    if (selectAcao) {
+        selectAcao.addEventListener('change', function() {
+            const id = parseInt(this.value);
+            if (id && acoesData[id]) {
+                const d = acoesData[id];
+                document.getElementById('info-cliente').textContent = d.cliente;
+                document.getElementById('info-local').textContent = d.local;
+                document.getElementById('info-data').textContent = d.data;
+                document.getElementById('info-status').textContent = d.status;
+                infoAcao.classList.remove('d-none');
+            } else {
+                infoAcao.classList.add('d-none');
+            }
+        });
+
+        // Disparar ao carregar se já houver valor selecionado
+        if (selectAcao.value) {
+            selectAcao.dispatchEvent(new Event('change'));
+        }
+    }
+
+    // ── Preview da imagem ─────────────────────────────────────────────────────
     const form = document.getElementById('form-auditoria');
     const latInput = document.getElementById('lat-input');
     const lonInput = document.getElementById('lon-input');
@@ -150,7 +235,6 @@
     let bestPosition = null;
     let watchId = null;
 
-    // PREVIEW DA IMAGEM
     fotoInput.addEventListener('change', function () {
         if (this.files && this.files[0]) {
             const reader = new FileReader();
@@ -165,6 +249,7 @@
         }
     });
 
+    // ── GPS ───────────────────────────────────────────────────────────────────
     function updateGPS() {
         if (!("geolocation" in navigator)) {
             gpsStatus.className = 'alert alert-danger';

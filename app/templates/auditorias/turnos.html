@@ -86,19 +86,13 @@ async function carregarTurnos() {
   data.turnos.forEach(t => {
     let status = t.status === 'ativo'
       ? '<span class="badge bg-success">Ativo</span>'
-      : t.status === 'pausado'
-      ? '<span class="badge bg-warning">Pausado</span>'
       : '<span class="badge bg-secondary">Encerrado</span>';
 
     let acoes = '';
 
     {% if current_user.tipo_usuario in ['admin', 'equipe'] %}
     if (t.status === 'ativo') {
-      acoes += `<button onclick="pausar(${t.id})" class="btn btn-sm btn-warning">⏸</button>`;
       acoes += `<button onclick="encerrar(${t.id})" class="btn btn-sm btn-danger">⛔</button>`;
-    }
-    if (t.status === 'pausado') {
-      acoes += `<button onclick="retomar(${t.id})" class="btn btn-sm btn-success">▶</button>`;
     }
 
     acoes += `<button onclick="editar(${t.id})" class="btn btn-sm btn-primary">✏</button>`;
@@ -121,15 +115,7 @@ async function carregarTurnos() {
    AÇÕES
 ========================= */
 
-async function pausar(id){
-  await fetch('/turno/pausar/' + id);
-  carregarTurnos();
-}
 
-async function retomar(id){
-  await fetch('/turno/retomar/' + id);
-  carregarTurnos();
-}
 
 async function encerrar(id){
   if(confirm('Encerrar turno?')){

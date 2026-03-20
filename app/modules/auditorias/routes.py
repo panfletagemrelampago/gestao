@@ -191,11 +191,16 @@ def iniciar_turno(acao_id):
         'fim': datetime.utcnow()
     })
 
-    # Criar o turno herdando dados da ação
+    # Buscar o veículo vinculado ao líder da equipe
+    from app.models.veiculo import Veiculo
+    veiculo_vinculado = Veiculo.query.filter_by(motorista_id=acao.lider_equipe_id).first()
+    veiculo_id = veiculo_vinculado.id if veiculo_vinculado else None
+
+    # Criar o turno herdando o líder e seu veículo
     turno = Turno(
         acao_id=acao_id,
-        equipe_id=acao.equipe_id,
-        veiculo_id=acao.veiculo_id,
+        equipe_id=acao.lider_equipe_id,
+        veiculo_id=veiculo_id,
         status='ativo'
     )
 

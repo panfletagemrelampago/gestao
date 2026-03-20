@@ -242,8 +242,8 @@ def listar_turnos_acao(acao_id):
         "turnos": [
             {
                 "id": t.id,
-                "equipe": t.equipe.nome if t.equipe else None,
-                "veiculo": t.veiculo.placa if t.veiculo else None,
+                "equipe_nome": t.equipe.nome if t.equipe else None,
+                "veiculo_placa": t.veiculo.placa if t.veiculo else None,
                 "inicio": t.inicio.isoformat() if t.inicio else None,
                 "fim": t.fim.isoformat() if t.fim else None,
                 "status": t.status,

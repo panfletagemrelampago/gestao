@@ -33,16 +33,15 @@
     border: 1px solid rgba(0,0,0,0.08);
     box-shadow: 0 8px 32px rgba(0,0,0,0.15);
     font-size: 13px;
-    /* Removido transition para não interferir com drag */
     overflow: hidden;
     display: flex;
     flex-direction: column;
     max-height: 80vh;
-    /* Cursor padrão; o header terá cursor de arrasto */
     user-select: none;
+    touch-action: none; /* Importante para o drag no mobile */
 }
 
-/* Estado expandido (padrão em desktop) */
+/* Estado expandido */
 #painel-filtros.expandido {
     width: 280px;
     padding: 0;
@@ -60,21 +59,21 @@
 #painel-filtros.arrastando {
     opacity: 0.85;
     box-shadow: 0 16px 48px rgba(0,0,0,0.3);
-    transition: none !important;
+    z-index: 1001;
 }
 
 #painel-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 15px;
+    padding: 12px 15px;
     background: linear-gradient(135deg, #8E0000 0%, #a00000 100%);
     color: white;
     font-weight: 600;
     flex-shrink: 0;
     cursor: grab;
     border-radius: 15px 15px 0 0;
-    user-select: none;
+    min-height: 50px;
 }
 
 #painel-header:active {
@@ -86,32 +85,33 @@
     padding: 0;
     width: 50px;
     height: 50px;
-    display: flex;
-    align-items: center;
     justify-content: center;
-    cursor: grab;
-}
-
-#painel-filtros.retraido #painel-header:active {
-    cursor: grabbing;
 }
 
 #btn-toggle-painel {
-    background: none;
+    background: rgba(255,255,255,0.1);
     border: none;
     color: white;
-    font-size: 18px;
+    font-size: 16px;
     cursor: pointer;
-    padding: 0;
-    display: none;
-    width: 30px;
-    height: 30px;
-}
-
-#painel-filtros.retraido #btn-toggle-painel {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: background 0.2s;
+}
+
+#btn-toggle-painel:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+#painel-filtros.retraido #btn-toggle-painel {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: none;
 }
 
 #painel-titulo {
@@ -119,23 +119,19 @@
     align-items: center;
     gap: 8px;
     flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
 }
 
-/* Ícone de arrasto no header */
 #drag-handle {
     display: flex;
     align-items: center;
-    opacity: 0.7;
-    margin-right: 6px;
-    font-size: 12px;
-    flex-shrink: 0;
+    opacity: 0.6;
+    margin-right: 4px;
+    font-size: 14px;
 }
 
 #painel-filtros.retraido #painel-titulo {
-    display: none;
-}
-
-#painel-filtros.retraido #drag-handle {
     display: none;
 }
 
@@ -154,8 +150,8 @@
     user-select:none;
     display: flex;
     align-items: center;
-    margin-bottom: 10px;
-    padding: 10px;
+    margin-bottom: 8px;
+    padding: 8px 10px;
     border-radius: 8px;
     transition: background 0.2s;
 }
@@ -173,8 +169,8 @@
 
 .cor-legenda{
     display:inline-block;
-    width:14px;
-    height:14px;
+    width:12px;
+    height:12px;
     border-radius:3px;
     margin-right:8px;
     flex-shrink: 0;
@@ -182,7 +178,7 @@
 
 .divisor-painel {
     height: 1px;
-    background: rgba(0,0,0,0.1);
+    background: rgba(0,0,0,0.08);
     margin: 10px 0;
 }
 
@@ -190,7 +186,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 0;
+    padding: 6px 0;
     font-size: 12px;
 }
 
@@ -232,55 +228,21 @@
     background-color: rgba(255, 158, 12, 1);
 }
 
-/* Responsivo */
+/* Responsivo Mobile */
 @media (max-width: 768px) {
-    #painel-filtros {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-    }
-
     #painel-filtros.expandido {
-        width: 280px;
-        height: auto;
-        max-height: 80vh;
+        width: 240px;
         border-radius: 15px;
     }
-
-    #painel-filtros.expandido #painel-header {
-        border-radius: 15px 15px 0 0;
+    
+    #painel-header {
+        padding: 10px 12px;
+        min-height: 45px;
     }
 
-    #painel-header {
-        border-radius: 50%;
-        padding: 0;
+    #painel-filtros.retraido {
         width: 50px;
         height: 50px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    #btn-toggle-painel {
-        display: flex !important;
-        align-items: center;
-        justify-content: center;
-    }
-
-    #painel-titulo {
-        display: none !important;
-    }
-
-    #painel-conteudo {
-        display: none !important;
-    }
-
-    #painel-filtros.expandido #painel-conteudo {
-        display: block !important;
-    }
-
-    #painel-filtros.expandido #painel-titulo {
-        display: flex !important;
     }
 }
 </style>
@@ -290,14 +252,14 @@
 <div class="position-relative">
     <div id="map"></div>
 
-    <!-- PAINEL DE FILTROS RETRÁTIL (com Drag and Drop) -->
+    <!-- PAINEL DE FILTROS RETRÁTIL -->
     <div id="painel-filtros" class="expandido">
         <div id="painel-header">
             <div id="painel-titulo">
                 <span id="drag-handle" title="Arraste para mover">
                     <i class="fas fa-grip-vertical"></i>
                 </span>
-                <i class="fas fa-layer-group"></i>
+                <i class="fas fa-layer-group me-1"></i>
                 <span>Camadas</span>
             </div>
             <button id="btn-toggle-painel" type="button" title="Alternar painel">
@@ -346,45 +308,54 @@
 
 <script>
 // =============================
-// PAINEL RETRÁTIL
-// =============================
-const painelFiltros = document.getElementById('painel-filtros');
-const btnTogglePainel = document.getElementById('btn-toggle-painel');
-
-btnTogglePainel.addEventListener('click', function(e) {
-    e.stopPropagation();
-    painelFiltros.classList.toggle('expandido');
-    painelFiltros.classList.toggle('retraido');
-});
-
-// Fechar painel ao clicar fora (em telas pequenas)
-document.addEventListener('click', function(e) {
-    if (window.innerWidth <= 768) {
-        if (!painelFiltros.contains(e.target) && painelFiltros.classList.contains('expandido')) {
-            painelFiltros.classList.remove('expandido');
-            painelFiltros.classList.add('retraido');
-        }
-    }
-});
-
-// =============================
-// DRAG AND DROP DO PAINEL DE FILTROS
+// PAINEL RETRÁTIL E DRAG
 // =============================
 (function() {
     const painel = document.getElementById('painel-filtros');
     const header = document.getElementById('painel-header');
+    const btnToggle = document.getElementById('btn-toggle-painel');
 
     let isDragging = false;
-    let startX = 0;
-    let startY = 0;
-    let startLeft = 0;
-    let startTop = 0;
+    let startX, startY, startLeft, startTop;
     let hasMoved = false;
-
-    // Chave para persistir posição no localStorage
     const STORAGE_KEY = 'painel_filtros_pos';
 
-    // Restaurar posição salva
+    // Alternar expandir/retrair
+    btnToggle.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const isRetraido = painel.classList.contains('retraido');
+        
+        if (isRetraido) {
+            painel.classList.remove('retraido');
+            painel.classList.add('expandido');
+        } else {
+            painel.classList.remove('expandido');
+            painel.classList.add('retraido');
+        }
+        
+        // Reajustar posição após mudar tamanho
+        const rect = painel.getBoundingClientRect();
+        aplicarPosicao(rect.left, rect.top);
+    });
+
+    function aplicarPosicao(left, top) {
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const pw = painel.offsetWidth;
+        const ph = painel.offsetHeight;
+
+        left = Math.max(5, Math.min(left, vw - pw - 5));
+        top  = Math.max(5, Math.min(top,  vh - ph - 5));
+
+        painel.style.right = 'auto';
+        painel.style.left  = left + 'px';
+        painel.style.top   = top  + 'px';
+    }
+
+    function salvarPosicao(left, top) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ left, top }));
+    }
+
     function restaurarPosicao() {
         try {
             const saved = localStorage.getItem(STORAGE_KEY);
@@ -392,134 +363,65 @@ document.addEventListener('click', function(e) {
                 const pos = JSON.parse(saved);
                 aplicarPosicao(pos.left, pos.top);
             }
-        } catch (e) {
-            // Ignorar erros de localStorage
-        }
+        } catch (e) {}
     }
 
-    // Salvar posição no localStorage
-    function salvarPosicao(left, top) {
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify({ left, top }));
-        } catch (e) {
-            // Ignorar erros de localStorage
-        }
-    }
-
-    // Aplicar posição garantindo que o painel fique dentro da tela
-    function aplicarPosicao(left, top) {
-        const vw = window.innerWidth;
-        const vh = window.innerHeight;
-        const pw = painel.offsetWidth || 280;
-        const ph = painel.offsetHeight || 50;
-
-        // Limitar dentro dos limites da viewport com margem de 10px
-        left = Math.max(10, Math.min(left, vw - pw - 10));
-        top  = Math.max(10, Math.min(top,  vh - ph - 10));
-
-        // Usar left/top em vez de right para posicionamento absoluto
-        painel.style.right = 'auto';
-        painel.style.left  = left + 'px';
-        painel.style.top   = top  + 'px';
-    }
-
-    // ── Mouse Events ──────────────────────────────────────────────────────────
-    header.addEventListener('mousedown', function(e) {
-        // Ignorar cliques em botões dentro do header
+    // Lógica de Drag (Mouse e Touch)
+    function onStart(e) {
         if (e.target.closest('button')) return;
-
+        
         isDragging = true;
         hasMoved = false;
-
-        // Calcular posição atual do painel
+        const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+        const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+        
         const rect = painel.getBoundingClientRect();
-        startX = e.clientX;
-        startY = e.clientY;
+        startX = clientX;
+        startY = clientY;
         startLeft = rect.left;
         startTop  = rect.top;
-
+        
         painel.classList.add('arrastando');
-        e.preventDefault();
-    });
+    }
 
-    document.addEventListener('mousemove', function(e) {
+    function onMove(e) {
         if (!isDragging) return;
-
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
-
-        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
-            hasMoved = true;
-        }
-
-        aplicarPosicao(startLeft + dx, startTop + dy);
-    });
-
-    document.addEventListener('mouseup', function(e) {
-        if (!isDragging) return;
-        isDragging = false;
-        painel.classList.remove('arrastando');
-
-        if (hasMoved) {
-            // Salvar posição final
-            const rect = painel.getBoundingClientRect();
-            salvarPosicao(rect.left, rect.top);
-        }
-    });
-
-    // ── Touch Events (mobile) ─────────────────────────────────────────────────
-    header.addEventListener('touchstart', function(e) {
-        if (e.target.closest('button')) return;
-
-        isDragging = true;
-        hasMoved = false;
-
-        const touch = e.touches[0];
-        const rect = painel.getBoundingClientRect();
-        startX = touch.clientX;
-        startY = touch.clientY;
-        startLeft = rect.left;
-        startTop  = rect.top;
-
-        painel.classList.add('arrastando');
-        // Não prevenir default aqui para não bloquear scroll em mobile
-    }, { passive: true });
-
-    document.addEventListener('touchmove', function(e) {
-        if (!isDragging) return;
-
-        const touch = e.touches[0];
-        const dx = touch.clientX - startX;
-        const dy = touch.clientY - startY;
-
+        
+        const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+        const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+        
+        const dx = clientX - startX;
+        const dy = clientY - startY;
+        
         if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
             hasMoved = true;
-            e.preventDefault(); // Prevenir scroll apenas quando arrastando
+            if (e.cancelable) e.preventDefault();
         }
-
+        
         aplicarPosicao(startLeft + dx, startTop + dy);
-    }, { passive: false });
+    }
 
-    document.addEventListener('touchend', function() {
+    function onEnd() {
         if (!isDragging) return;
         isDragging = false;
         painel.classList.remove('arrastando');
-
         if (hasMoved) {
             const rect = painel.getBoundingClientRect();
             salvarPosicao(rect.left, rect.top);
         }
-    });
+    }
 
-    // Restaurar posição ao carregar a página
+    header.addEventListener('mousedown', onStart);
+    header.addEventListener('touchstart', onStart, { passive: true });
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('mouseup', onEnd);
+    document.addEventListener('touchend', onEnd);
+
     window.addEventListener('load', restaurarPosicao);
-
-    // Reajustar posição ao redimensionar a janela
-    window.addEventListener('resize', function() {
+    window.addEventListener('resize', () => {
         const rect = painel.getBoundingClientRect();
-        if (rect.left !== 0 || rect.top !== 0) {
-            aplicarPosicao(rect.left, rect.top);
-        }
+        aplicarPosicao(rect.left, rect.top);
     });
 })();
 
@@ -551,19 +453,14 @@ const layers = {
     areas: L.featureGroup().addTo(map)
 };
 
-// Mapa de layers para controle de exclusão (area_id -> layer)
 const areaLayerMap = {};
 
-// 🔒 Previne XSS em conteúdo dinâmico
 function escapeHTML(str) {
     return str?.replace(/[&<>"']/g, m => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[m])) || '';
 }
 
-// =============================
-// TOAST DE NOTIFICAÇÃO
-// =============================
 function mostrarToast(mensagem, tipo = 'success') {
     const toast = document.getElementById('toast-mapa');
     toast.className = `alert alert-${tipo} shadow-lg border-0 rounded-3 text-center fw-semibold`;
@@ -572,9 +469,6 @@ function mostrarToast(mensagem, tipo = 'success') {
     setTimeout(() => { toast.style.display = 'none'; }, 3000);
 }
 
-// =============================
-// CARREGAR FOTOS DE CAMPO
-// =============================
 async function carregarFotos() {
     try {
         const response = await fetch('/api/mapa/fotos');
@@ -610,16 +504,11 @@ async function carregarFotos() {
     }
 }
 
-// =============================
-// CARREGAR ÁREAS DE ATUAÇÃO (com persistência)
-// =============================
 async function carregarAreas() {
     try {
         const response = await fetch('/api/mapa/areas');
         const areas = await response.json();
         layers.areas.clearLayers();
-
-        // Limpar mapa de layers
         Object.keys(areaLayerMap).forEach(k => delete areaLayerMap[k]);
 
         let totalAreas = 0;
@@ -627,18 +516,10 @@ async function carregarAreas() {
             if (!area.geojson) return;
             totalAreas++;
             const geoLayer = L.geoJSON(area.geojson, {
-                style: {
-                    color: area.cor || "#0d6efd",
-                    weight: 3,
-                    opacity: 0.8,
-                    fillOpacity: 0.15
-                }
+                style: { color: area.cor || "#0d6efd", weight: 3, opacity: 0.8, fillOpacity: 0.15 }
             }).addTo(layers.areas);
 
-            // Guardar referência para exclusão futura
-            if (area.id) {
-                areaLayerMap[area.id] = geoLayer;
-            }
+            if (area.id) areaLayerMap[area.id] = geoLayer;
 
             const nomeArea = escapeHTML(area.nome) || 'Área sem nome';
             const descArea = escapeHTML(area.descricao) || 'Sem descrição';
@@ -662,21 +543,15 @@ async function carregarAreas() {
             `);
             {% endif %}
         });
-
-        // Atualizar contador
         document.getElementById('count-areas').textContent = totalAreas;
     } catch (err) {
         console.error("Erro ao carregar áreas:", err);
     }
 }
 
-// =============================
-// SALVAR ÁREA NO BANCO
-// =============================
 async function salvarArea(layer) {
     const geojson = layer.toGeoJSON();
     const nome = prompt('Nome para esta área (opcional):', 'Área ' + new Date().toLocaleDateString('pt-BR'));
-    
     const nomeArea = (nome !== null && nome.trim() !== '') ? nome.trim() : 'Área ' + new Date().toLocaleDateString('pt-BR');
 
     try {
@@ -684,14 +559,9 @@ async function salvarArea(layer) {
         const response = await fetch('/api/mapa/areas', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                nome: nomeArea,
-                geojson: geojson
-            })
+            body: JSON.stringify({ nome: nomeArea, geojson: geojson })
         });
-
         const data = await response.json();
-
         if (response.ok && data.status === 'sucesso') {
             mostrarToast('✅ Área "' + nomeArea + '" salva com sucesso!', 'success');
             await carregarAreas();
@@ -706,19 +576,11 @@ async function salvarArea(layer) {
     }
 }
 
-// =============================
-// EXCLUIR ÁREA DO BANCO
-// =============================
 async function excluirArea(areaId) {
     if (!confirm('Deseja excluir esta área permanentemente?')) return;
-
     try {
-        const response = await fetch('/api/mapa/areas/' + areaId, {
-            method: 'DELETE'
-        });
-
+        const response = await fetch('/api/mapa/areas/' + areaId, { method: 'DELETE' });
         const data = await response.json();
-
         if (response.ok && data.status === 'sucesso') {
             mostrarToast('✅ Área excluída com sucesso!', 'success');
             await carregarAreas();
@@ -731,9 +593,6 @@ async function excluirArea(areaId) {
     }
 }
 
-// =============================
-// CONTROLES DE DESENHO (LEAFLET.DRAW)
-// =============================
 function inicializarDrawControl() {
     {% if current_user.tipo_usuario in ['admin', 'equipe'] %}
     const drawControl = new L.Control.Draw({
@@ -745,69 +604,17 @@ function inicializarDrawControl() {
         edit: { featureGroup: layers.areas }
     });
     map.addControl(drawControl);
-
-    map.on(L.Draw.Event.CREATED, function(event) {
-        const layer = event.layer;
-        layers.areas.addLayer(layer);
-        salvarArea(layer);
-    });
-
-    map.on(L.Draw.Event.EDITED, function(event) {
-        event.layers.eachLayer(function(layer) {
-            const areaId = Object.keys(areaLayerMap).find(id => {
-                const existingLayer = areaLayerMap[id];
-                return existingLayer && existingLayer.hasLayer && existingLayer.hasLayer(layer);
-            });
-
-            if (areaId) {
-                fetch('/api/mapa/areas/' + areaId, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ geojson: layer.toGeoJSON() })
-                }).then(() => {
-                    mostrarToast('✅ Área atualizada!', 'success');
-                }).catch(err => {
-                    console.error('Erro ao atualizar área:', err);
-                    mostrarToast('❌ Erro ao atualizar área.', 'danger');
-                });
-            }
-        });
-    });
-
-    map.on(L.Draw.Event.DELETED, function(event) {
-        event.layers.eachLayer(function(layer) {
-            const areaId = Object.keys(areaLayerMap).find(id => {
-                const existingLayer = areaLayerMap[id];
-                return existingLayer && existingLayer.hasLayer && existingLayer.hasLayer(layer);
-            });
-
-            if (areaId) {
-                fetch('/api/mapa/areas/' + areaId, {
-                    method: 'DELETE'
-                }).then(() => {
-                    mostrarToast('✅ Área excluída!', 'success');
-                    delete areaLayerMap[areaId];
-                }).catch(err => {
-                    console.error('Erro ao excluir área:', err);
-                });
-            }
-        });
-    });
+    map.on(L.Draw.Event.CREATED, (e) => { layers.areas.addLayer(e.layer); salvarArea(e.layer); });
     {% endif %}
 }
 
-// =============================
-// INICIALIZAÇÃO E TOGGLES
-// =============================
 document.addEventListener("DOMContentLoaded", function() {
     document.getElementById("toggle-fotos").addEventListener("change", (e) => {
         e.target.checked ? map.addLayer(layers.fotos) : map.removeLayer(layers.fotos);
     });
-
     document.getElementById("toggle-areas").addEventListener("change", (e) => {
         e.target.checked ? map.addLayer(layers.areas) : map.removeLayer(layers.areas);
     });
-
     inicializarDrawControl();
     carregarFotos();
     carregarAreas();

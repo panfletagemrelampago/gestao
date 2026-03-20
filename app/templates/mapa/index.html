@@ -60,6 +60,7 @@
     flex-shrink: 0;
     cursor: pointer;
     border-radius: 15px 15px 0 0;
+    user-select: none;
 }
 
 #painel-controle.retraido #painel-header {
@@ -219,7 +220,7 @@
     <div id="map"></div>
 
     <!-- PAINEL RETRÁTIL -->
-    <div id="painel-controle" class="retraido">
+    <div id="painel-controle">
         <div id="painel-header">
             <div id="painel-titulo">
                 <i class="fas fa-layer-group"></i>
@@ -272,10 +273,23 @@
 // =============================
 const painelControle = document.getElementById('painel-controle');
 const btnTogglePainel = document.getElementById('btn-toggle-painel');
+const painelHeader = document.getElementById('painel-header');
 
-btnTogglePainel.addEventListener('click', function() {
-    painelControle.classList.toggle('expandido');
-});
+// Função para alternar o painel
+function togglePainel(e) {
+    if (e) e.stopPropagation();
+    
+    if (window.innerWidth <= 768) {
+        // No mobile, usamos a classe 'expandido' para controlar a visibilidade total
+        painelControle.classList.toggle('expandido');
+    } else {
+        // No desktop, usamos a classe 'retraido' para recolher
+        painelControle.classList.toggle('retraido');
+    }
+}
+
+btnTogglePainel.addEventListener('click', togglePainel);
+painelHeader.addEventListener('click', togglePainel);
 
 // Fechar painel ao clicar fora (em telas pequenas)
 document.addEventListener('click', function(e) {

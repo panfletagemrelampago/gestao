@@ -12,17 +12,13 @@ def fotos_mapa():
 
     resultado = []
 
-    # Importar FotoAuditoria para buscar o vínculo com o turno
-    from app.models.foto_auditoria import FotoAuditoria
-    
     for a in auditorias:
         if not a.latitude or not a.longitude:
             continue
 
-        # Buscar o ID do turno vinculado a esta auditoria na tabela fotos_auditoria
-        # (onde o vínculo com o turno realmente existe no seu banco)
-        foto_registro = FotoAuditoria.query.filter_by(url=a.foto_url).first()
-        turno_id = foto_registro.turno_id if foto_registro else "N/A"
+        # Buscar o período do turno (Manhã, Tarde, etc.) da Ação vinculada
+        # O campo 'turno' está no modelo AcaoPromocional
+        periodo_turno = a.acao.turno if a.acao else "N/A"
 
         resultado.append({
             "lat": a.latitude,
@@ -31,7 +27,7 @@ def fotos_mapa():
             "descricao": a.descricao,
             "data": a.data_hora.isoformat() if a.data_hora else None,
             "id": a.id,
-            "turno_id": turno_id
+            "turno_id": periodo_turno
         })
 
     return jsonify(resultado)

@@ -142,12 +142,21 @@ def turnos(acao_id):
     veiculos = Veiculo.query.filter_by(status=True).all()
     turnos = Turno.query.filter_by(acao_id=acao_id).order_by(Turno.inicio.desc()).all()
 
+    # Buscar o veículo vinculado ao líder da ação
+    veiculo_lider = None
+    if acao.lider_equipe_id:
+        veiculo_lider = Veiculo.query.filter_by(
+            motorista_id=acao.lider_equipe_id,
+            status=True
+        ).first()
+
     return render_template(
         'auditorias/turnos.html',
         acao=acao,
         equipes=equipes,
         veiculos=veiculos,
-        turnos=turnos
+        turnos=turnos,
+        veiculo_lider=veiculo_lider
     )
 
 

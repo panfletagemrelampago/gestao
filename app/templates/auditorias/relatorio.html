@@ -158,9 +158,9 @@
             </td>
             <td><span class="badge bg-primary rounded-pill px-3">{{ t.fotos|length }}</span></td>
             <td>
-              <span class="badge {% if t.status == 'ativo' %}bg-success{% elif t.status == 'pausado' %}bg-warning text-dark{% else %}bg-secondary{% endif %} rounded-pill px-3">
-                {{ t.status|capitalize }}
-              </span>
+<span class="badge {% if t.status == 'ativo' %}bg-success{% else %}bg-secondary{% endif %} rounded-pill px-3">
+	                {{ t.status|capitalize }}
+	              </span>
             </td>
           </tr>
           {% endfor %}

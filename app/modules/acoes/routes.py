@@ -112,21 +112,22 @@ def excluir(id):
     acao = AcaoPromocional.query.get_or_404(id)
 
     try:
-        # 🔥 1. Buscar turnos da ação
+        # 🔥 1. Deletar auditorias vinculadas à ação
+        for auditoria in acao.auditorias:
+            db.session.delete(auditoria)
+
+        # 🔥 2. Buscar turnos da ação para deletar fotos vinculadas
         turnos = Turno.query.filter_by(acao_id=id).all()
-
         for turno in turnos:
-            # 🔥 2. Deletar fotos do turno
-            fotos = FotoAuditoria.query.filter_by(turno_id=turno.id).all()
-            for foto in fotos:
+            # 2.1 Deletar fotos vinculadas ao turno (FotoAuditoria)
+            for foto in turno.fotos:
                 db.session.delete(foto)
-
-            # 🔥 3. Deletar turno
+            
+            # 2.2 Deletar o turno
             db.session.delete(turno)
 
-        # 🔥 4. Deletar ação
+        # 🔥 3. Deletar a ação
         db.session.delete(acao)
-
         db.session.commit()
 
         flash('Ação excluída com sucesso!', 'success')

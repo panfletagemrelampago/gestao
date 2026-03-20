@@ -15,7 +15,7 @@
     <div class="col-6 col-md-4 col-lg-2">
         <div class="card stat-widget h-100 border-0 shadow-sm rounded-4 p-3 text-center">
             <div class="stat-icon bg-vinho bg-opacity-10 rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
-                <i class="fas fa-rocket text-vinho"></i>
+                <i class="fas fa-rocket text-vinho" style="font-size: 1.2rem;"></i>
             </div>
             <h4 class="fw-bold mb-0">{{ acoes_dia|length }}</h4>
             <small class="text-muted d-block">Ações</small>
@@ -24,7 +24,7 @@
     <div class="col-6 col-md-4 col-lg-2">
         <div class="card stat-widget h-100 border-0 shadow-sm rounded-4 p-3 text-center">
             <div class="stat-icon bg-primary bg-opacity-10 rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
-                <i class="fas fa-users text-primary"></i>
+                <i class="fas fa-users text-primary" style="font-size: 1.2rem;"></i>
             </div>
             <h4 class="fw-bold mb-0">{{ equipes_ativas }}</h4>
             <small class="text-muted d-block">Equipes</small>
@@ -33,7 +33,7 @@
     <div class="col-6 col-md-4 col-lg-2">
         <div class="card stat-widget h-100 border-0 shadow-sm rounded-4 p-3 text-center">
             <div class="stat-icon bg-laranja bg-opacity-10 rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
-                <i class="fas fa-car text-laranja"></i>
+                <i class="fas fa-car text-laranja" style="font-size: 1.2rem;"></i>
             </div>
             <h4 class="fw-bold mb-0">{{ veiculos_em_campo }}</h4>
             <small class="text-muted d-block">Veículos</small>
@@ -42,7 +42,7 @@
     <div class="col-6 col-md-4 col-lg-2">
         <div class="card stat-widget h-100 border-0 shadow-sm rounded-4 p-3 text-center">
             <div class="stat-icon bg-info bg-opacity-10 rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
-                <i class="fas fa-camera-retro text-info"></i>
+                <i class="fas fa-camera-retro text-info" style="font-size: 1.2rem;"></i>
             </div>
             <h4 class="fw-bold mb-0">{{ ultimas_auditorias|length }}</h4>
             <small class="text-muted d-block">Auditorias</small>
@@ -51,7 +51,7 @@
     <div class="col-6 col-md-4 col-lg-2">
         <div class="card stat-widget h-100 border-0 shadow-sm rounded-4 p-3 text-center">
             <div class="stat-icon bg-success bg-opacity-10 rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
-                <i class="fas fa-boxes-stacked text-success"></i>
+                <i class="fas fa-boxes-stacked text-success" style="font-size: 1.2rem;"></i>
             </div>
             <h4 class="fw-bold mb-0">{{ total_materiais }}</h4>
             <small class="text-muted d-block">Materiais</small>
@@ -60,7 +60,7 @@
     <div class="col-6 col-md-4 col-lg-2">
         <div class="card stat-widget h-100 border-0 shadow-sm rounded-4 p-3 text-center">
             <div class="stat-icon bg-warning bg-opacity-10 rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
-                <i class="fas fa-user-tie text-warning"></i>
+                <i class="fas fa-user-tie text-warning" style="font-size: 1.2rem;"></i>
             </div>
             <h4 class="fw-bold mb-0">{{ total_vagas }}</h4>
             <small class="text-muted d-block">Candidatos</small>
@@ -98,7 +98,6 @@
                                 <td><span class="badge bg-primary bg-opacity-10 text-primary rounded-pill small">{{ acao.status }}</span></td>
                                 <td class="pe-3">
                                     <div class="d-flex justify-content-center">
-                                        <!-- BOTÃO DE MAPA CORRIGIDO: QUADRADO COM BORDAS ARREDONDADAS -->
                                         <a href="{{ url_for('mapa.index') }}?acao_id={{ acao.id }}" 
                                            class="btn btn-sm btn-primary rounded-3 shadow-sm d-flex align-items-center justify-content-center" 
                                            style="width: 36px; height: 36px; transition: 0.2s;">
@@ -156,10 +155,10 @@
 <style>
     .cursor-pointer { cursor: pointer; }
     .x-small { font-size: 0.75rem; }
-    .text-vinho { color: #8E0000; }
-    .bg-vinho { background-color: #8E0000; }
-    .text-laranja { color: #FF9E0C; }
-    .bg-laranja { background-color: #FF9E0C; }
+    .text-vinho { color: #8E0000 !important; }
+    .bg-vinho { background-color: #8E0000 !important; }
+    .text-laranja { color: #fd7e14 !important; }
+    .bg-laranja { background-color: #fd7e14 !important; }
     .btn-primary { background-color: #0d6efd; border-color: #0d6efd; }
     .btn-primary:hover { background-color: #0b5ed7; border-color: #0a58ca; transform: translateY(-1px); }
 </style>

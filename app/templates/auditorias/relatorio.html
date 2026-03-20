@@ -10,9 +10,7 @@
 {% endmacro %}
 
 {% block head %}
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
-  #mapa-relatorio { height: 450px; border-radius: 12px; border: 1px solid #eee; }
   .foto-thumb { width: 100%; height: 140px; object-fit: cover; border-radius: 8px; cursor: pointer; transition: transform 0.2s; }
   .foto-thumb:hover { transform: scale(1.03); }
   .badge-dentro { background: #198754; }
@@ -41,7 +39,6 @@
 
   @media print {
     .no-print { display: none !important; }
-    #mapa-relatorio { height: 350px; }
     .card { break-inside: avoid; }
   }
 </style>
@@ -137,16 +134,6 @@
       <div class="small opacity-75">Áreas Definidas</div>
       <div class="fs-2 fw-bold">{{ areas|length }}</div>
     </div>
-  </div>
-</div>
-
-<!-- Mapa do Relatório -->
-<div class="card border-0 shadow-sm rounded-4 mb-4">
-  <div class="card-header border-0 rounded-top-4 bg-white py-3">
-    <h6 class="mb-0 fw-bold"><i class="fas fa-map me-2" style="color:#8E0000;"></i>Mapa de Atividades</h6>
-  </div>
-  <div class="card-body p-2">
-    <div id="mapa-relatorio"></div>
   </div>
 </div>
 
@@ -319,94 +306,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-// ── Mapa do Relatório ────────────────────────────────────────────────────────
-// Inicializa em Cuiabá (MT) como fallback, mas o fitBounds vai ajustar
-const mapaRel = L.map('mapa-relatorio').setView([-15.5668, -56.0568], 13);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© OpenStreetMap contributors'
-}).addTo(mapaRel);
-
-const layersRel = {
-  rastros: L.layerGroup().addTo(mapaRel),
-  fotos:   L.layerGroup().addTo(mapaRel),
-  areas:   L.layerGroup().addTo(mapaRel)
-};
-
-fetch('/api/mapa/dados/acao/{{ acao.id }}')
-  .then(r => r.json())
-  .then(data => {
-    // Rastros
-    Object.keys(data.rastros_por_turno || {}).forEach(turnoId => {
-      const info = data.rastros_por_turno[turnoId];
-      if (info.pontos && info.pontos.length > 1) {
-        L.polyline(info.pontos, { color: '#8E0000', weight: 4, opacity: 0.6 })
-          .addTo(layersRel.rastros)
-          .bindPopup('<strong>Turno #' + turnoId + '</strong><br>Equipe: ' + (info.equipe||'—'));
-      }
-    });
-
-    // Fotos
-    (data.fotos || []).forEach(f => {
-      const cor = f.dentro_da_area === true ? '#198754' : f.dentro_da_area === false ? '#dc3545' : '#FF9E0C';
-      L.circleMarker([f.latitude, f.longitude], {
-        radius: 7, fillColor: cor, color: '#fff', weight: 2, fillOpacity: 0.9
-      }).addTo(layersRel.fotos)
-        .bindPopup('<div class="text-center"><img src="' + f.url + '" style="max-width:180px;border-radius:8px;margin-bottom:8px;"><br><small class="fw-bold">' + new Date(f.data_hora).toLocaleString('pt-BR') + '</small></div>');
-    });
-
-    // Áreas
-    (data.areas || []).forEach(area => {
-      if (!area.geojson) return;
-      try {
-        L.geoJSON(area.geojson, {
-          style: { color: area.cor||'#0d6efd', fillColor: area.cor||'#0d6efd', fillOpacity: 0.1, weight: 2, dashArray: '5,5' }
-        }).addTo(layersRel.areas)
-          .bindPopup('<strong>' + area.nome + '</strong>');
-      } catch(e) {}
-    });
-
-    // Ajustar zoom para mostrar tudo
-    setTimeout(() => {
-        const bounds = [];
-        
-        // Coletar todos os pontos de rastros
-        layersRel.rastros.eachLayer(layer => {
-            if (layer instanceof L.Polyline) bounds.push(layer.getBounds());
-        });
-        
-        // Coletar todos os pontos de fotos
-        layersRel.fotos.eachLayer(layer => {
-            if (layer instanceof L.CircleMarker) bounds.push(layer.getLatLng());
-        });
-        
-        // Coletar todas as áreas
-        layersRel.areas.eachLayer(layer => {
-            if (layer.getBounds) bounds.push(layer.getBounds());
-        });
-
-        if (bounds.length > 0) {
-            const group = L.featureGroup();
-            // Adiciona marcadores invisíveis para criar um bounds consolidado
-            bounds.forEach(b => {
-                if (b instanceof L.LatLngBounds) {
-                    L.marker(b.getSouthWest()).addTo(group);
-                    L.marker(b.getNorthEast()).addTo(group);
-                } else {
-                    L.marker(b).addTo(group);
-                }
-            });
-            try { 
-                mapaRel.fitBounds(group.getBounds(), { padding: [50, 50], maxZoom: 16 }); 
-            } catch(e) {
-                console.error("Erro ao ajustar bounds:", e);
-            }
-        }
-    }, 800);
-  })
-  .catch(err => console.error('Erro ao carregar dados do mapa:', err));
-
 // Modal de foto
 document.querySelectorAll('.foto-thumb').forEach(img => {
   img.addEventListener('click', function() {

@@ -2,8 +2,7 @@
 Blueprint do módulo de auditorias de campo.
 Gerencia o registro de auditorias, turnos de campo e geração de relatórios.
 """
-from datetime import datetime, timezone
-import pytz
+from datetime import datetime, timedelta, timezone
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
 from flask_login import login_required, current_user
 from app.models.acao_promocional import AcaoPromocional
@@ -20,22 +19,20 @@ from app.extensions import db
 auditorias_bp = Blueprint('auditorias', __name__)
 
 # =============================
-# HELPER: CONVERTER PARA TIMEZONE LOCAL
+# HELPER: CONVERTER PARA TIMEZONE LOCAL (GMT-3)
 # =============================
 def get_local_now():
-    """Retorna datetime atual no timezone de Brasília (America/Sao_Paulo)"""
-    tz = pytz.timezone('America/Sao_Paulo')
-    return datetime.now(tz).replace(tzinfo=None)
+    """Retorna datetime atual no fuso de Brasília (GMT-3) sem usar pytz"""
+    # UTC -> Brasília (GMT-3)
+    return datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=-3))).replace(tzinfo=None)
 
 def to_local_tz(dt):
-    """Converte um datetime UTC para timezone local"""
+    """Converte um datetime UTC para local (GMT-3)"""
     if dt is None:
         return None
     if dt.tzinfo is None:
-        # Se não tem timezone, assume UTC
-        dt = dt.replace(tzinfo=pytz.UTC)
-    tz = pytz.timezone('America/Sao_Paulo')
-    return dt.astimezone(tz).replace(tzinfo=None)
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone(timedelta(hours=-3))).replace(tzinfo=None)
 
 
 # =============================
@@ -295,7 +292,7 @@ def retomar_turno(turno_id):
         'fim': get_local_now()
     })
 
-    # Retomar o turno selecionado
+    # Retomar the turno selecionado
     turno.status = 'ativo'
     turno.fim = None  # Limpa o horário de fim ao retomar
     db.session.commit()

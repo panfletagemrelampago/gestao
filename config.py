@@ -45,8 +45,8 @@ class Config:
     CLOUDINARY_API_KEY = os.environ.get("CLOUDINARY_API_KEY")
     CLOUDINARY_API_SECRET = os.environ.get("CLOUDINARY_API_SECRET")
 
-    # Timezone (Horário de Cuiabá - UTC-4)
-    TIMEZONE = 'America/Cuiaba'
+    # Timezone (Horário de Brasília)
+    TIMEZONE = 'America/Sao_Paulo'
 
     # Outras configurações
     ITEMS_PER_PAGE = 10

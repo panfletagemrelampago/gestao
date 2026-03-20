@@ -18,16 +18,9 @@ from app.services.gps_service import GpsService
 from app.services.cloudinary_service import CloudinaryService
 from app.extensions import db
 from app.models.mapa_area import MapaArea
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 api_bp = Blueprint('api', __name__)
-
-# =============================
-# HELPER: CONVERTER PARA TIMEZONE LOCAL (GMT-4 - Cuiabá)
-# =============================
-def get_local_now():
-    """Retorna datetime atual no fuso de Cuiabá (GMT-4) sem usar pytz"""
-    return datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=-4))).replace(tzinfo=None)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -59,7 +52,7 @@ def receber_gps():
         latitude=float(lat),
         longitude=float(lon),
         accuracy=float(acc) if acc is not None else None,
-        data_hora=get_local_now()
+        data_hora=datetime.utcnow()
     )
     db.session.add(nova_posicao)
     db.session.commit()
@@ -73,7 +66,7 @@ def gps_latest():
     """
     Retorna as últimas posições de todos os dispositivos ativos nas últimas 24 horas.
     """
-    tempo_limite = get_local_now() - timedelta(hours=24)
+    tempo_limite = datetime.utcnow() - timedelta(hours=24)
 
     # CORREÇÃO: Usar device_id e data_hora conforme modelo PosicaoGps
     # Subquery para pegar a última posição de cada device
@@ -115,7 +108,7 @@ def historico_gps(device_id):
     if horas <= 0 or horas > 168:  # Máximo 7 dias
         return jsonify({"erro": "Parâmetro 'horas' deve estar entre 1 e 168"}), 400
 
-    tempo_limite = get_local_now() - timedelta(hours=horas)
+    tempo_limite = datetime.utcnow() - timedelta(hours=horas)
 
     # CORREÇÃO: Usar device_id (string) e data_hora conforme modelo PosicaoGps
     posicoes = PosicaoGps.query.filter(
@@ -167,7 +160,7 @@ def iniciar_turno():
         return jsonify({"erro": "Permissão negada para iniciar turno"}), 403
 
     # Encerrar turnos anteriores antes de iniciar um novo
-    Turno.query.filter_by(acao_id=acao_id, status='ativo').update({'status': 'encerrado', 'fim': get_local_now()})
+    Turno.query.filter_by(acao_id=acao_id, status='ativo').update({'status': 'encerrado', 'fim': datetime.utcnow()})
 
     # Se veiculo_id não foi passado, buscar o veículo vinculado à equipe
     if not veiculo_id and equipe_id:
@@ -182,7 +175,7 @@ def iniciar_turno():
             acao_id=acao_id,
             equipe_id=equipe_id,
             veiculo_id=veiculo_id,
-            inicio=get_local_now(),
+            inicio=datetime.utcnow(),
             status='ativo',
             observacoes=observacoes
         )
@@ -216,7 +209,7 @@ def encerrar_turno(turno_id):
     data = request.get_json() or {}
 
     try:
-        turno.fim = get_local_now()
+        turno.fim = datetime.utcnow()
         turno.status = 'encerrado'
         if data.get('observacoes'):
             turno.observacoes = data.get('observacoes')
@@ -604,7 +597,7 @@ def enviar_foto():
             longitude=lon,
             descricao=descricao,
             dentro_da_area=dentro_da_area,
-            data_hora=get_local_now()
+            data_hora=datetime.utcnow()
         )
         db.session.add(nova_foto)
         db.session.commit()
@@ -668,7 +661,7 @@ def mapa_dados():
     Inclui rastros GPS, fotos geolocalizadas, áreas de atuação e veículos.
     Filtra por acao_id se fornecido via query string.
     """
-    tempo_limite = get_local_now() - timedelta(hours=24)
+    tempo_limite = datetime.utcnow() - timedelta(hours=24)
     acao_id = request.args.get('acao_id', type=int)
 
     # Verificar permissões do cliente
@@ -811,7 +804,7 @@ def mapa_dados_acao(acao_id):
 
         pontos_turno = []
         for usuario in membros_com_device:
-            fim = turno.fim or get_local_now()
+            fim = turno.fim or datetime.utcnow()
             posicoes = PosicaoGps.query.filter(
                 PosicaoGps.device_id == usuario.device_id,
                 PosicaoGps.data_hora >= turno.inicio,

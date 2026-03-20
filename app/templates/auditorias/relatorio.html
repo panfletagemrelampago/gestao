@@ -20,6 +20,25 @@
   .stat-card { border-radius: 12px; padding: 18px; color: white; transition: transform 0.2s; }
   .stat-card:hover { transform: translateY(-3px); }
   .text-vinho { color: #8E0000; }
+  
+  /* Ajuste de botões no mobile */
+  @media (max-width: 768px) {
+    .header-actions-relatorio {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-start;
+      margin-top: 15px;
+    }
+    .header-actions-relatorio .btn {
+      flex: 1 1 auto;
+      min-width: 120px;
+      margin: 0 !important;
+      padding: 8px 12px;
+      font-size: 13px;
+    }
+  }
+
   @media print {
     .no-print { display: none !important; }
     #mapa-relatorio { height: 350px; }
@@ -40,7 +59,7 @@
       Gerado em {{ agora.strftime('%d/%m/%Y às %H:%M') }} por {{ current_user.nome_exibicao }}
     </p>
   </div>
-  <div class="col-md-4 text-md-end mt-2 mt-md-0 no-print">
+  <div class="col-md-4 text-md-end no-print header-actions-relatorio">
     <button onclick="window.print()" class="btn btn-sm btn-outline-secondary rounded-pill me-2">
       <i class="fas fa-print me-1"></i> Imprimir
     </button>
@@ -192,7 +211,6 @@
       {% for foto in fotos %}
       <div class="col-6 col-md-3 col-lg-2">
         <div class="position-relative">
-          {# FotoAuditoria usa campo 'url', não 'foto_url' #}
           <img src="{{ foto.url }}" alt="Foto {{ loop.index }}" class="foto-thumb shadow-sm"
                data-bs-toggle="modal" data-bs-target="#modalFoto"
                data-url="{{ foto.url }}"
@@ -246,7 +264,7 @@
 </div>
 {% endif %}
 
-<!-- Modal de foto ampliada com informações completas -->
+<!-- Modal de foto ampliada -->
 <div class="modal fade" id="modalFoto" tabindex="-1">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
@@ -258,11 +276,9 @@
       </div>
       <div class="modal-body p-0">
         <div class="row g-0">
-          <!-- Foto -->
           <div class="col-md-7 bg-dark d-flex align-items-center justify-content-center" style="min-height:300px;">
             <img id="modalFotoImg" src="" alt="Foto" class="img-fluid" style="max-height:500px; object-fit:contain;">
           </div>
-          <!-- Informações detalhadas -->
           <div class="col-md-5 p-4 d-flex flex-column gap-3">
             <div>
               <div class="text-muted small mb-1"><i class="fas fa-bullhorn me-1 text-danger"></i>Nome da Campanha</div>
@@ -272,26 +288,25 @@
               <div class="text-muted small mb-1"><i class="fas fa-building me-1"></i>Cliente</div>
               <div class="fw-semibold" id="modalFotoCliente">—</div>
             </div>
+            <div id="modalFotoBadge" class="mb-1"></div>
             <div>
               <div class="text-muted small mb-1"><i class="fas fa-calendar-alt me-1"></i>Data e Hora</div>
               <div class="fw-semibold" id="modalFotoHora">—</div>
             </div>
             <div>
               <div class="text-muted small mb-1"><i class="fas fa-clock me-1"></i>Turno</div>
-              <div class="small" id="modalFotoTurno">—</div>
+              <div class="fw-semibold" id="modalFotoTurno">—</div>
             </div>
             <div>
               <div class="text-muted small mb-1"><i class="fas fa-align-left me-1"></i>Descrição</div>
-              <div class="small" id="modalFotoDescricao" style="color:#444;">—</div>
+              <div class="small" id="modalFotoDescricao">—</div>
             </div>
             <div>
               <div class="text-muted small mb-1"><i class="fas fa-crosshairs me-1"></i>Coordenadas GPS</div>
               <div class="small font-monospace" id="modalFotoCoordenadas">—</div>
             </div>
-            <div id="modalFotoBadge"></div>
             <div class="mt-auto">
-              <a id="modalFotoMapaLink" href="#" target="_blank"
-                 class="btn btn-sm btn-outline-primary rounded-pill w-100">
+              <a id="modalFotoMapaLink" href="#" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill w-100">
                 <i class="fas fa-map me-1"></i> Ver no Google Maps
               </a>
             </div>
@@ -307,7 +322,8 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 // ── Mapa do Relatório ────────────────────────────────────────────────────────
-const mapaRel = L.map('mapa-relatorio').setView([-23.5505, -46.6333], 13);
+// Inicializa em Cuiabá (MT) como fallback, mas o fitBounds vai ajustar
+const mapaRel = L.map('mapa-relatorio').setView([-15.5668, -56.0568], 13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors'
 }).addTo(mapaRel);
@@ -318,17 +334,16 @@ const layersRel = {
   areas:   L.layerGroup().addTo(mapaRel)
 };
 
-// Carregar dados via API
 fetch('/api/mapa/dados/acao/{{ acao.id }}')
   .then(r => r.json())
   .then(data => {
-    // Rastros GPS por turno
+    // Rastros
     Object.keys(data.rastros_por_turno || {}).forEach(turnoId => {
       const info = data.rastros_por_turno[turnoId];
       if (info.pontos && info.pontos.length > 1) {
         L.polyline(info.pontos, { color: '#8E0000', weight: 4, opacity: 0.6 })
           .addTo(layersRel.rastros)
-          .bindPopup('<strong>Turno #' + turnoId + '</strong><br>Equipe: ' + (info.equipe||'—') + '<br>Veículo: ' + (info.veiculo||'A pé'));
+          .bindPopup('<strong>Turno #' + turnoId + '</strong><br>Equipe: ' + (info.equipe||'—'));
       }
     });
 
@@ -362,7 +377,7 @@ fetch('/api/mapa/dados/acao/{{ acao.id }}')
   })
   .catch(err => console.error('Erro ao carregar dados do mapa:', err));
 
-// ── Modal de foto ampliada com informações completas ──────────────────────────
+// Modal de foto
 document.querySelectorAll('.foto-thumb').forEach(img => {
   img.addEventListener('click', function() {
     const dentro = this.dataset.dentro;
@@ -371,14 +386,12 @@ document.querySelectorAll('.foto-thumb').forEach(img => {
     const turnoId = this.dataset.turno;
 
     document.getElementById('modalFotoImg').src = this.dataset.url;
-    document.getElementById('modalFotoTitulo').innerHTML = '<i class="fas fa-camera me-2"></i>Evidência de Campo';
     document.getElementById('modalFotoAcao').textContent = this.dataset.acao || '—';
     document.getElementById('modalFotoCliente').textContent = this.dataset.cliente || '—';
     document.getElementById('modalFotoHora').textContent = this.dataset.hora || '—';
     document.getElementById('modalFotoTurno').textContent = turnoId ? 'Turno #' + turnoId : '—';
     document.getElementById('modalFotoDescricao').textContent = this.dataset.descricao || 'Sem descrição registrada.';
 
-    // Coordenadas e link Google Maps
     if (lat && lon) {
       const latF = parseFloat(lat).toFixed(6);
       const lonF = parseFloat(lon).toFixed(6);
@@ -390,7 +403,6 @@ document.querySelectorAll('.foto-thumb').forEach(img => {
       document.getElementById('modalFotoMapaLink').style.display = 'none';
     }
 
-    // Badge dentro/fora da área
     let badge = '';
     if (dentro === 'True') {
       badge = '<span class="badge bg-success rounded-pill px-3"><i class="fas fa-check-circle me-1"></i>Dentro da área</span>';

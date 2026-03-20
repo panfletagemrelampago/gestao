@@ -92,7 +92,7 @@
     }
     #lista-turnos .table tbody td { vertical-align: middle; padding: 0.75rem 1rem; }
 
-    /* ── Botões de ação ── */
+    /* ── Botões de ação (ESTÉTICA CORRIGIDA) ── */
     .btn-turno {
         display: inline-flex; align-items: center; gap: 0.4rem;
         font-size: 0.78rem; font-weight: 600; padding: 0.45rem 0.9rem;
@@ -100,10 +100,9 @@
         transition: all 0.2s; white-space: nowrap; color: #fff !important;
     }
     .btn-turno:hover { opacity: 0.85; transform: translateY(-1px); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    .btn-turno-parar    { background: #dc3545; }
-    .btn-turno-retomar  { background: #198754; }
-    .btn-turno-editar   { background: #0d6efd; }
-    .btn-turno-excluir  { background: #6c757d; }
+    .btn-turno-parar { background: #dc3545; }
+    .btn-turno-editar { background: #0d6efd; }
+    .btn-turno-excluir { background: #6c757d; }
     
     .acoes-turno { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
 </style>
@@ -156,11 +155,7 @@
                 let acoes = '<div class="acoes-turno">';
                 {% if current_user.tipo_usuario in ['admin', 'equipe'] %}
                 if (t.status === 'ativo') {
-                    // Turno ativo: mostrar Parar, Editar, Excluir
                     acoes += `<button onclick="encerrar(${t.id})" class="btn-turno btn-turno-parar"><i class="fas fa-stop-circle"></i> Parar</button>`;
-                } else {
-                    // Turno encerrado: mostrar Retomar
-                    acoes += `<button onclick="retomar(${t.id})" class="btn-turno btn-turno-retomar"><i class="fas fa-play-circle"></i> Retomar</button>`;
                 }
                 acoes += `<button onclick="editar(${t.id})" class="btn-turno btn-turno-editar"><i class="fas fa-pen"></i> Editar</button>`;
                 acoes += `<button onclick="excluir(${t.id})" class="btn-turno btn-turno-excluir"><i class="fas fa-trash-alt"></i> Excluir</button>`;
@@ -187,52 +182,15 @@
 
     async function encerrar(id) {
         if (confirm('Deseja encerrar este turno?')) {
-            try {
-                const resp = await fetch('/auditorias/turno/encerrar/' + id);
-                const data = await resp.json();
-                if (data.status === 'sucesso') {
-                    carregarTurnos();
-                } else {
-                    alert('Erro ao encerrar turno: ' + (data.mensagem || 'Tente novamente.'));
-                }
-            } catch (err) {
-                console.error('Erro ao encerrar turno:', err);
-                alert('Erro de comunicação. Tente novamente.');
-            }
-        }
-    }
-
-    async function retomar(id) {
-        if (confirm('Deseja retomar este turno? O turno ativo atual (se houver) será encerrado.')) {
-            try {
-                const resp = await fetch('/auditorias/turno/retomar/' + id);
-                const data = await resp.json();
-                if (data.status === 'sucesso') {
-                    carregarTurnos();
-                } else {
-                    alert('Erro ao retomar turno: ' + (data.mensagem || 'Tente novamente.'));
-                }
-            } catch (err) {
-                console.error('Erro ao retomar turno:', err);
-                alert('Erro de comunicação. Tente novamente.');
-            }
+            await fetch('/auditorias/turno/encerrar/' + id);
+            carregarTurnos();
         }
     }
 
     async function excluir(id) {
         if (confirm('Deseja excluir este turno? Esta ação não pode ser desfeita.')) {
-            try {
-                const resp = await fetch('/auditorias/turno/excluir/' + id);
-                const data = await resp.json();
-                if (data.status === 'sucesso') {
-                    carregarTurnos();
-                } else {
-                    alert('Erro ao excluir turno: ' + (data.mensagem || 'Tente novamente.'));
-                }
-            } catch (err) {
-                console.error('Erro ao excluir turno:', err);
-                alert('Erro de comunicação. Tente novamente.');
-            }
+            await fetch('/auditorias/turno/excluir/' + id);
+            carregarTurnos();
         }
     }
 

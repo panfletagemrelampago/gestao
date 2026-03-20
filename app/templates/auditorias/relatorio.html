@@ -1,6 +1,14 @@
 {% extends "base.html" %}
 {% block title %}Relatório de Auditoria — {{ acao.local_alvo }}{% endblock %}
 
+{% macro format_datetime(dt) %}
+  {% if dt %}
+    {{ dt.strftime('%d/%m/%Y %H:%M') }}
+  {% else %}
+    —
+  {% endif %}
+{% endmacro %}
+
 {% block head %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>

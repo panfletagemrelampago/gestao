@@ -1,259 +1,211 @@
 {% extends "base.html" %}
+
 {% block title %}Turnos de Campo — {{ acao.local_alvo }}{% endblock %}
 
 {% block content %}
+
 <div class="row mb-4 align-items-center">
-  <div class="col-md-8">
-    <h2 class="mb-0">
-      <i class="fas fa-clock me-2" style="color:#8E0000;"></i>
-      Turnos de Campo
-    </h2>
-    <p class="text-muted small mb-0">
-      <strong>{{ acao.local_alvo }}</strong> — {{ acao.cliente.nome_empresa }} —
-      {{ acao.data.strftime('%d/%m/%Y') }}
-    </p>
-  </div>
-  <div class="col-md-4 text-md-end mt-2 mt-md-0">
-    <a href="{{ url_for('mapa.index') }}?acao_id={{ acao.id }}" class="btn btn-sm btn-outline-primary rounded-pill me-2">
-      <i class="fas fa-map me-1"></i> Ver no Mapa
-    </a>
-    <a href="{{ url_for('auditorias.relatorio', acao_id=acao.id) }}" class="btn btn-sm rounded-pill" style="background:#8E0000;color:white;">
-      <i class="fas fa-file-alt me-1"></i> Relatório
-    </a>
-  </div>
+    <div class="col-md-8">
+        <h2 class="mb-0">
+            <i class="fas fa-clock me-2" style="color:#8E0000;"></i>
+            Turnos de Campo
+        </h2>
+        <p class="text-muted small mb-0">
+            <strong>{{ acao.local_alvo }}</strong> — {{ acao.cliente.nome_empresa }} — {{ acao.data.strftime('%d/%m/%Y') }}
+        </p>
+    </div>
+    <div class="col-md-4 text-md-end mt-2 mt-md-0">
+        <a href="{{ url_for('mapa.index') }}?acao_id={{ acao.id }}" class="btn btn-sm btn-outline-primary rounded-pill me-2">
+            <i class="fas fa-map me-1"></i> Ver no Mapa
+        </a>
+        <a href="{{ url_for('auditorias.relatorio', acao_id=acao.id) }}" class="btn btn-sm rounded-pill" style="background:#8E0000;color:white;">
+            <i class="fas fa-file-alt me-1"></i> Relatório
+        </a>
+    </div>
 </div>
 
-<!-- INICIAR TURNO -->
+<!-- SEÇÃO: INICIAR NOVO TURNO -->
 {% if current_user.tipo_usuario in ['admin', 'equipe'] %}
 <div class="card border-0 shadow-sm rounded-4 mb-4">
-  <div class="card-header text-white d-flex justify-content-between align-items-center" style="background:#8E0000;">
-    <h6 class="mb-0">Novo Turno de Campo</h6>
-    <span class="badge bg-white" style="color: #8E0000 !important;">{{ acao.status }}</span>
-  </div>
-  <div class="card-body">
-    <div class="row align-items-center">
-      <div class="col-md-8">
-        <p class="mb-1">
-          <strong>Equipe (Líder):</strong>
-          {{ acao.lider.nome if acao.lider else 'Não definida' }}
-        </p>
-        <p class="mb-0 text-muted small">
-          <strong>Veículo Vinculado:</strong>
-          {% if veiculo_lider %}
-            <span class="badge bg-light text-dark border">
-              <i class="fas fa-car me-1"></i>{{ veiculo_lider.placa }} — {{ veiculo_lider.modelo }} ({{ veiculo_lider.cor }})
-            </span>
-          {% else %}
-            <span class="badge bg-light text-secondary border">
-              <i class="fas fa-walking me-1"></i> A pé
-            </span>
-          {% endif %}
-        </p>
-      </div>
-      <div class="col-md-4 text-md-end mt-3 mt-md-0">
-        <form action="{{ url_for('auditorias.iniciar_turno', acao_id=acao.id) }}" method="POST">
-          <button type="submit" class="btn btn-success rounded-pill px-4">
-            <i class="fas fa-play me-2"></i> Iniciar Turno
-          </button>
-        </form>
-      </div>
+    <div class="card-header text-white d-flex justify-content-between align-items-center" style="background:#8E0000;">
+        <h6 class="mb-0">Novo Turno de Campo</h6>
+        <span class="badge bg-white" style="color: #8E0000 !important;">{{ acao.status }}</span>
     </div>
-  </div>
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <p class="mb-1">
+                    <strong>Equipe (Líder):</strong> 
+                    {{ acao.lider.nome if acao.lider else 'Não definida' }}
+                </p>
+                <p class="mb-0 text-muted small">
+                    <strong>Veículo Vinculado:</strong>
+                    {% if veiculo_lider %}
+                        <span class="badge bg-light text-dark border">
+                            <i class="fas fa-car me-1"></i>{{ veiculo_lider.placa }} — {{ veiculo_lider.modelo }} ({{ veiculo_lider.cor }})
+                        </span>
+                    {% else %}
+                        <span class="badge bg-light text-secondary border">
+                            <i class="fas fa-walking me-1"></i> A pé
+                        </span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <form action="{{ url_for('auditorias.iniciar_turno', acao_id=acao.id) }}" method="POST">
+                    <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold">
+                        <i class="fas fa-play me-2"></i> Iniciar Turno
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 {% endif %}
 
-<!-- LISTA -->
+<!-- SEÇÃO: HISTÓRICO DE TURNOS -->
 <div class="card border-0 shadow-sm rounded-4">
-  <div class="card-header d-flex align-items-center" style="background:#f8f9fa; border-bottom: 1px solid #dee2e6;">
-    <i class="fas fa-list me-2 text-muted"></i>
-    <h6 class="mb-0 text-muted">Histórico de Turnos</h6>
-  </div>
-  <div class="card-body p-0">
-    <div id="lista-turnos"></div>
-  </div>
+    <div class="card-header d-flex align-items-center" style="background:#f8f9fa; border-bottom: 1px solid #dee2e6;">
+        <i class="fas fa-list me-2 text-muted"></i>
+        <h6 class="mb-0 text-muted">Histórico de Turnos</h6>
+    </div>
+    <div class="card-body p-0">
+        <div id="lista-turnos">
+            <!-- Conteúdo carregado via JavaScript -->
+            <div class="p-5 text-center text-muted">
+                <div class="spinner-border spinner-border-sm me-2"></div>
+                Carregando turnos...
+            </div>
+        </div>
+    </div>
 </div>
 
 {% endblock %}
 
 {% block scripts %}
 <style>
-  /* ── Tabela de turnos ── */
-  #lista-turnos .table {
-    margin-bottom: 0;
-    font-size: 0.875rem;
-  }
-  #lista-turnos .table thead th {
-    background: #f8f9fa;
-    color: #6c757d;
-    font-weight: 600;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    border-bottom: 2px solid #dee2e6;
-    padding: 0.75rem 1rem;
-  }
-  #lista-turnos .table tbody td {
-    vertical-align: middle;
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid #f0f0f0;
-  }
-  #lista-turnos .table tbody tr:last-child td {
-    border-bottom: none;
-  }
+    /* ── Tabela de turnos ── */
+    #lista-turnos .table { margin-bottom: 0; font-size: 0.875rem; }
+    #lista-turnos .table thead th {
+        background: #f8f9fa; color: #6c757d; font-weight: 600;
+        font-size: 0.75rem; text-transform: uppercase; padding: 0.75rem 1rem;
+    }
+    #lista-turnos .table tbody td { vertical-align: middle; padding: 0.75rem 1rem; }
 
-  /* ── Botões de ação ── */
-  .btn-turno {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    font-size: 0.78rem;
-    font-weight: 500;
-    padding: 0.35rem 0.75rem;
-    border-radius: 20px;
-    border: none;
-    cursor: pointer;
-    transition: opacity 0.15s, transform 0.1s;
-    white-space: nowrap;
-  }
-  .btn-turno:hover {
-    opacity: 0.85;
-    transform: translateY(-1px);
-  }
-  .btn-turno:active {
-    transform: translateY(0);
-  }
-  .btn-turno-parar {
-    background: #dc3545;
-    color: #fff;
-  }
-  .btn-turno-editar {
-    background: #0d6efd;
-    color: #fff;
-  }
-  .btn-turno-excluir {
-    background: #6c757d;
-    color: #fff;
-  }
-  .acoes-turno {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-    align-items: center;
-  }
+    /* ── Botões de ação (ESTÉTICA CORRIGIDA) ── */
+    .btn-turno {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        font-size: 0.78rem; font-weight: 600; padding: 0.45rem 0.9rem;
+        border-radius: 20px; border: none; cursor: pointer;
+        transition: all 0.2s; white-space: nowrap; color: #fff !important;
+    }
+    .btn-turno:hover { opacity: 0.85; transform: translateY(-1px); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .btn-turno-parar { background: #dc3545; }
+    .btn-turno-editar { background: #0d6efd; }
+    .btn-turno-excluir { background: #6c757d; }
+    
+    .acoes-turno { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
 </style>
 
 <script>
-const ACAO_ID = {{ acao.id }};
+    const ACAO_ID = {{ acao.id }};
 
-async function carregarTurnos() {
-  const resp = await fetch('/api/turnos/acao/' + ACAO_ID);
-  const data = await resp.json();
-  const el = document.getElementById('lista-turnos');
+    async function carregarTurnos() {
+        try {
+            const resp = await fetch('/api/turnos/acao/' + ACAO_ID);
+            const data = await resp.json();
+            const el = document.getElementById('lista-turnos');
 
-  if (!data.turnos || data.turnos.length === 0) {
-    el.innerHTML = `
-      <div class="p-5 text-center text-muted">
-        <i class="fas fa-inbox fa-2x mb-2 d-block opacity-50"></i>
-        Nenhum turno registrado ainda.
-      </div>`;
-    return;
-  }
+            if (!data.turnos || data.turnos.length === 0) {
+                el.innerHTML = `
+                    <div class="p-5 text-center text-muted">
+                        <i class="fas fa-inbox fa-2x mb-2 d-block opacity-50"></i>
+                        Nenhum turno registrado ainda.
+                    </div>`;
+                return;
+            }
 
-  let html = `
-    <div class="table-responsive">
-      <table class="table mb-0">
-        <thead>
-          <tr>
-            <th>Equipe</th>
-            <th>Veículo</th>
-            <th>Status</th>
-            <th>Duração</th>
-            <th>Fotos</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody>`;
+            let html = `
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Equipe</th>
+                                <th>Veículo</th>
+                                <th>Status</th>
+                                <th>Duração</th>
+                                <th>Fotos</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
 
-  data.turnos.forEach(t => {
-    const statusBadge = t.status === 'ativo'
-      ? '<span class="badge rounded-pill bg-success"><i class="fas fa-circle me-1" style="font-size:0.55rem;"></i>Ativo</span>'
-      : '<span class="badge rounded-pill bg-secondary"><i class="fas fa-circle me-1" style="font-size:0.55rem;"></i>Encerrado</span>';
+            data.turnos.forEach(t => {
+                const statusBadge = t.status === 'ativo'
+                    ? '<span class="badge rounded-pill bg-success bg-opacity-10 text-success px-3">Ativo</span>'
+                    : '<span class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary px-3">Encerrado</span>';
 
-    const veiculo = t.veiculo_placa
-      ? `<span class="badge bg-light text-dark border"><i class="fas fa-car me-1"></i>${t.veiculo_placa}</span>`
-      : `<span class="text-muted small"><i class="fas fa-walking me-1"></i>A pé</span>`;
+                const veiculo = t.veiculo_placa
+                    ? `<span class="badge bg-light text-dark border fw-normal"><i class="fas fa-car me-1"></i>${t.veiculo_placa}</span>`
+                    : `<span class="text-muted small"><i class="fas fa-walking me-1"></i>A pé</span>`;
 
-    const duracao = t.duracao_minutos != null
-      ? `<span class="text-muted">${t.duracao_minutos} min</span>`
-      : `<span class="text-muted">—</span>`;
+                const duracao = t.duracao_minutos != null ? `${t.duracao_minutos} min` : '—';
+                const fotos = `<span class="badge bg-light text-dark border fw-normal"><i class="fas fa-camera me-1"></i>${t.total_fotos || 0}</span>`;
 
-    const fotos = `<span class="badge bg-light text-dark border"><i class="fas fa-camera me-1"></i>${t.total_fotos || 0}</span>`;
+                let acoes = '<div class="acoes-turno">';
+                {% if current_user.tipo_usuario in ['admin', 'equipe'] %}
+                if (t.status === 'ativo') {
+                    acoes += `<button onclick="encerrar(${t.id})" class="btn-turno btn-turno-parar"><i class="fas fa-stop-circle"></i> Parar</button>`;
+                }
+                acoes += `<button onclick="editar(${t.id})" class="btn-turno btn-turno-editar"><i class="fas fa-pen"></i> Editar</button>`;
+                acoes += `<button onclick="excluir(${t.id})" class="btn-turno btn-turno-excluir"><i class="fas fa-trash-alt"></i> Excluir</button>`;
+                {% endif %}
+                acoes += '</div>';
 
-    let acoes = '<div class="acoes-turno">';
+                html += `
+                    <tr>
+                        <td><div class="fw-bold">${t.equipe_nome || '—'}</div></td>
+                        <td>${veiculo}</td>
+                        <td>${statusBadge}</td>
+                        <td><span class="text-muted small">${duracao}</span></td>
+                        <td>${fotos}</td>
+                        <td>${acoes}</td>
+                    </tr>`;
+            });
 
-    {% if current_user.tipo_usuario in ['admin', 'equipe'] %}
-    if (t.status === 'ativo') {
-      acoes += `<button onclick="encerrar(${t.id})" class="btn-turno btn-turno-parar">
-                  <i class="fas fa-stop-circle"></i> Parar
-                </button>`;
+            html += '</tbody></table></div>';
+            el.innerHTML = html;
+        } catch (err) {
+            console.error("Erro ao carregar turnos:", err);
+        }
     }
-    acoes += `<button onclick="editar(${t.id})" class="btn-turno btn-turno-editar">
-                <i class="fas fa-pen"></i> Editar
-              </button>`;
-    acoes += `<button onclick="excluir(${t.id})" class="btn-turno btn-turno-excluir">
-                <i class="fas fa-trash-alt"></i> Excluir
-              </button>`;
-    {% endif %}
 
-    acoes += '</div>';
+    async function encerrar(id) {
+        if (confirm('Deseja encerrar este turno?')) {
+            await fetch('/auditorias/turno/encerrar/' + id);
+            carregarTurnos();
+        }
+    }
 
-    html += `<tr>
-      <td><strong>${t.equipe_nome || '—'}</strong></td>
-      <td>${veiculo}</td>
-      <td>${statusBadge}</td>
-      <td>${duracao}</td>
-      <td>${fotos}</td>
-      <td>${acoes}</td>
-    </tr>`;
-  });
+    async function excluir(id) {
+        if (confirm('Deseja excluir este turno? Esta ação não pode ser desfeita.')) {
+            await fetch('/auditorias/turno/excluir/' + id);
+            carregarTurnos();
+        }
+    }
 
-  html += '</tbody></table></div>';
-  el.innerHTML = html;
-}
+    async function editar(id) {
+        const obs = prompt('Nova observação:');
+        if (obs === null) return;
+        await fetch('/auditorias/turno/editar/' + id, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'observacoes=' + encodeURIComponent(obs)
+        });
+        carregarTurnos();
+    }
 
-/* =========================
-   AÇÕES
-========================= */
-
-async function encerrar(id) {
-  if (confirm('Deseja encerrar este turno?')) {
-    await fetch('/auditorias/turno/encerrar/' + id);
     carregarTurnos();
-  }
-}
-
-async function excluir(id) {
-  if (confirm('Deseja excluir este turno? Esta ação não pode ser desfeita.')) {
-    await fetch('/auditorias/turno/excluir/' + id);
-    carregarTurnos();
-  }
-}
-
-async function editar(id) {
-  const obs = prompt('Nova observação:');
-  if (!obs) return;
-
-  await fetch('/auditorias/turno/editar/' + id, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'observacoes=' + encodeURIComponent(obs)
-  });
-
-  carregarTurnos();
-}
-
-/* INIT */
-carregarTurnos();
-setInterval(carregarTurnos, 20000);
+    setInterval(carregarTurnos, 30000);
 </script>
 {% endblock %}

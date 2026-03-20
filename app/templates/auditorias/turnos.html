@@ -33,8 +33,9 @@
   <div class="card-body">
     <div class="row align-items-center">
       <div class="col-md-8">
-        <p class="mb-1"><strong>Equipe:</strong> {{ acao.equipe.nome if acao.equipe else 'Não definida' }}</p>
-        <p class="mb-0 text-muted small"><strong>Veículo:</strong> {{ acao.veiculo.placa if acao.veiculo else 'A pé' }}</p>
+        {% set veiculo_vinculado = acao.lider.veiculos[0] if acao.lider and acao.lider.veiculos else None %}
+        <p class="mb-1"><strong>Equipe (Líder):</strong> {{ acao.lider.nome if acao.lider else 'Não definida' }}</p>
+        <p class="mb-0 text-muted small"><strong>Veículo Vinculado:</strong> {{ veiculo_vinculado.placa if veiculo_vinculado else 'A pé' }}</p>
       </div>
       <div class="col-md-4 text-md-end mt-3 mt-md-0">
         <form action="{{ url_for('auditorias.iniciar_turno', acao_id=acao.id) }}" method="POST">
@@ -90,11 +91,11 @@ async function carregarTurnos() {
     {% endif %}
 
     html += `<tr>
-      <td>${t.equipe || '-'}</td>
-      <td>${status}</td>
-      <td>${t.duracao_minutos || '-'} min</td>
-      <td>${acoes}</td>
-    </tr>`;
+	      <td>${t.equipe_nome || '-'}</td>
+	      <td>${status}</td>
+	      <td>${t.duracao_minutos || '-'} min</td>
+	      <td>${acoes}</td>
+	    </tr>`;
   });
 
   html += '</tbody></table>';

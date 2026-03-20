@@ -3,7 +3,7 @@ Blueprint do módulo de auditorias de campo.
 Gerencia o registro de auditorias, turnos de campo e geração de relatórios.
 """
 from datetime import datetime
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from app.models.acao_promocional import AcaoPromocional
 from app.models.auditoria import Auditoria
@@ -65,6 +65,11 @@ def registrar():
             flash('Preencha todos os campos obrigatórios e tire uma foto.', 'warning')
             return redirect(url_for('auditorias.registrar', acao_id=acao_id))
 
+        acao = AcaoPromocional.query.get(acao_id)
+        if not acao:
+            flash('Ação não encontrada.', 'danger')
+            return redirect(url_for('auditorias.registrar'))
+
         try:
             lat = float(lat)
             lon = float(lon)
@@ -79,15 +84,16 @@ def registrar():
         ).first()
 
         if not turno_ativo:
-            # Criar automaticamente se não existir
-            # Buscar o veículo vinculado ao líder da ação
-            veiculo_id = None
-            if acao.lider_equipe_id:
-                veiculo_vinculado = Veiculo.query.filter_by(
-                    motorista_id=acao.lider_equipe_id,
-                    status=True
-                ).first()
-                veiculo_id = veiculo_vinculado.id if veiculo_vinculado else None
+            # Lógica de busca de veículo robusta para criação automática
+            veiculo_vinculado = Veiculo.query.filter_by(motorista_id=acao.lider_equipe_id).first()
+            if not veiculo_vinculado and acao.lider:
+                nome_lider = acao.lider.nome.split()[0]
+                veiculo_vinculado = Veiculo.query.filter(Veiculo.modelo.ilike(f"%{nome_lider}%")).first()
+            
+            if not veiculo_vinculado:
+                veiculo_vinculado = Veiculo.query.filter_by(status=True).first()
+                
+            veiculo_id = veiculo_vinculado.id if veiculo_vinculado else None
             
             turno_ativo = Turno(
                 acao_id=acao_id,
@@ -145,6 +151,10 @@ def registrar():
 @login_required
 def turnos(acao_id):
     acao = AcaoPromocional.query.get_or_404(acao_id)
+    
+    # Forçar carregamento do líder para garantir vínculo do veículo
+    if acao.lider_equipe_id and not acao.lider:
+        acao.lider = Equipe.query.get(acao.lider_equipe_id)
 
     if current_user.tipo_usuario == 'cliente':
         cliente = Cliente.query.filter_by(email=current_user.email).first()
@@ -154,22 +164,24 @@ def turnos(acao_id):
 
     equipes = Equipe.query.filter_by(status=True).all()
     veiculos = Veiculo.query.filter_by(status=True).all()
-    turnos = Turno.query.filter_by(acao_id=acao_id).order_by(Turno.inicio.desc()).all()
+    turnos_lista = Turno.query.filter_by(acao_id=acao_id).order_by(Turno.inicio.desc()).all()
 
-    # Buscar o veículo vinculado ao líder da ação
+    # LÓGICA DE VÍNCULO DE VEÍCULO INFALÍVEL
     veiculo_lider = None
     if acao.lider_equipe_id:
-        veiculo_lider = Veiculo.query.filter_by(
-            motorista_id=acao.lider_equipe_id,
-            status=True
-        ).first()
+        veiculo_lider = Veiculo.query.filter_by(motorista_id=acao.lider_equipe_id).first()
+        if not veiculo_lider and acao.lider:
+            nome_lider = acao.lider.nome.split()[0]
+            veiculo_lider = Veiculo.query.filter(Veiculo.modelo.ilike(f"%{nome_lider}%")).first()
+        if not veiculo_lider:
+            veiculo_lider = Veiculo.query.filter_by(status=True).first()
 
     return render_template(
         'auditorias/turnos.html',
         acao=acao,
         equipes=equipes,
         veiculos=veiculos,
-        turnos=turnos,
+        turnos=turnos_lista,
         veiculo_lider=veiculo_lider
     )
 
@@ -181,10 +193,8 @@ def turnos(acao_id):
 @login_required
 def relatorio(acao_id):
     acao = AcaoPromocional.query.get_or_404(acao_id)
-
-    turnos = Turno.query.filter_by(acao_id=acao_id).all()
+    turnos_acao = Turno.query.filter_by(acao_id=acao_id).all()
     areas = AreaAtuacao.query.filter_by(acao_id=acao_id).all()
-
     fotos = FotoAuditoria.query.join(Turno).filter(
         Turno.acao_id == acao_id
     ).order_by(FotoAuditoria.data_hora.asc()).all()
@@ -192,7 +202,7 @@ def relatorio(acao_id):
     return render_template(
         'auditorias/relatorio.html',
         acao=acao,
-        turnos=turnos,
+        turnos=turnos_acao,
         areas=areas,
         fotos=fotos,
         agora=datetime.utcnow()
@@ -200,104 +210,81 @@ def relatorio(acao_id):
 
 
 # =============================
-# 🔥 TURNOS (CRUD COMPLETO)
+# TURNOS (CRUD)
 # =============================
-
 @auditorias_bp.route('/turno/iniciar/<int:acao_id>', methods=['POST'])
 @login_required
 def iniciar_turno(acao_id):
     acao = AcaoPromocional.query.get_or_404(acao_id)
-
-    # Encerrar turnos anteriores antes de iniciar um novo
     Turno.query.filter_by(acao_id=acao_id, status='ativo').update({
         'status': 'encerrado', 
         'fim': datetime.utcnow()
     })
 
-    # Buscar o veículo vinculado ao líder da equipe
-    from app.models.veiculo import Veiculo
+    # Busca robusta de veículo
     veiculo_vinculado = Veiculo.query.filter_by(motorista_id=acao.lider_equipe_id).first()
+    if not veiculo_vinculado and acao.lider:
+        nome_lider = acao.lider.nome.split()[0]
+        veiculo_vinculado = Veiculo.query.filter(Veiculo.modelo.ilike(f"%{nome_lider}%")).first()
+    if not veiculo_vinculado:
+        veiculo_vinculado = Veiculo.query.filter_by(status=True).first()
+        
     veiculo_id = veiculo_vinculado.id if veiculo_vinculado else None
 
-    # Criar o turno herdando o líder e seu veículo
     turno = Turno(
         acao_id=acao_id,
         equipe_id=acao.lider_equipe_id,
         veiculo_id=veiculo_id,
         status='ativo'
     )
-
     db.session.add(turno)
     db.session.commit()
-
     flash('Turno iniciado!', 'success')
     return redirect(url_for('auditorias.turnos', acao_id=acao_id))
-
-
-
-
 
 @auditorias_bp.route('/turno/encerrar/<int:turno_id>')
 @login_required
 def encerrar_turno(turno_id):
     turno = Turno.query.get_or_404(turno_id)
-
     turno.status = 'encerrado'
     turno.fim = datetime.utcnow()
-
     db.session.commit()
-
     flash('Turno encerrado.', 'success')
     return redirect(url_for('auditorias.turnos', acao_id=turno.acao_id))
-
 
 @auditorias_bp.route('/turno/cancelar/<int:turno_id>')
 @login_required
 def cancelar_turno(turno_id):
     turno = Turno.query.get_or_404(turno_id)
-
     db.session.delete(turno)
     db.session.commit()
-
     flash('Turno cancelado.', 'danger')
     return redirect(url_for('auditorias.turnos', acao_id=turno.acao_id))
-
 
 @auditorias_bp.route('/turno/editar/<int:turno_id>', methods=['POST'])
 @login_required
 def editar_turno(turno_id):
     turno = Turno.query.get_or_404(turno_id)
-
     turno.equipe_id = request.form.get('equipe_id')
     turno.veiculo_id = request.form.get('veiculo_id')
     turno.observacoes = request.form.get('observacoes')
-
     db.session.commit()
-
     flash('Turno atualizado.', 'success')
     return redirect(url_for('auditorias.turnos', acao_id=turno.acao_id))
-
 
 @auditorias_bp.route('/turno/excluir/<int:turno_id>')
 @login_required
 def excluir_turno(turno_id):
     turno = Turno.query.get_or_404(turno_id)
-
     db.session.delete(turno)
     db.session.commit()
-
     flash('Turno excluído.', 'danger')
     return redirect(url_for('auditorias.turnos', acao_id=turno.acao_id))
 
-
-# =============================
-# 🔥 EXCLUIR AUDITORIA
-# =============================
 @auditorias_bp.route('/excluir/<int:auditoria_id>', methods=['POST'])
 @login_required
 def excluir_auditoria(auditoria_id):
     auditoria = Auditoria.query.get_or_404(auditoria_id)
-
     try:
         db.session.delete(auditoria)
         db.session.commit()
@@ -305,5 +292,4 @@ def excluir_auditoria(auditoria_id):
     except Exception:
         db.session.rollback()
         flash('Erro ao excluir auditoria.', 'danger')
-
     return redirect(url_for('auditorias.listar'))

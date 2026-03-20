@@ -20,6 +20,7 @@
             <small class="text-muted d-block">Ações</small>
         </div>
     </div>
+
     <div class="col-6 col-md-4 col-lg-2">
         <div class="card stat-widget h-100 border-0 shadow-sm rounded-4 p-3 text-center">
             <div class="stat-icon bg-primary bg-opacity-10 rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
@@ -29,6 +30,7 @@
             <small class="text-muted d-block">Equipes</small>
         </div>
     </div>
+
     <div class="col-6 col-md-4 col-lg-2">
         <div class="card stat-widget h-100 border-0 shadow-sm rounded-4 p-3 text-center">
             <div class="stat-icon bg-laranja bg-opacity-10 rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
@@ -38,6 +40,7 @@
             <small class="text-muted d-block">Veículos</small>
         </div>
     </div>
+
     <div class="col-6 col-md-4 col-lg-2">
         <div class="card stat-widget h-100 border-0 shadow-sm rounded-4 p-3 text-center">
             <div class="stat-icon bg-info bg-opacity-10 rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
@@ -47,6 +50,7 @@
             <small class="text-muted d-block">Auditorias</small>
         </div>
     </div>
+
     <div class="col-6 col-md-4 col-lg-2">
         <div class="card stat-widget h-100 border-0 shadow-sm rounded-4 p-3 text-center">
             <div class="stat-icon bg-success bg-opacity-10 rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
@@ -56,6 +60,7 @@
             <small class="text-muted d-block">Materiais</small>
         </div>
     </div>
+
     <div class="col-6 col-md-4 col-lg-2">
         <div class="card stat-widget h-100 border-0 shadow-sm rounded-4 p-3 text-center">
             <div class="stat-icon bg-warning bg-opacity-10 rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
@@ -74,6 +79,7 @@
                 <h6 class="mb-0 fw-bold"><i class="fas fa-tasks me-2 text-vinho"></i> Operações Ativas</h6>
                 <a href="{{ url_for('acoes.listar') }}" class="btn btn-sm btn-light rounded-pill px-3">Ver Todas</a>
             </div>
+
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover mb-0 align-middle">
@@ -85,6 +91,7 @@
                                 <th class="pe-3 text-center">AÇÃO</th>
                             </tr>
                         </thead>
+
                         <tbody>
                             {% for acao in acoes_dia %}
                             <tr>
@@ -92,8 +99,15 @@
                                     <div class="fw-bold small">{{ acao.local_alvo }}</div>
                                     <small class="text-muted d-md-none">{{ acao.cidade }}</small>
                                 </td>
+
                                 <td class="d-none d-md-table-cell small">{{ acao.cidade }}</td>
-                                <td><span class="badge bg-primary bg-opacity-10 text-primary rounded-pill small">{{ acao.status }}</span></td>
+
+                                <td>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill small">
+                                        {{ acao.status }}
+                                    </span>
+                                </td>
+
                                 <td class="pe-3">
                                     <div class="d-flex justify-content-center">
                                         <a href="{{ url_for('mapa.index') }}?acao_id={{ acao.id }}" 
@@ -121,27 +135,45 @@
     <div class="col-12 col-lg-4">
         <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
             <div class="card-header bg-white py-3">
-                <h6 class="mb-0 fw-bold"><i class="fas fa-camera-retro me-2 text-laranja"></i> Auditorias Recentes</h6>
+                <h6 class="mb-0 fw-bold">
+                    <i class="fas fa-camera-retro me-2 text-laranja"></i> Auditorias Recentes
+                </h6>
             </div>
+
             <div class="card-body p-0">
                 {% if ultimas_auditorias %}
                 <div class="list-group list-group-flush">
                     {% for auditoria in ultimas_auditorias %}
                     <div class="list-group-item p-3 border-0">
                         <div class="d-flex align-items-center">
-                            <img src="{{ auditoria.foto_url }}" class="rounded-3 me-3 cursor-pointer" onclick="openModal('{{ auditoria.foto_url }}')" style="width: 50px; height: 50px; object-fit: cover;">
+                            <img src="{{ auditoria.foto_url }}" 
+                                 class="rounded-3 me-3 cursor-pointer"
+                                 onclick="openModal('{{ auditoria.foto_url }}')"
+                                 style="width: 50px; height: 50px; object-fit: cover;">
+
                             <div class="flex-grow-1">
-                                <h6 class="mb-0 fw-bold small text-truncate">{{ auditoria.acao.local_alvo }}</h6>
-                                <p class="mb-0 x-small text-muted">{{ auditoria.data_hora.strftime('%H:%M - %d/%m/%y') }}</p>
+                                <h6 class="mb-0 fw-bold small text-truncate">
+                                    {{ auditoria.acao.local_alvo }}
+                                </h6>
+                                <p class="mb-0 x-small text-muted">
+                                    {{ auditoria.data_hora.strftime('%H:%M - %d/%m/%y') }}
+                                </p>
                             </div>
-                            <a href="{{ url_for('auditorias.listar') }}" class="btn btn-sm btn-light rounded-circle"><i class="fas fa-chevron-right"></i></a>
+
+                            <a href="{{ url_for('auditorias.listar') }}" 
+                               class="btn btn-sm btn-light rounded-circle">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
                         </div>
                     </div>
                     {% endfor %}
                 </div>
+
                 {% else %}
                 <div class="text-center py-5">
-                    <p class="text-muted px-4 small">Sem auditorias registradas hoje.</p>
+                    <p class="text-muted px-4 small">
+                        Sem auditorias registradas hoje.
+                    </p>
                 </div>
                 {% endif %}
             </div>
@@ -152,21 +184,28 @@
 <style>
     .cursor-pointer { cursor: pointer; }
     .x-small { font-size: 0.75rem; }
-    
-    /* Variáveis para cores customizadas respeitarem a opacidade do Bootstrap */
+
+    /* CORES CUSTOM (CORRIGIDO) */
     .text-vinho { color: #8E0000 !important; }
     .bg-vinho { 
-        --bs-bg-opacity: 1;
         background-color: rgba(142, 0, 0, var(--bs-bg-opacity)) !important; 
     }
 
     .text-laranja { color: #fd7e14 !important; }
     .bg-laranja { 
-        --bs-bg-opacity: 1;
         background-color: rgba(253, 126, 20, var(--bs-bg-opacity)) !important; 
     }
 
-    .btn-primary { background-color: #0d6efd; border-color: #0d6efd; }
-    .btn-primary:hover { background-color: #0b5ed7; border-color: #0a58ca; transform: translateY(-1px); }
+    /* BOTÃO */
+    .btn-primary { 
+        background-color: #0d6efd; 
+        border-color: #0d6efd; 
+    }
+
+    .btn-primary:hover { 
+        background-color: #0b5ed7; 
+        border-color: #0a58ca; 
+        transform: translateY(-1px); 
+    }
 </style>
 {% endblock %}

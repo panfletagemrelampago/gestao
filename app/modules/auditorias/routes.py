@@ -2,8 +2,8 @@
 Blueprint do módulo de auditorias de campo.
 Gerencia o registro de auditorias, turnos de campo e geração de relatórios.
 """
-from datetime import datetime, timedelta, timezone
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
+from datetime import datetime
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from app.models.acao_promocional import AcaoPromocional
 from app.models.auditoria import Auditoria
@@ -17,22 +17,6 @@ from app.services.cloudinary_service import CloudinaryService
 from app.extensions import db
 
 auditorias_bp = Blueprint('auditorias', __name__)
-
-# =============================
-# HELPER: CONVERTER PARA TIMEZONE LOCAL (GMT-3)
-# =============================
-def get_local_now():
-    """Retorna datetime atual no fuso de Brasília (GMT-3) sem usar pytz"""
-    # UTC -> Brasília (GMT-3)
-    return datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=-3))).replace(tzinfo=None)
-
-def to_local_tz(dt):
-    """Converte um datetime UTC para local (GMT-3)"""
-    if dt is None:
-        return None
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    return dt.astimezone(timezone(timedelta(hours=-3))).replace(tzinfo=None)
 
 
 # =============================
@@ -66,18 +50,9 @@ def listar():
 @auditorias_bp.route('/registrar', methods=['GET', 'POST'])
 @login_required
 def registrar():
-    # Buscar ações agrupadas por cliente para o seletor melhorado
     acoes_ativas = AcaoPromocional.query.filter(
         AcaoPromocional.status.in_(['Planejada', 'Em Andamento'])
-    ).order_by(AcaoPromocional.cliente_id, AcaoPromocional.data.desc()).all()
-
-    # Agrupar por cliente
-    clientes_acoes = {}
-    for acao in acoes_ativas:
-        cliente_nome = acao.cliente.nome_empresa if acao.cliente else 'Sem Cliente'
-        if cliente_nome not in clientes_acoes:
-            clientes_acoes[cliente_nome] = []
-        clientes_acoes[cliente_nome].append(acao)
+    ).all()
 
     if request.method == 'POST':
         acao_id = request.form.get('acao_id')
@@ -142,7 +117,7 @@ def registrar():
                 foto_url=foto_url,
                 latitude=lat,
                 longitude=lon,
-                data_hora=get_local_now()
+                data_hora=datetime.utcnow()
             )
             db.session.add(nova_auditoria)
 
@@ -151,7 +126,7 @@ def registrar():
                 latitude=lat,
                 longitude=lon,
                 descricao=descricao,
-                data_hora=get_local_now(),
+                data_hora=datetime.utcnow(),
                 turno_id=turno_ativo.id
             )
             db.session.add(nova_foto)
@@ -166,7 +141,7 @@ def registrar():
         flash('Auditoria registrada!', 'success')
         return redirect(url_for('auditorias.listar'))
 
-    return render_template('auditorias/registrar.html', acoes=acoes_ativas, clientes_acoes=clientes_acoes)
+    return render_template('auditorias/registrar.html', acoes=acoes_ativas)
 
 
 # =============================
@@ -230,7 +205,7 @@ def relatorio(acao_id):
         turnos=turnos_acao,
         areas=areas,
         fotos=fotos,
-        agora=get_local_now()
+        agora=datetime.utcnow()
     )
 
 
@@ -243,7 +218,7 @@ def iniciar_turno(acao_id):
     acao = AcaoPromocional.query.get_or_404(acao_id)
     Turno.query.filter_by(acao_id=acao_id, status='ativo').update({
         'status': 'encerrado', 
-        'fim': get_local_now()
+        'fim': datetime.utcnow()
     })
 
     # Busca robusta de veículo
@@ -267,49 +242,24 @@ def iniciar_turno(acao_id):
     flash('Turno iniciado!', 'success')
     return redirect(url_for('auditorias.turnos', acao_id=acao_id))
 
-
 @auditorias_bp.route('/turno/encerrar/<int:turno_id>')
 @login_required
 def encerrar_turno(turno_id):
     turno = Turno.query.get_or_404(turno_id)
     turno.status = 'encerrado'
-    turno.fim = get_local_now()
+    turno.fim = datetime.utcnow()
     db.session.commit()
-    # Retornar JSON para compatibilidade com fetch() do frontend
-    return jsonify({'status': 'sucesso', 'mensagem': 'Turno encerrado.'})
-
-
-@auditorias_bp.route('/turno/retomar/<int:turno_id>')
-@login_required
-def retomar_turno(turno_id):
-    """Retoma um turno que estava pausado/encerrado, reativando-o."""
-    turno = Turno.query.get_or_404(turno_id)
-    acao_id = turno.acao_id
-
-    # Encerrar qualquer turno ativo antes de retomar este
-    Turno.query.filter_by(acao_id=acao_id, status='ativo').update({
-        'status': 'encerrado',
-        'fim': get_local_now()
-    })
-
-    # Retomar the turno selecionado
-    turno.status = 'ativo'
-    turno.fim = None  # Limpa o horário de fim ao retomar
-    db.session.commit()
-
-    return jsonify({'status': 'sucesso', 'mensagem': 'Turno retomado com sucesso.'})
-
+    flash('Turno encerrado.', 'success')
+    return redirect(url_for('auditorias.turnos', acao_id=turno.acao_id))
 
 @auditorias_bp.route('/turno/cancelar/<int:turno_id>')
 @login_required
 def cancelar_turno(turno_id):
     turno = Turno.query.get_or_404(turno_id)
-    acao_id = turno.acao_id
     db.session.delete(turno)
     db.session.commit()
     flash('Turno cancelado.', 'danger')
-    return redirect(url_for('auditorias.turnos', acao_id=acao_id))
-
+    return redirect(url_for('auditorias.turnos', acao_id=turno.acao_id))
 
 @auditorias_bp.route('/turno/editar/<int:turno_id>', methods=['POST'])
 @login_required
@@ -322,20 +272,14 @@ def editar_turno(turno_id):
     flash('Turno atualizado.', 'success')
     return redirect(url_for('auditorias.turnos', acao_id=turno.acao_id))
 
-
 @auditorias_bp.route('/turno/excluir/<int:turno_id>')
 @login_required
 def excluir_turno(turno_id):
     turno = Turno.query.get_or_404(turno_id)
-    acao_id = turno.acao_id
-    try:
-        db.session.delete(turno)
-        db.session.commit()
-        return jsonify({'status': 'sucesso', 'mensagem': 'Turno excluído.'})
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'status': 'erro', 'mensagem': str(e)}), 500
-
+    db.session.delete(turno)
+    db.session.commit()
+    flash('Turno excluído.', 'danger')
+    return redirect(url_for('auditorias.turnos', acao_id=turno.acao_id))
 
 @auditorias_bp.route('/excluir/<int:auditoria_id>', methods=['POST'])
 @login_required

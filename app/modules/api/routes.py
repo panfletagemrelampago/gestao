@@ -162,14 +162,6 @@ def iniciar_turno():
     # Encerrar turnos anteriores antes de iniciar um novo
     Turno.query.filter_by(acao_id=acao_id, status='ativo').update({'status': 'encerrado', 'fim': datetime.utcnow()})
 
-    # Se veiculo_id não foi passado, buscar o veículo vinculado à equipe
-    if not veiculo_id and equipe_id:
-        veiculo_vinculado = Veiculo.query.filter_by(
-            motorista_id=equipe_id,
-            status=True
-        ).first()
-        veiculo_id = veiculo_vinculado.id if veiculo_vinculado else None
-
     try:
         novo_turno = Turno(
             acao_id=acao_id,

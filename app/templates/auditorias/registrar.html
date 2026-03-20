@@ -41,6 +41,7 @@
                                     📍 {{ acao.local_alvo }}
                                     {% if acao.bairro %} — {{ acao.bairro }}{% endif %}
                                     ({{ acao.data.strftime('%d/%m/%Y') }})
+                                    {% if acao.tipo_servico %} · {{ acao.tipo_servico }}{% endif %}
                                     · {{ acao.status }}
                                 </option>
                                 {% endfor %}
@@ -188,7 +189,8 @@
             cliente: "{{ acao.cliente.nome_empresa | e }}",
             local: "{{ acao.local_alvo | e }}",
             data: "{{ acao.data.strftime('%d/%m/%Y') }}",
-            status: "{{ acao.status }}"
+            status: "{{ acao.status }}",
+            tipo: "{{ acao.tipo_servico | e }}"
         },
         {% endfor %}
     };
@@ -268,39 +270,77 @@
                 const lon = position.coords.longitude;
                 const acc = position.coords.accuracy;
 
+                gpsInfo.innerHTML = `
+                    Lat: ${lat.toFixed(6)} |
+                    Lng: ${lon.toFixed(6)} |
+                    Precisão: ${Math.round(acc)}m
+                `;
+
                 if (!bestPosition || acc < bestPosition.coords.accuracy) {
                     bestPosition = position;
-                    latInput.value = lat;
-                    lonInput.value = lon;
-                    accInput.value = acc;
                 }
 
-                if (acc <= 50) {
-                    gpsStatus.className = 'alert alert-success py-2 px-3 mb-2 d-flex align-items-center';
-                    gpsStatus.innerHTML = `<i class="fas fa-check-circle me-2"></i> <span class="small">GPS Localizado (Precisão: ${acc.toFixed(1)}m)</span>`;
+                if (acc <= 30) {
+                    gpsStatus.className = 'alert alert-success d-flex align-items-center';
+                    gpsStatus.innerHTML = `<i class="fas fa-check-circle me-2"></i> 🟢 GPS OK (${Math.round(acc)}m)`;
+
+                    latInput.value = bestPosition.coords.latitude;
+                    lonInput.value = bestPosition.coords.longitude;
+                    accInput.value = bestPosition.coords.accuracy;
+
                     btnSubmit.disabled = false;
-                } else {
-                    gpsStatus.className = 'alert alert-warning py-2 px-3 mb-2 d-flex align-items-center';
-                    gpsStatus.innerHTML = `<div class="spinner-border spinner-border-sm me-2"></div> <span class="small">Aguardando precisão (Atual: ${acc.toFixed(1)}m)</span>`;
-                    btnSubmit.disabled = true;
-                }
 
-                gpsInfo.innerHTML = `Lat: ${lat.toFixed(6)}, Lon: ${lon.toFixed(6)} (±${acc.toFixed(1)}m)`;
+                    navigator.geolocation.clearWatch(watchId);
+
+                } else if (acc <= 50) {
+                    gpsStatus.className = 'alert alert-warning';
+                    gpsStatus.innerHTML = `🟡 Melhorando precisão... (${Math.round(acc)}m)`;
+
+                } else {
+                    gpsStatus.className = 'alert alert-danger';
+                    gpsStatus.innerHTML = `🔴 GPS fraco (${Math.round(acc)}m) - Aguarde...`;
+                }
             },
             function (error) {
-                gpsStatus.className = 'alert alert-danger py-2 px-3 mb-2';
-                gpsStatus.innerHTML = `<i class="fas fa-times-circle me-2"></i> <span class="small">Erro GPS: ${error.message}</span>`;
+                let msg = "Erro ao obter GPS";
+
+                if (error.code === 1) msg = "Permissão negada.";
+                else if (error.code === 2) msg = "Sem sinal.";
+                else if (error.code === 3) msg = "Timeout.";
+
+                gpsStatus.className = 'alert alert-danger';
+                gpsStatus.innerHTML = msg;
+
+                btnSubmit.disabled = true;
             },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            {
+                enableHighAccuracy: true,
+                timeout: 20000,
+                maximumAge: 0
+            }
         );
     }
 
-    // Iniciar GPS ao carregar
     updateGPS();
 
-    // Limpar watch ao sair
-    window.addEventListener('beforeunload', () => {
-        if (watchId) navigator.geolocation.clearWatch(watchId);
+    form.addEventListener('submit', function (e) {
+        if (!bestPosition) {
+            e.preventDefault();
+            alert('Aguarde o GPS estabilizar.');
+            return;
+        }
+
+        const acc = bestPosition.coords.accuracy;
+
+        if (acc > 50) {
+            e.preventDefault();
+            alert('GPS muito impreciso. Aguarde melhorar.');
+            return;
+        }
+
+        latInput.value = bestPosition.coords.latitude;
+        lonInput.value = bestPosition.coords.longitude;
+        accInput.value = bestPosition.coords.accuracy;
     });
 </script>
 {% endblock %}

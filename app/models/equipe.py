@@ -14,7 +14,6 @@ class Equipe(db.Model):
 
     # Relacionamentos
     veiculos = db.relationship('Veiculo', backref='motorista', lazy=True)
-    acoes_lideradas = db.relationship('AcaoPromocional', backref='lider', lazy=True)
 
     def __repr__(self):
         return f'<Equipe {self.nome}>'

@@ -159,14 +159,8 @@ def iniciar_turno():
     if current_user.tipo_usuario not in ['admin', 'equipe']:
         return jsonify({"erro": "Permissão negada para iniciar turno"}), 403
 
-    turno_ativo = Turno.query.filter_by(
-        acao_id=acao_id, equipe_id=equipe_id, status='ativo'
-    ).first()
-    if turno_ativo:
-        return jsonify({
-            "erro": "Já existe um turno ativo para esta equipe nesta ação",
-            "turno_id": turno_ativo.id
-        }), 409
+    # Encerrar turnos anteriores antes de iniciar um novo
+    Turno.query.filter_by(acao_id=acao_id, status='ativo').update({'status': 'encerrado', 'fim': datetime.utcnow()})
 
     try:
         novo_turno = Turno(
@@ -226,46 +220,7 @@ def encerrar_turno(turno_id):
         return jsonify({"erro": f"Erro ao encerrar turno: {str(e)}"}), 500
 
 
-@api_bp.route('/turnos/<int:turno_id>/pausar', methods=['POST'])
-@login_required
-def pausar_turno(turno_id):
-    """Pausa um turno ativo temporariamente."""
-    turno = Turno.query.get_or_404(turno_id)
 
-    if current_user.tipo_usuario not in ['admin', 'equipe']:
-        return jsonify({"erro": "Permissão negada"}), 403
-
-    if turno.status != 'ativo':
-        return jsonify({"erro": "Somente turnos ativos podem ser pausados"}), 400
-
-    try:
-        turno.status = 'pausado'
-        db.session.commit()
-        return jsonify({"status": "sucesso", "mensagem": "Turno pausado"})
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"erro": f"Erro ao pausar turno: {str(e)}"}), 500
-
-
-@api_bp.route('/turnos/<int:turno_id>/retomar', methods=['POST'])
-@login_required
-def retomar_turno(turno_id):
-    """Retoma um turno pausado."""
-    turno = Turno.query.get_or_404(turno_id)
-
-    if current_user.tipo_usuario not in ['admin', 'equipe']:
-        return jsonify({"erro": "Permissão negada"}), 403
-
-    if turno.status != 'pausado':
-        return jsonify({"erro": "Somente turnos pausados podem ser retomados"}), 400
-
-    try:
-        turno.status = 'ativo'
-        db.session.commit()
-        return jsonify({"status": "sucesso", "mensagem": "Turno retomado"})
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"erro": f"Erro ao retomar turno: {str(e)}"}), 500
 
 
 @api_bp.route('/turnos/acao/<int:acao_id>', methods=['GET'])

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Turnos de Campo — {{ acao.local_alvo }}{% endblock %}
+{% block title %}Turnos de Campo — {{ acao.nome_exibicao }}{% endblock %}
 
 {% block content %}
 
@@ -11,7 +11,7 @@
             Turnos de Campo
         </h2>
         <p class="text-muted small mb-0">
-            <strong>{{ acao.local_alvo }}</strong> — {{ acao.cliente.nome_empresa }} — {{ acao.data.strftime('%d/%m/%Y') }}
+            <strong>{{ acao.nome_exibicao }}</strong> — {{ acao.cliente.nome_empresa }} — {{ acao.data.strftime('%d/%m/%Y') }}
         </p>
     </div>
     <div class="col-md-4 text-md-end mt-2 mt-md-0">

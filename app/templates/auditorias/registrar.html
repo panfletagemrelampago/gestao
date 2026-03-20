@@ -38,7 +38,7 @@
                                 {% for acao in acoes_cliente %}
                                 <option value="{{ acao.id }}"
                                     {% if request.args.get('acao_id')|int == acao.id %}selected{% endif %}>
-                                    📍 {{ acao.local_alvo }}
+                                    📍 {{ acao.nome_exibicao }}
                                     {% if acao.bairro %} — {{ acao.bairro }}{% endif %}
                                     ({{ acao.data.strftime('%d/%m/%Y') }})
                                     {% if acao.tipo_servico %} · {{ acao.tipo_servico }}{% endif %}
@@ -61,7 +61,7 @@
                                     <strong id="info-data">—</strong>
                                 </div>
                                 <div class="col-6">
-                                    <span class="text-muted">Local:</span>
+                                    <span class="text-muted">Nome da Campanha:</span>
                                     <strong id="info-local">—</strong>
                                 </div>
                                 <div class="col-6">
@@ -187,7 +187,7 @@
         {% for acao in acoes %}
         {{ acao.id }}: {
             cliente: "{{ acao.cliente.nome_empresa | e }}",
-            local: "{{ acao.local_alvo | e }}",
+            local: "{{ acao.nome_exibicao | e }}",
             data: "{{ acao.data.strftime('%d/%m/%Y') }}",
             status: "{{ acao.status }}",
             tipo: "{{ acao.tipo_servico | e }}"

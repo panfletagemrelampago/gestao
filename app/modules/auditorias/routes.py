@@ -305,6 +305,8 @@ def retomar_turno(turno_id):
 def cancelar_turno(turno_id):
     turno = Turno.query.get_or_404(turno_id)
     acao_id = turno.acao_id
+    # Excluir fotos vinculadas ao turno antes de excluir o turno
+    FotoAuditoria.query.filter_by(turno_id=turno_id).delete()
     db.session.delete(turno)
     db.session.commit()
     flash('Turno cancelado.', 'danger')
@@ -329,6 +331,8 @@ def excluir_turno(turno_id):
     turno = Turno.query.get_or_404(turno_id)
     acao_id = turno.acao_id
     try:
+        # Excluir fotos vinculadas ao turno antes de excluir o turno
+        FotoAuditoria.query.filter_by(turno_id=turno_id).delete()
         db.session.delete(turno)
         db.session.commit()
         return jsonify({'status': 'sucesso', 'mensagem': 'Turno excluído.'})

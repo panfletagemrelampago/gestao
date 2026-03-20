@@ -742,7 +742,7 @@ def mapa_dados():
                 "longitude": a.longitude,
                 "foto_url": a.foto_url,
                 "descricao": a.descricao,
-                "acao": a.acao.local_alvo if a.acao else ""
+                "acao": a.acao.nome_exibicao if a.acao else ""
             }
             for a in auditorias_legadas
         ],
@@ -824,7 +824,7 @@ def mapa_dados_acao(acao_id):
     return jsonify({
         "acao": {
             "id": acao.id,
-            "local_alvo": acao.local_alvo,
+            "local_alvo": acao.nome_exibicao,
             "bairro": acao.bairro,
             "cidade": acao.cidade,
             "data": acao.data.isoformat() if acao.data else None,
@@ -867,4 +867,3 @@ def mapa_dados_acao(acao_id):
             for a in areas
         ]
     })
-

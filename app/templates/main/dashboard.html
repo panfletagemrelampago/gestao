@@ -97,7 +97,7 @@
                             <tr>
                                 <td class="ps-3">
                                     <div class="fw-bold small text-vinho">{{ acao.cliente.nome_empresa if acao.cliente else 'Sem Cliente' }}</div>
-                                    <div class="small text-dark">{{ acao.local_alvo }}</div>
+                                    <div class="small text-dark">{{ acao.nome_exibicao }}</div>
                                 </td>
 
                                 <td class="d-none d-md-table-cell small">
@@ -159,7 +159,7 @@
                                     <i class="fas fa-building me-1"></i>{{ auditoria.acao.cliente.nome_empresa if auditoria.acao.cliente else 'Sem Cliente' }}
                                 </div>
                                 <h6 class="mb-0 fw-bold small text-truncate text-dark">
-                                    <i class="fas fa-bullseye me-1"></i>{{ auditoria.acao.local_alvo }}
+                                    <i class="fas fa-bullseye me-1"></i>{{ auditoria.acao.nome_exibicao }}
                                 </h6>
                                 <p class="mb-0 x-small text-muted text-truncate">
                                     <i class="fas fa-map-marker-alt me-1"></i>{{ auditoria.acao.bairro if auditoria.acao.bairro else '—' }}

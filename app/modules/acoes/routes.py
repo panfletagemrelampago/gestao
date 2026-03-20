@@ -4,7 +4,7 @@ from app.models.acao_promocional import AcaoPromocional
 from app.models.cliente import Cliente
 from app.models.equipe import Equipe
 from app.models.turno import Turno
-from app.models.foto_auditoria import FotoAuditoria  # 🔥 NOVO
+from app.models.foto_auditoria import FotoAuditoria
 from app.extensions import db
 from datetime import datetime
 
@@ -47,6 +47,7 @@ def nova():
 
     if request.method == 'POST':
         cliente_id = request.form.get('cliente_id')
+        nome_campanha = request.form.get('nome_campanha', '').strip() or None
         local_alvo = request.form.get('local_alvo')
         bairro = request.form.get('bairro')
         cidade = request.form.get('cidade')
@@ -60,6 +61,7 @@ def nova():
 
         nova_acao = AcaoPromocional(
             cliente_id=cliente_id,
+            nome_campanha=nome_campanha,
             local_alvo=local_alvo,
             bairro=bairro,
             cidade=cidade,
@@ -94,7 +96,7 @@ def atualizar_status(id):
     db.session.commit()
 
     flash(
-        f'Status da ação {acao.local_alvo} atualizado para {novo_status}.',
+        f'Status da ação {acao.nome_exibicao} atualizado para {novo_status}.',
         'info'
     )
 
@@ -112,11 +114,11 @@ def excluir(id):
     acao = AcaoPromocional.query.get_or_404(id)
 
     try:
-        # 🔥 1. Deletar auditorias vinculadas à ação
+        # 1. Deletar auditorias vinculadas à ação
         for auditoria in acao.auditorias:
             db.session.delete(auditoria)
 
-        # 🔥 2. Buscar turnos da ação para deletar fotos vinculadas
+        # 2. Buscar turnos da ação para deletar fotos vinculadas
         turnos = Turno.query.filter_by(acao_id=id).all()
         for turno in turnos:
             # 2.1 Deletar fotos vinculadas ao turno (FotoAuditoria)
@@ -126,7 +128,7 @@ def excluir(id):
             # 2.2 Deletar o turno
             db.session.delete(turno)
 
-        # 🔥 3. Deletar a ação
+        # 3. Deletar a ação
         db.session.delete(acao)
         db.session.commit()
 

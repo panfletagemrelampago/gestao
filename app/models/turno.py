@@ -41,7 +41,7 @@ class Turno(db.Model):
     acao = db.relationship('AcaoPromocional', backref='turnos', lazy=True)
     equipe = db.relationship('Equipe', backref='turnos', lazy=True)
     veiculo = db.relationship('Veiculo', backref='turnos', lazy=True)
-    fotos = db.relationship('FotoAuditoria', backref='turno', lazy=True)
+    fotos = db.relationship('FotoAuditoria', backref='turno', lazy=True, cascade='all, delete-orphan')
 
     @property
     def duracao_minutos(self):

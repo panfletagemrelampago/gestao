@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Relatório de Auditoria — {{ acao.local_alvo }}{% endblock %}
+{% block title %}Relatório de Auditoria — {{ acao.nome_exibicao }}{% endblock %}
 
 {% macro format_datetime(dt) %}
   {% if dt %}
@@ -65,8 +65,8 @@
         <div class="fw-bold">{{ acao.cliente.nome_empresa }}</div>
       </div>
       <div class="col-md-3">
-        <div class="text-muted small">Local / Bairro</div>
-        <div class="fw-bold">{{ acao.local_alvo }}</div>
+        <div class="text-muted small">Nome da Campanha</div>
+        <div class="fw-bold">{{ acao.nome_exibicao }}</div>
         <div class="small text-muted">{{ acao.bairro }} — {{ acao.cidade }}</div>
       </div>
       <div class="col-md-2">
@@ -202,7 +202,7 @@
                data-lon="{{ foto.longitude }}"
                data-dentro="{{ foto.dentro_da_area }}"
                data-turno="{{ foto.turno_id or '' }}"
-               data-acao="{{ acao.local_alvo }}"
+               data-acao="{{ acao.nome_exibicao }}"
                data-cliente="{{ acao.cliente.nome_empresa }}">
 
           {% if foto.dentro_da_area == True %}
@@ -265,7 +265,7 @@
           <!-- Informações detalhadas -->
           <div class="col-md-5 p-4 d-flex flex-column gap-3">
             <div>
-              <div class="text-muted small mb-1"><i class="fas fa-map-marker-alt me-1 text-danger"></i>Ação / Local</div>
+              <div class="text-muted small mb-1"><i class="fas fa-bullhorn me-1 text-danger"></i>Nome da Campanha</div>
               <div class="fw-bold text-vinho" id="modalFotoAcao">—</div>
             </div>
             <div>

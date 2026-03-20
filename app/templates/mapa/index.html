@@ -33,11 +33,13 @@
     border: 1px solid rgba(0,0,0,0.08);
     box-shadow: 0 8px 32px rgba(0,0,0,0.15);
     font-size: 13px;
-    transition: all 0.3s ease;
+    /* Removido transition para não interferir com drag */
     overflow: hidden;
     display: flex;
     flex-direction: column;
     max-height: 80vh;
+    /* Cursor padrão; o header terá cursor de arrasto */
+    user-select: none;
 }
 
 /* Estado expandido (padrão em desktop) */
@@ -54,6 +56,13 @@
     border-radius: 50%;
 }
 
+/* Indicador visual durante o arrasto */
+#painel-filtros.arrastando {
+    opacity: 0.85;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.3);
+    transition: none !important;
+}
+
 #painel-header {
     display: flex;
     align-items: center;
@@ -63,9 +72,13 @@
     color: white;
     font-weight: 600;
     flex-shrink: 0;
-    cursor: pointer;
+    cursor: grab;
     border-radius: 15px 15px 0 0;
     user-select: none;
+}
+
+#painel-header:active {
+    cursor: grabbing;
 }
 
 #painel-filtros.retraido #painel-header {
@@ -76,6 +89,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    cursor: grab;
+}
+
+#painel-filtros.retraido #painel-header:active {
+    cursor: grabbing;
 }
 
 #btn-toggle-painel {
@@ -103,7 +121,21 @@
     flex: 1;
 }
 
+/* Ícone de arrasto no header */
+#drag-handle {
+    display: flex;
+    align-items: center;
+    opacity: 0.7;
+    margin-right: 6px;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
 #painel-filtros.retraido #painel-titulo {
+    display: none;
+}
+
+#painel-filtros.retraido #drag-handle {
     display: none;
 }
 
@@ -258,10 +290,13 @@
 <div class="position-relative">
     <div id="map"></div>
 
-    <!-- PAINEL DE FILTROS RETRÁTIL -->
+    <!-- PAINEL DE FILTROS RETRÁTIL (com Drag and Drop) -->
     <div id="painel-filtros" class="expandido">
         <div id="painel-header">
             <div id="painel-titulo">
+                <span id="drag-handle" title="Arraste para mover">
+                    <i class="fas fa-grip-vertical"></i>
+                </span>
                 <i class="fas fa-layer-group"></i>
                 <span>Camadas</span>
             </div>
@@ -333,6 +368,162 @@ document.addEventListener('click', function(e) {
 });
 
 // =============================
+// DRAG AND DROP DO PAINEL DE FILTROS
+// =============================
+(function() {
+    const painel = document.getElementById('painel-filtros');
+    const header = document.getElementById('painel-header');
+
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let startLeft = 0;
+    let startTop = 0;
+    let hasMoved = false;
+
+    // Chave para persistir posição no localStorage
+    const STORAGE_KEY = 'painel_filtros_pos';
+
+    // Restaurar posição salva
+    function restaurarPosicao() {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const pos = JSON.parse(saved);
+                aplicarPosicao(pos.left, pos.top);
+            }
+        } catch (e) {
+            // Ignorar erros de localStorage
+        }
+    }
+
+    // Salvar posição no localStorage
+    function salvarPosicao(left, top) {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ left, top }));
+        } catch (e) {
+            // Ignorar erros de localStorage
+        }
+    }
+
+    // Aplicar posição garantindo que o painel fique dentro da tela
+    function aplicarPosicao(left, top) {
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const pw = painel.offsetWidth || 280;
+        const ph = painel.offsetHeight || 50;
+
+        // Limitar dentro dos limites da viewport com margem de 10px
+        left = Math.max(10, Math.min(left, vw - pw - 10));
+        top  = Math.max(10, Math.min(top,  vh - ph - 10));
+
+        // Usar left/top em vez de right para posicionamento absoluto
+        painel.style.right = 'auto';
+        painel.style.left  = left + 'px';
+        painel.style.top   = top  + 'px';
+    }
+
+    // ── Mouse Events ──────────────────────────────────────────────────────────
+    header.addEventListener('mousedown', function(e) {
+        // Ignorar cliques em botões dentro do header
+        if (e.target.closest('button')) return;
+
+        isDragging = true;
+        hasMoved = false;
+
+        // Calcular posição atual do painel
+        const rect = painel.getBoundingClientRect();
+        startX = e.clientX;
+        startY = e.clientY;
+        startLeft = rect.left;
+        startTop  = rect.top;
+
+        painel.classList.add('arrastando');
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+            hasMoved = true;
+        }
+
+        aplicarPosicao(startLeft + dx, startTop + dy);
+    });
+
+    document.addEventListener('mouseup', function(e) {
+        if (!isDragging) return;
+        isDragging = false;
+        painel.classList.remove('arrastando');
+
+        if (hasMoved) {
+            // Salvar posição final
+            const rect = painel.getBoundingClientRect();
+            salvarPosicao(rect.left, rect.top);
+        }
+    });
+
+    // ── Touch Events (mobile) ─────────────────────────────────────────────────
+    header.addEventListener('touchstart', function(e) {
+        if (e.target.closest('button')) return;
+
+        isDragging = true;
+        hasMoved = false;
+
+        const touch = e.touches[0];
+        const rect = painel.getBoundingClientRect();
+        startX = touch.clientX;
+        startY = touch.clientY;
+        startLeft = rect.left;
+        startTop  = rect.top;
+
+        painel.classList.add('arrastando');
+        // Não prevenir default aqui para não bloquear scroll em mobile
+    }, { passive: true });
+
+    document.addEventListener('touchmove', function(e) {
+        if (!isDragging) return;
+
+        const touch = e.touches[0];
+        const dx = touch.clientX - startX;
+        const dy = touch.clientY - startY;
+
+        if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+            hasMoved = true;
+            e.preventDefault(); // Prevenir scroll apenas quando arrastando
+        }
+
+        aplicarPosicao(startLeft + dx, startTop + dy);
+    }, { passive: false });
+
+    document.addEventListener('touchend', function() {
+        if (!isDragging) return;
+        isDragging = false;
+        painel.classList.remove('arrastando');
+
+        if (hasMoved) {
+            const rect = painel.getBoundingClientRect();
+            salvarPosicao(rect.left, rect.top);
+        }
+    });
+
+    // Restaurar posição ao carregar a página
+    window.addEventListener('load', restaurarPosicao);
+
+    // Reajustar posição ao redimensionar a janela
+    window.addEventListener('resize', function() {
+        const rect = painel.getBoundingClientRect();
+        if (rect.left !== 0 || rect.top !== 0) {
+            aplicarPosicao(rect.left, rect.top);
+        }
+    });
+})();
+
+// =============================
 // CONFIGURAÇÃO GLOBAL DO MAPA
 // =============================
 const map = L.map("map").setView([-15.5668, -56.0568], 13);
@@ -389,17 +580,14 @@ async function carregarFotos() {
         const response = await fetch('/api/mapa/fotos');
         const fotos = await response.json();
         layers.fotos.clearLayers();
-
         const coordenadasValidas = [];
 
         fotos.forEach(foto => {
             if (!foto.lat || !foto.lng) return;
             coordenadasValidas.push([foto.lat, foto.lng]);
-
             const marker = L.marker([foto.lat, foto.lng]);
             
             const dataFormatada = foto.data ? new Date(foto.data).toLocaleString('pt-BR') : 'N/A';
-
             const popup = `
                 <div style="width:200px">
                     <img src="${foto.img}" style="width:100%; border-radius:8px;" />
@@ -435,11 +623,9 @@ async function carregarAreas() {
         Object.keys(areaLayerMap).forEach(k => delete areaLayerMap[k]);
 
         let totalAreas = 0;
-
         areas.forEach(area => {
             if (!area.geojson) return;
             totalAreas++;
-
             const geoLayer = L.geoJSON(area.geojson, {
                 style: {
                     color: area.cor || "#0d6efd",
@@ -479,7 +665,6 @@ async function carregarAreas() {
 
         // Atualizar contador
         document.getElementById('count-areas').textContent = totalAreas;
-
     } catch (err) {
         console.error("Erro ao carregar áreas:", err);
     }
@@ -496,7 +681,6 @@ async function salvarArea(layer) {
 
     try {
         mostrarToast('Salvando área...', 'info');
-
         const response = await fetch('/api/mapa/areas', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

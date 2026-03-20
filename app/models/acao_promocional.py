@@ -17,6 +17,7 @@ class AcaoPromocional(db.Model):
     descricao = db.Column(db.Text, nullable=True)
 
     # Relacionamentos
+    lider = db.relationship('Equipe', backref='acoes', lazy=True)
     auditorias = db.relationship('Auditoria', backref='acao', lazy=True)
 
     def __repr__(self):

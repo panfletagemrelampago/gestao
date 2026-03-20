@@ -2,8 +2,9 @@
 Blueprint do módulo de auditorias de campo.
 Gerencia o registro de auditorias, turnos de campo e geração de relatórios.
 """
-from datetime import datetime
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from datetime import datetime, timezone
+import pytz
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
 from flask_login import login_required, current_user
 from app.models.acao_promocional import AcaoPromocional
 from app.models.auditoria import Auditoria
@@ -17,6 +18,24 @@ from app.services.cloudinary_service import CloudinaryService
 from app.extensions import db
 
 auditorias_bp = Blueprint('auditorias', __name__)
+
+# =============================
+# HELPER: CONVERTER PARA TIMEZONE LOCAL
+# =============================
+def get_local_now():
+    """Retorna datetime atual no timezone de Brasília (America/Sao_Paulo)"""
+    tz = pytz.timezone('America/Sao_Paulo')
+    return datetime.now(tz).replace(tzinfo=None)
+
+def to_local_tz(dt):
+    """Converte um datetime UTC para timezone local"""
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        # Se não tem timezone, assume UTC
+        dt = dt.replace(tzinfo=pytz.UTC)
+    tz = pytz.timezone('America/Sao_Paulo')
+    return dt.astimezone(tz).replace(tzinfo=None)
 
 
 # =============================
@@ -126,7 +145,7 @@ def registrar():
                 foto_url=foto_url,
                 latitude=lat,
                 longitude=lon,
-                data_hora=datetime.utcnow()
+                data_hora=get_local_now()
             )
             db.session.add(nova_auditoria)
 
@@ -135,7 +154,7 @@ def registrar():
                 latitude=lat,
                 longitude=lon,
                 descricao=descricao,
-                data_hora=datetime.utcnow(),
+                data_hora=get_local_now(),
                 turno_id=turno_ativo.id
             )
             db.session.add(nova_foto)
@@ -214,7 +233,7 @@ def relatorio(acao_id):
         turnos=turnos_acao,
         areas=areas,
         fotos=fotos,
-        agora=datetime.utcnow()
+        agora=get_local_now()
     )
 
 
@@ -227,7 +246,7 @@ def iniciar_turno(acao_id):
     acao = AcaoPromocional.query.get_or_404(acao_id)
     Turno.query.filter_by(acao_id=acao_id, status='ativo').update({
         'status': 'encerrado', 
-        'fim': datetime.utcnow()
+        'fim': get_local_now()
     })
 
     # Busca robusta de veículo
@@ -257,7 +276,7 @@ def iniciar_turno(acao_id):
 def encerrar_turno(turno_id):
     turno = Turno.query.get_or_404(turno_id)
     turno.status = 'encerrado'
-    turno.fim = datetime.utcnow()
+    turno.fim = get_local_now()
     db.session.commit()
     # Retornar JSON para compatibilidade com fetch() do frontend
     return jsonify({'status': 'sucesso', 'mensagem': 'Turno encerrado.'})
@@ -273,7 +292,7 @@ def retomar_turno(turno_id):
     # Encerrar qualquer turno ativo antes de retomar este
     Turno.query.filter_by(acao_id=acao_id, status='ativo').update({
         'status': 'encerrado',
-        'fim': datetime.utcnow()
+        'fim': get_local_now()
     })
 
     # Retomar o turno selecionado

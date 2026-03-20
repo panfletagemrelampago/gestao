@@ -11,6 +11,7 @@
   .badge-fora   { background: #dc3545; }
   .stat-card { border-radius: 12px; padding: 18px; color: white; transition: transform 0.2s; }
   .stat-card:hover { transform: translateY(-3px); }
+  .text-vinho { color: #8E0000; }
   @media print {
     .no-print { display: none !important; }
     #mapa-relatorio { height: 350px; }
@@ -158,9 +159,9 @@
             </td>
             <td><span class="badge bg-primary rounded-pill px-3">{{ t.fotos|length }}</span></td>
             <td>
-<span class="badge {% if t.status == 'ativo' %}bg-success{% else %}bg-secondary{% endif %} rounded-pill px-3">
-	                {{ t.status|capitalize }}
-	              </span>
+              <span class="badge {% if t.status == 'ativo' %}bg-success{% else %}bg-secondary{% endif %} rounded-pill px-3">
+                {{ t.status|capitalize }}
+              </span>
             </td>
           </tr>
           {% endfor %}
@@ -183,14 +184,18 @@
       {% for foto in fotos %}
       <div class="col-6 col-md-3 col-lg-2">
         <div class="position-relative">
-          <img src="{{ foto.foto_url }}" alt="Foto {{ loop.index }}" class="foto-thumb shadow-sm"
+          {# FotoAuditoria usa campo 'url', não 'foto_url' #}
+          <img src="{{ foto.url }}" alt="Foto {{ loop.index }}" class="foto-thumb shadow-sm"
                data-bs-toggle="modal" data-bs-target="#modalFoto"
-               data-url="{{ foto.foto_url }}"
+               data-url="{{ foto.url }}"
                data-descricao="{{ foto.descricao or '' }}"
                data-hora="{{ foto.data_hora.strftime('%d/%m/%Y %H:%M') }}"
                data-lat="{{ foto.latitude }}"
                data-lon="{{ foto.longitude }}"
-               data-dentro="{{ foto.dentro_da_area }}">
+               data-dentro="{{ foto.dentro_da_area }}"
+               data-turno="{{ foto.turno_id or '' }}"
+               data-acao="{{ acao.local_alvo }}"
+               data-cliente="{{ acao.cliente.nome_empresa }}">
 
           {% if foto.dentro_da_area == True %}
             <span class="badge badge-dentro position-absolute top-0 end-0 m-1 shadow-sm" style="font-size:9px;">✓ Área</span>
@@ -233,17 +238,57 @@
 </div>
 {% endif %}
 
-<!-- Modal de foto ampliada -->
+<!-- Modal de foto ampliada com informações completas -->
 <div class="modal fade" id="modalFoto" tabindex="-1">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-      <div class="modal-header border-0 pb-0">
-        <h6 class="modal-title fw-bold" id="modalFotoTitulo">Foto de Campo</h6>
-        <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
+      <div class="modal-header border-0 pb-0" style="background:#8E0000; color:white;">
+        <h6 class="modal-title fw-bold" id="modalFotoTitulo">
+          <i class="fas fa-camera me-2"></i>Evidência de Campo
+        </h6>
+        <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body text-center p-3">
-        <img id="modalFotoImg" src="" alt="Foto" class="img-fluid rounded-3 shadow-sm" style="max-height:70vh;">
-        <div class="mt-3 p-3 bg-light rounded-3" id="modalFotoInfo"></div>
+      <div class="modal-body p-0">
+        <div class="row g-0">
+          <!-- Foto -->
+          <div class="col-md-7 bg-dark d-flex align-items-center justify-content-center" style="min-height:300px;">
+            <img id="modalFotoImg" src="" alt="Foto" class="img-fluid" style="max-height:500px; object-fit:contain;">
+          </div>
+          <!-- Informações detalhadas -->
+          <div class="col-md-5 p-4 d-flex flex-column gap-3">
+            <div>
+              <div class="text-muted small mb-1"><i class="fas fa-map-marker-alt me-1 text-danger"></i>Ação / Local</div>
+              <div class="fw-bold text-vinho" id="modalFotoAcao">—</div>
+            </div>
+            <div>
+              <div class="text-muted small mb-1"><i class="fas fa-building me-1"></i>Cliente</div>
+              <div class="fw-semibold" id="modalFotoCliente">—</div>
+            </div>
+            <div>
+              <div class="text-muted small mb-1"><i class="fas fa-calendar-alt me-1"></i>Data e Hora</div>
+              <div class="fw-semibold" id="modalFotoHora">—</div>
+            </div>
+            <div>
+              <div class="text-muted small mb-1"><i class="fas fa-clock me-1"></i>Turno</div>
+              <div class="small" id="modalFotoTurno">—</div>
+            </div>
+            <div>
+              <div class="text-muted small mb-1"><i class="fas fa-align-left me-1"></i>Descrição</div>
+              <div class="small" id="modalFotoDescricao" style="color:#444;">—</div>
+            </div>
+            <div>
+              <div class="text-muted small mb-1"><i class="fas fa-crosshairs me-1"></i>Coordenadas GPS</div>
+              <div class="small font-monospace" id="modalFotoCoordenadas">—</div>
+            </div>
+            <div id="modalFotoBadge"></div>
+            <div class="mt-auto">
+              <a id="modalFotoMapaLink" href="#" target="_blank"
+                 class="btn btn-sm btn-outline-primary rounded-pill w-100">
+                <i class="fas fa-map me-1"></i> Ver no Google Maps
+              </a>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -265,7 +310,7 @@ const layersRel = {
   areas:   L.layerGroup().addTo(mapaRel)
 };
 
-// Carregar dados via API (Requisito 4)
+// Carregar dados via API
 fetch('/api/mapa/dados/acao/{{ acao.id }}')
   .then(r => r.json())
   .then(data => {
@@ -309,27 +354,45 @@ fetch('/api/mapa/dados/acao/{{ acao.id }}')
   })
   .catch(err => console.error('Erro ao carregar dados do mapa:', err));
 
-// ── Modal de foto ampliada ────────────────────────────────────────────────────
+// ── Modal de foto ampliada com informações completas ──────────────────────────
 document.querySelectorAll('.foto-thumb').forEach(img => {
   img.addEventListener('click', function() {
-    document.getElementById('modalFotoImg').src = this.dataset.url;
-    document.getElementById('modalFotoTitulo').textContent = 'Evidência: ' + this.dataset.hora;
-
     const dentro = this.dataset.dentro;
-    let badge = '';
-    if (dentro === 'True') badge = '<span class="badge bg-success rounded-pill px-3 me-2">Dentro da área</span>';
-    else if (dentro === 'False') badge = '<span class="badge bg-danger rounded-pill px-3 me-2">Fora da área</span>';
+    const lat = this.dataset.lat;
+    const lon = this.dataset.lon;
+    const turnoId = this.dataset.turno;
 
-    document.getElementById('modalFotoInfo').innerHTML = `
-      <div class="mb-2">${badge} <span class="text-muted small"><i class="fas fa-calendar-alt me-1"></i>${this.dataset.hora}</span></div>
-      <div class="fw-semibold mb-2">${this.dataset.descricao || 'Sem descrição.'}</div>
-      <div class="small text-muted"><i class="fas fa-map-marker-alt me-1"></i>Coordenadas: ${parseFloat(this.dataset.lat).toFixed(6)}, ${parseFloat(this.dataset.lon).toFixed(6)}</div>
-    `;
+    document.getElementById('modalFotoImg').src = this.dataset.url;
+    document.getElementById('modalFotoTitulo').innerHTML = '<i class="fas fa-camera me-2"></i>Evidência de Campo';
+    document.getElementById('modalFotoAcao').textContent = this.dataset.acao || '—';
+    document.getElementById('modalFotoCliente').textContent = this.dataset.cliente || '—';
+    document.getElementById('modalFotoHora').textContent = this.dataset.hora || '—';
+    document.getElementById('modalFotoTurno').textContent = turnoId ? 'Turno #' + turnoId : '—';
+    document.getElementById('modalFotoDescricao').textContent = this.dataset.descricao || 'Sem descrição registrada.';
+
+    // Coordenadas e link Google Maps
+    if (lat && lon) {
+      const latF = parseFloat(lat).toFixed(6);
+      const lonF = parseFloat(lon).toFixed(6);
+      document.getElementById('modalFotoCoordenadas').textContent = latF + ', ' + lonF;
+      document.getElementById('modalFotoMapaLink').href = 'https://www.google.com/maps?q=' + latF + ',' + lonF;
+      document.getElementById('modalFotoMapaLink').style.display = '';
+    } else {
+      document.getElementById('modalFotoCoordenadas').textContent = 'Não disponível';
+      document.getElementById('modalFotoMapaLink').style.display = 'none';
+    }
+
+    // Badge dentro/fora da área
+    let badge = '';
+    if (dentro === 'True') {
+      badge = '<span class="badge bg-success rounded-pill px-3"><i class="fas fa-check-circle me-1"></i>Dentro da área</span>';
+    } else if (dentro === 'False') {
+      badge = '<span class="badge bg-danger rounded-pill px-3"><i class="fas fa-times-circle me-1"></i>Fora da área</span>';
+    } else {
+      badge = '<span class="badge bg-secondary rounded-pill px-3">Área não verificada</span>';
+    }
+    document.getElementById('modalFotoBadge').innerHTML = badge;
   });
 });
 </script>
-
-<style>
-    .text-vinho { color: #8E0000; }
-</style>
 {% endblock %}

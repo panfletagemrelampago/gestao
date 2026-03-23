@@ -15,6 +15,7 @@ from app.models.veiculo import Veiculo
 from app.models.cliente import Cliente
 from app.services.cloudinary_service import CloudinaryService
 from app.extensions import db
+from app.decorators.auth_decorators import perfil_required
 
 auditorias_bp = Blueprint('auditorias', __name__)
 
@@ -39,23 +40,20 @@ def to_local_tz(dt):
 # LISTAR AUDITORIAS
 # =============================
 @auditorias_bp.route('/')
-@login_required
+@perfil_required("admin", "funcionario")
 def listar():
+    """
+    Lista auditorias conforme o perfil:
+    - admin: todas as auditorias
+    - funcionario: apenas as que ele registrou
+    Clientes não têm acesso direto a esta rota (acessam via /cliente/acao/<id>).
+    """
     if current_user.tipo_usuario == 'admin':
         auditorias = Auditoria.query.order_by(Auditoria.data_hora.desc()).all()
-    elif current_user.tipo_usuario == 'equipe':
+    else:  # funcionario
         auditorias = Auditoria.query.filter_by(user_id=current_user.id).order_by(
             Auditoria.data_hora.desc()
         ).all()
-    else:
-        cliente = Cliente.query.filter_by(email=current_user.email).first()
-        if cliente:
-            acao_ids = [a.id for a in AcaoPromocional.query.filter_by(cliente_id=cliente.id).all()]
-            auditorias = Auditoria.query.filter(
-                Auditoria.acao_id.in_(acao_ids)
-            ).order_by(Auditoria.data_hora.desc()).all()
-        else:
-            auditorias = []
 
     return render_template('auditorias/listar.html', auditorias=auditorias)
 
@@ -64,7 +62,7 @@ def listar():
 # REGISTRAR FOTO (COM TURNO)
 # =============================
 @auditorias_bp.route('/registrar', methods=['GET', 'POST'])
-@login_required
+@perfil_required("admin", "funcionario")
 def registrar():
     # Buscar ações agrupadas por cliente para o seletor melhorado
     acoes_ativas = AcaoPromocional.query.filter(
@@ -173,17 +171,17 @@ def registrar():
 # TELA DE TURNOS
 # =============================
 @auditorias_bp.route('/turnos/<int:acao_id>')
-@login_required
+@perfil_required("admin", "funcionario")
 def turnos(acao_id):
     acao = AcaoPromocional.query.get_or_404(acao_id)
-    
+
     # Forçar carregamento do líder para garantir vínculo do veículo
     if acao.lider_equipe_id and not acao.lider:
         acao.lider = Equipe.query.get(acao.lider_equipe_id)
 
-    if current_user.tipo_usuario == 'cliente':
-        cliente = Cliente.query.filter_by(email=current_user.email).first()
-        if not cliente or acao.cliente_id != cliente.id:
+    # Funcionário só pode ver turnos de ações em que é líder
+    if current_user.tipo_usuario == 'funcionario':
+        if acao.lider_equipe_id != current_user.id:
             flash('Acesso negado.', 'danger')
             return redirect(url_for('auditorias.listar'))
 
@@ -215,9 +213,14 @@ def turnos(acao_id):
 # RELATÓRIO
 # =============================
 @auditorias_bp.route('/relatorio/<int:acao_id>')
-@login_required
+@perfil_required("admin", "funcionario", "cliente")
 def relatorio(acao_id):
-    acao = AcaoPromocional.query.get_or_404(acao_id)
+    """
+    Relatório de auditoria de uma ação.
+    Clientes só podem ver relatórios das suas próprias ações (verificado por cliente_id).
+    """
+    from app.utils.security_helpers import get_acao_segura
+    acao = get_acao_segura(acao_id)
     turnos_acao = Turno.query.filter_by(acao_id=acao_id).all()
     areas = AreaAtuacao.query.filter_by(acao_id=acao_id).all()
     fotos = FotoAuditoria.query.join(Turno).filter(
@@ -238,7 +241,7 @@ def relatorio(acao_id):
 # TURNOS (CRUD)
 # =============================
 @auditorias_bp.route('/turno/iniciar/<int:acao_id>', methods=['POST'])
-@login_required
+@perfil_required("admin", "funcionario")
 def iniciar_turno(acao_id):
     acao = AcaoPromocional.query.get_or_404(acao_id)
     Turno.query.filter_by(acao_id=acao_id, status='ativo').update({
@@ -269,7 +272,7 @@ def iniciar_turno(acao_id):
 
 
 @auditorias_bp.route('/turno/encerrar/<int:turno_id>')
-@login_required
+@perfil_required("admin", "funcionario")
 def encerrar_turno(turno_id):
     turno = Turno.query.get_or_404(turno_id)
     turno.status = 'encerrado'
@@ -280,7 +283,7 @@ def encerrar_turno(turno_id):
 
 
 @auditorias_bp.route('/turno/retomar/<int:turno_id>')
-@login_required
+@perfil_required("admin", "funcionario")
 def retomar_turno(turno_id):
     """Retoma um turno que estava pausado/encerrado, reativando-o."""
     turno = Turno.query.get_or_404(turno_id)
@@ -301,7 +304,7 @@ def retomar_turno(turno_id):
 
 
 @auditorias_bp.route('/turno/cancelar/<int:turno_id>')
-@login_required
+@perfil_required("admin")
 def cancelar_turno(turno_id):
     turno = Turno.query.get_or_404(turno_id)
     acao_id = turno.acao_id
@@ -314,7 +317,7 @@ def cancelar_turno(turno_id):
 
 
 @auditorias_bp.route('/turno/editar/<int:turno_id>', methods=['POST'])
-@login_required
+@perfil_required("admin")
 def editar_turno(turno_id):
     turno = Turno.query.get_or_404(turno_id)
     turno.equipe_id = request.form.get('equipe_id')
@@ -326,7 +329,7 @@ def editar_turno(turno_id):
 
 
 @auditorias_bp.route('/turno/excluir/<int:turno_id>')
-@login_required
+@perfil_required("admin")
 def excluir_turno(turno_id):
     turno = Turno.query.get_or_404(turno_id)
     acao_id = turno.acao_id
@@ -342,7 +345,7 @@ def excluir_turno(turno_id):
 
 
 @auditorias_bp.route('/excluir/<int:auditoria_id>', methods=['POST'])
-@login_required
+@perfil_required("admin")
 def excluir_auditoria(auditoria_id):
     auditoria = Auditoria.query.get_or_404(auditoria_id)
     try:

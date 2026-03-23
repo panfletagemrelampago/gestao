@@ -3,21 +3,23 @@ from flask_login import login_required
 from app.models.vaga import Vaga
 from app.extensions import db
 from app.services.cloudinary_service import CloudinaryService
+from app.decorators.auth_decorators import perfil_required
 from datetime import datetime
 
 vagas_bp = Blueprint('vagas', __name__)
 
-# LISTAR VAGAS
+
+# LISTAR VAGAS (apenas admin e funcionario)
 @vagas_bp.route('/')
-@login_required
+@perfil_required("admin", "funcionario")
 def listar():
     vagas = Vaga.query.order_by(Vaga.data_cadastro.desc()).all()
     return render_template('vagas/listar.html', vagas=vagas)
 
 
-# NOVA VAGA
+# NOVA VAGA (apenas admin)
 @vagas_bp.route('/novo', methods=['GET', 'POST'])
-@login_required
+@perfil_required("admin")
 def novo():
     if request.method == 'POST':
         try:
@@ -74,9 +76,9 @@ def novo():
     return render_template('vagas/novo.html')
 
 
-# EDITAR VAGA
+# EDITAR VAGA (apenas admin)
 @vagas_bp.route('/editar/<int:id>', methods=['GET', 'POST'])
-@login_required
+@perfil_required("admin")
 def editar(id):
 
     vaga = Vaga.query.get_or_404(id)
@@ -149,9 +151,9 @@ def editar(id):
     return render_template('vagas/editar.html', vaga=vaga)
 
 
-# EXCLUIR VAGA
+# EXCLUIR VAGA (apenas admin)
 @vagas_bp.route('/excluir/<int:id>', methods=['POST'])
-@login_required
+@perfil_required("admin")
 def excluir(id):
 
     vaga = Vaga.query.get_or_404(id)

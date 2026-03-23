@@ -15,6 +15,11 @@ main_bp = Blueprint('main', __name__)
 @main_bp.route('/')
 def index():
     if current_user.is_authenticated:
+        # Redirecionar para o dashboard correto conforme o perfil
+        if current_user.tipo_usuario == 'funcionario':
+            return redirect(url_for('funcionario.dashboard'))
+        elif current_user.tipo_usuario == 'cliente':
+            return redirect(url_for('cliente.dashboard'))
         return redirect(url_for('main.dashboard'))
     return redirect(url_for('auth.login'))
 

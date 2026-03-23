@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Materiais de Campanha{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0">
+        <i class="fas fa-box me-2 text-success"></i>Materiais de Campanha
+    </h2>
+    <a href="{{ url_for('funcionario.dashboard') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Dashboard
+    </a>
+</div>
+
+{% if materiais %}
+<div class="row g-3">
+    {% for material in materiais %}
+    <div class="col-md-6 col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            {% if material.imagem_url %}
+            <img src="{{ material.imagem_url }}" class="card-img-top"
+                 style="height:180px;object-fit:cover;" alt="{{ material.nome_campanha }}">
+            {% endif %}
+            <div class="card-body">
+                <h6 class="fw-bold mb-1">{{ material.nome_campanha }}</h6>
+                <p class="text-muted small mb-2">{{ material.empresa }}</p>
+                <div class="d-flex justify-content-between text-muted small">
+                    <span><i class="fas fa-calendar me-1"></i>{{ material.data_inicio.strftime('%d/%m/%Y') if material.data_inicio else '—' }}</span>
+                    <span><i class="fas fa-boxes me-1"></i>{{ material.quantidade or '—' }} unid.</span>
+                </div>
+            </div>
+            {% if material.documento_url %}
+            <div class="card-footer bg-white border-top">
+                <a href="{{ material.documento_url }}" target="_blank"
+                   class="btn btn-sm btn-outline-primary w-100">
+                    <i class="fas fa-file-download me-1"></i>Baixar Documento
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5 text-muted">
+    <i class="fas fa-box-open fa-3x mb-3 opacity-25"></i>
+    <p class="mb-0">Nenhum material disponível no momento.</p>
+</div>
+{% endif %}
+{% endblock %}

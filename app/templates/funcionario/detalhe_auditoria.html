@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Auditoria #{{ auditoria.id }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a href="{{ url_for('funcionario.dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('auditorias.listar') }}">Auditorias</a></li>
+                <li class="breadcrumb-item active">Auditoria #{{ auditoria.id }}</li>
+            </ol>
+        </nav>
+        <h2 class="fw-bold mb-0">Auditoria #{{ auditoria.id }}</h2>
+    </div>
+    <a href="{{ url_for('auditorias.listar') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Voltar
+    </a>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        {% if auditoria.foto_url %}
+        <div class="card border-0 shadow-sm mb-3">
+            <img src="{{ auditoria.foto_url }}" class="card-img-top rounded-3"
+                 style="max-height:350px;object-fit:cover;cursor:pointer;"
+                 onclick="openModal('{{ auditoria.foto_url }}')"
+                 alt="Foto da auditoria">
+        </div>
+        {% endif %}
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="mb-0 fw-bold"><i class="fas fa-info-circle me-2 text-primary"></i>Detalhes</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless mb-0">
+                    <tr>
+                        <td class="text-muted fw-semibold" style="width:40%">Ação</td>
+                        <td>{{ auditoria.acao.nome_exibicao if auditoria.acao else '—' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted fw-semibold">Data/Hora</td>
+                        <td>{{ auditoria.data_hora.strftime('%d/%m/%Y %H:%M') if auditoria.data_hora else '—' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted fw-semibold">Descrição</td>
+                        <td>{{ auditoria.descricao or '—' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted fw-semibold">Latitude</td>
+                        <td>{{ auditoria.latitude or '—' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted fw-semibold">Longitude</td>
+                        <td>{{ auditoria.longitude or '—' }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        {% if auditoria.latitude and auditoria.longitude %}
+        <div class="mt-3">
+            <a href="https://www.google.com/maps?q={{ auditoria.latitude }},{{ auditoria.longitude }}"
+               target="_blank" class="btn btn-outline-primary w-100">
+                <i class="fas fa-map-marker-alt me-2"></i>Ver no Google Maps
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

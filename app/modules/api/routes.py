@@ -18,6 +18,8 @@ from app.services.gps_service import GpsService
 from app.services.cloudinary_service import CloudinaryService
 from app.extensions import db
 from app.models.mapa_area import MapaArea
+from app.decorators.auth_decorators import perfil_required
+from app.utils.security_helpers import get_cliente_id_do_usuario
 from datetime import datetime, timedelta
 
 api_bp = Blueprint('api', __name__)
@@ -28,7 +30,7 @@ api_bp = Blueprint('api', __name__)
 # ─────────────────────────────────────────────────────────────────────────────
 
 @api_bp.route('/gps', methods=['POST'])
-@login_required
+@perfil_required("admin", "funcionario")
 def receber_gps():
     """
     Endpoint para receber dados GPS do navegador via Geolocation API.
@@ -61,7 +63,7 @@ def receber_gps():
 
 
 @api_bp.route('/gps/latest', methods=['GET'])
-@login_required
+@perfil_required("admin", "funcionario")
 def gps_latest():
     """
     Retorna as últimas posições de todos os dispositivos ativos nas últimas 24 horas.
@@ -98,7 +100,7 @@ def gps_latest():
 
 
 @api_bp.route('/gps/historico/<string:device_id>', methods=['GET'])
-@login_required
+@perfil_required("admin", "funcionario")
 def historico_gps(device_id):
     """
     Retorna o histórico de posições GPS de um dispositivo.
@@ -136,7 +138,7 @@ def historico_gps(device_id):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @api_bp.route('/turnos/iniciar', methods=['POST'])
-@login_required
+@perfil_required("admin", "funcionario")
 def iniciar_turno():
     """
     Inicia um novo turno de campo para uma ação promocional.
@@ -154,10 +156,6 @@ def iniciar_turno():
     acao = AcaoPromocional.query.get(acao_id)
     if not acao:
         return jsonify({"erro": "Ação não encontrada"}), 404
-
-    # Verificar permissão do usuário
-    if current_user.tipo_usuario not in ['admin', 'equipe']:
-        return jsonify({"erro": "Permissão negada para iniciar turno"}), 403
 
     # Encerrar turnos anteriores antes de iniciar um novo
     Turno.query.filter_by(acao_id=acao_id, status='ativo').update({'status': 'encerrado', 'fim': datetime.utcnow()})
@@ -194,14 +192,10 @@ def iniciar_turno():
 
 
 @api_bp.route('/turnos/<int:turno_id>/encerrar', methods=['POST'])
-@login_required
+@perfil_required("admin", "funcionario")
 def encerrar_turno(turno_id):
     """Encerra um turno ativo, registrando o horário de fim."""
     turno = Turno.query.get_or_404(turno_id)
-
-    # Verificar permissão
-    if current_user.tipo_usuario not in ['admin', 'equipe']:
-        return jsonify({"erro": "Permissão negada"}), 403
 
     if turno.status == 'encerrado':
         return jsonify({"erro": "Turno já foi encerrado"}), 400
@@ -232,15 +226,14 @@ def encerrar_turno(turno_id):
 
 
 @api_bp.route('/turnos/acao/<int:acao_id>', methods=['GET'])
-@login_required
+@perfil_required("admin", "funcionario", "cliente")
 def listar_turnos_acao(acao_id):
     """Lista todos os turnos de uma ação específica."""
-    # Verificar acesso para clientes
+    # Verificar acesso para clientes usando cliente_id (ownership)
     if current_user.tipo_usuario == 'cliente':
-        from app.models.cliente import Cliente
-        cliente = Cliente.query.filter_by(email=current_user.email).first()
         acao = AcaoPromocional.query.get_or_404(acao_id)
-        if not cliente or acao.cliente_id != cliente.id:
+        cliente_id = get_cliente_id_do_usuario(current_user)
+        if not cliente_id or acao.cliente_id != cliente_id:
             return jsonify({"erro": "Acesso negado"}), 403
 
     turnos = Turno.query.filter_by(acao_id=acao_id).order_by(Turno.inicio.desc()).all()
@@ -268,16 +261,15 @@ def listar_turnos_acao(acao_id):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @api_bp.route('/areas/<int:acao_id>', methods=['GET'])
-@login_required
+@perfil_required("admin", "funcionario", "cliente")
 def listar_areas(acao_id):
     """Retorna todas as áreas de atuação de uma ação."""
     acao = AcaoPromocional.query.get_or_404(acao_id)
 
-    # Verificar acesso para clientes
+    # Verificar acesso para clientes usando cliente_id (ownership)
     if current_user.tipo_usuario == 'cliente':
-        from app.models.cliente import Cliente
-        cliente = Cliente.query.filter_by(email=current_user.email).first()
-        if not cliente or acao.cliente_id != cliente.id:
+        cliente_id = get_cliente_id_do_usuario(current_user)
+        if not cliente_id or acao.cliente_id != cliente_id:
             return jsonify({"erro": "Acesso negado"}), 403
 
     areas = AreaAtuacao.query.filter_by(acao_id=acao_id).all()
@@ -298,14 +290,12 @@ def listar_areas(acao_id):
 
 
 @api_bp.route('/areas/<int:acao_id>', methods=['POST'])
-@login_required
+@perfil_required("admin", "funcionario")
 def salvar_area(acao_id):
     """
     Salva uma nova área de atuação para uma ação.
     Corpo JSON: { nome, geojson, descricao (opcional), cor (opcional) }
     """
-    if current_user.tipo_usuario not in ['admin', 'equipe']:
-        return jsonify({"erro": "Permissão negada"}), 403
 
     acao = AcaoPromocional.query.get_or_404(acao_id)
 
@@ -351,11 +341,9 @@ def salvar_area(acao_id):
 
 
 @api_bp.route('/areas/item/<int:area_id>', methods=['DELETE'])
-@login_required
+@perfil_required("admin")
 def deletar_area(area_id):
     """Remove uma área de atuação."""
-    if current_user.tipo_usuario != 'admin':
-        return jsonify({"erro": "Permissão negada"}), 403
 
     area = AreaAtuacao.query.get_or_404(area_id)
 
@@ -369,11 +357,9 @@ def deletar_area(area_id):
 
 
 @api_bp.route("/areas/item/<int:area_id>", methods=["PUT"])
-@login_required
+@perfil_required("admin", "funcionario")
 def atualizar_area_atuacao(area_id):
     """Atualiza os dados de uma área de atuação existente."""
-    if current_user.tipo_usuario not in ["admin", "equipe"]:
-        return jsonify({"erro": "Permissão negada"}), 403
 
     area = AreaAtuacao.query.get_or_404(area_id)
     data = request.get_json() or {}
@@ -406,7 +392,7 @@ def atualizar_area_atuacao(area_id):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @api_bp.route("/mapa/areas", methods=["GET"])
-@login_required
+@perfil_required("admin", "funcionario", "cliente")
 def get_mapa_areas():
     """Retorna todas as áreas de mapa salvas."""
     areas = MapaArea.query.all()
@@ -422,11 +408,9 @@ def get_mapa_areas():
 
 
 @api_bp.route("/mapa/areas", methods=["POST"])
-@login_required
+@perfil_required("admin", "funcionario")
 def post_mapa_area():
     """Recebe GeoJSON e salva uma nova área de mapa."""
-    if current_user.tipo_usuario not in ["admin", "equipe"]:
-        return jsonify({"erro": "Permissão negada"}), 403
 
     data = request.get_json()
     if not data:
@@ -460,11 +444,9 @@ def post_mapa_area():
 
 
 @api_bp.route("/mapa/areas/<int:area_id>", methods=["DELETE"])
-@login_required
+@perfil_required("admin", "funcionario")
 def delete_mapa_area(area_id):
     """Remove uma área de mapa pelo ID."""
-    if current_user.tipo_usuario not in ["admin", "equipe"]:
-        return jsonify({"erro": "Permissão negada"}), 403
 
     area = MapaArea.query.get_or_404(area_id)
 
@@ -478,11 +460,9 @@ def delete_mapa_area(area_id):
 
 
 @api_bp.route("/mapa/areas/<int:area_id>", methods=["PUT"])
-@login_required
+@perfil_required("admin", "funcionario")
 def update_mapa_area(area_id):
     """Atualiza uma área de mapa existente."""
-    if current_user.tipo_usuario not in ["admin", "equipe"]:
-        return jsonify({"erro": "Permissão negada"}), 403
 
     area = MapaArea.query.get_or_404(area_id)
     data = request.get_json()
@@ -511,7 +491,7 @@ def update_mapa_area(area_id):
 
 
 @api_bp.route('/areas/verificar', methods=['POST'])
-@login_required
+@perfil_required("admin", "funcionario")
 def verificar_ponto_na_area():
     """
     Verifica se um ponto GPS está dentro de alguma área de atuação.
@@ -547,7 +527,7 @@ def verificar_ponto_na_area():
 # ─────────────────────────────────────────────────────────────────────────────
 
 @api_bp.route('/fotos/enviar', methods=['POST'])
-@login_required
+@perfil_required("admin", "funcionario")
 def enviar_foto():
     """
     Recebe uma foto com geolocalização e a associa a um turno.
@@ -572,10 +552,6 @@ def enviar_foto():
         return jsonify({"erro": "Turno não encontrado"}), 404
     if turno.status == 'encerrado':
         return jsonify({"erro": "Não é possível enviar fotos para um turno encerrado"}), 400
-
-    # Verificar permissão do usuário
-    if current_user.tipo_usuario not in ['admin', 'equipe']:
-        return jsonify({"erro": "Permissão negada"}), 403
 
     foto_url = CloudinaryService.upload_image(foto, folder="auditorias_campo")
     if not foto_url:
@@ -615,16 +591,15 @@ def enviar_foto():
 
 
 @api_bp.route('/fotos/turno/<int:turno_id>', methods=['GET'])
-@login_required
+@perfil_required("admin", "funcionario", "cliente")
 def fotos_do_turno(turno_id):
     """Retorna todas as fotos de um turno específico."""
     turno = Turno.query.get_or_404(turno_id)
 
-    # Verificar acesso para clientes
+    # Verificar acesso para clientes usando cliente_id (ownership)
     if current_user.tipo_usuario == 'cliente':
-        from app.models.cliente import Cliente
-        cliente = Cliente.query.filter_by(email=current_user.email).first()
-        if not cliente or turno.acao.cliente_id != cliente.id:
+        cliente_id = get_cliente_id_do_usuario(current_user)
+        if not cliente_id or turno.acao.cliente_id != cliente_id:
             return jsonify({"erro": "Acesso negado"}), 403
 
     fotos = FotoAuditoria.query.filter_by(turno_id=turno_id).order_by(
@@ -654,23 +629,23 @@ def fotos_do_turno(turno_id):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @api_bp.route('/mapa/dados')
-@login_required
+@perfil_required("admin", "funcionario", "cliente")
 def mapa_dados():
     """
     Retorna dados JSON consolidados para o mapa Leaflet.
     Inclui rastros GPS, fotos geolocalizadas, áreas de atuação e veículos.
     Filtra por acao_id se fornecido via query string.
+    Clientes só vêem dados das suas próprias ações (ownership por cliente_id).
     """
     tempo_limite = datetime.utcnow() - timedelta(hours=24)
     acao_id = request.args.get('acao_id', type=int)
 
-    # Verificar permissões do cliente
+    # Filtrar por ownership para clientes (usa cliente_id, não email)
     if current_user.tipo_usuario == 'cliente':
-        from app.models.cliente import Cliente
-        cliente = Cliente.query.filter_by(email=current_user.email).first()
-        if not cliente:
+        cliente_id = get_cliente_id_do_usuario(current_user)
+        if not cliente_id:
             return jsonify({"veiculos": [], "fotos": [], "rastros_gps": {}, "areas": [], "auditorias_legadas": []})
-        filtro_acoes = [a.id for a in AcaoPromocional.query.filter_by(cliente_id=cliente.id).all()]
+        filtro_acoes = [a.id for a in AcaoPromocional.query.filter_by(cliente_id=cliente_id).all()]
     else:
         filtro_acoes = None
 
@@ -761,19 +736,19 @@ def mapa_dados():
 
 
 @api_bp.route('/mapa/dados/acao/<int:acao_id>')
-@login_required
+@perfil_required("admin", "funcionario", "cliente")
 def mapa_dados_acao(acao_id):
     """
     Retorna dados completos do mapa para uma ação específica.
     Inclui turnos, rastros GPS, fotos e áreas.
+    Clientes só podem acessar ações vinculadas ao seu cliente_id.
     """
     acao = AcaoPromocional.query.get_or_404(acao_id)
 
-    # Verificar acesso para clientes
+    # Verificar acesso para clientes usando cliente_id (ownership)
     if current_user.tipo_usuario == 'cliente':
-        from app.models.cliente import Cliente
-        cliente = Cliente.query.filter_by(email=current_user.email).first()
-        if not cliente or acao.cliente_id != cliente.id:
+        cliente_id = get_cliente_id_do_usuario(current_user)
+        if not cliente_id or acao.cliente_id != cliente_id:
             return jsonify({"erro": "Acesso negado"}), 403
 
     turnos = Turno.query.filter_by(acao_id=acao_id).all()

@@ -2,9 +2,11 @@ from flask import Blueprint, render_template, jsonify
 from flask_login import login_required, current_user
 from app.models.acao_promocional import AcaoPromocional
 from app.models.cliente import Cliente
-from app.models.foto_auditoria import FotoAuditoria  # ✅ NOVO
-from app.models.posicao_gps import PosicaoGps  # (mantido, mas não central)
+from app.models.foto_auditoria import FotoAuditoria
+from app.models.posicao_gps import PosicaoGps
 from app.extensions import db
+from app.decorators.auth_decorators import perfil_required
+from app.utils.security_helpers import get_acoes_por_perfil
 import math
 
 mapa_bp = Blueprint('mapa', __name__)
@@ -13,19 +15,15 @@ mapa_bp = Blueprint('mapa', __name__)
 # Página do mapa
 # =============================
 @mapa_bp.route('/')
-@login_required
+@perfil_required("admin", "funcionario", "cliente")
 def index():
-
-    if current_user.tipo_usuario == 'cliente':
-        cliente = Cliente.query.filter_by(email=current_user.email).first()
-        acoes = AcaoPromocional.query.filter_by(cliente_id=cliente.id).all() if cliente else []
-
-    elif current_user.tipo_usuario == 'equipe':
-        acoes = AcaoPromocional.query.filter_by(lider_equipe_id=current_user.id).all()
-
-    else:
-        acoes = AcaoPromocional.query.order_by(AcaoPromocional.data.desc()).all()
-
+    """
+    Exibe o mapa com ações filtradas por perfil:
+    - admin: todas as ações
+    - funcionario: ações em que é líder
+    - cliente: ações vinculadas ao seu cliente_id
+    """
+    acoes = get_acoes_por_perfil()
     return render_template(
         "mapa/index.html",
         acoes=acoes

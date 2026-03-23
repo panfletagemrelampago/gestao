@@ -524,7 +524,7 @@ async function carregarAreas() {
             const nomeArea = escapeHTML(area.nome) || 'Área sem nome';
             const descArea = escapeHTML(area.descricao) || 'Sem descrição';
 
-            {% if current_user.tipo_usuario in ['admin', 'equipe'] %}
+            {% if current_user.tipo_usuario in ['admin', 'funcionario'] %}
             geoLayer.bindPopup(`
                 <div style="min-width:180px">
                     <h6 class="mb-1 fw-bold text-primary">${nomeArea}</h6>
@@ -594,7 +594,7 @@ async function excluirArea(areaId) {
 }
 
 function inicializarDrawControl() {
-    {% if current_user.tipo_usuario in ['admin', 'equipe'] %}
+    {% if current_user.tipo_usuario in ['admin', 'funcionario'] %}
     const drawControl = new L.Control.Draw({
         draw: {
             polygon: { allowIntersection: false, shapeOptions: { color: "#0d6efd" } },

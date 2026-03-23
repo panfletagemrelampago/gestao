@@ -117,6 +117,9 @@ def create_app(config_class=Config):
     # =============================
     # INIT DB + ADMIN
     # =============================
+    from app.utils.migrations import run_auto_migrations
+    run_auto_migrations(app)
+
     with app.app_context():
         db.create_all()
 

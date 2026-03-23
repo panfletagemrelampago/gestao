@@ -84,6 +84,33 @@ def run_auto_migrations(app):
                 logger.warning("Migração automática concluída: Coluna 'ativo' adicionada à tabela 'users'.")
             else:
                 logger.info("Verificação de schema: Coluna 'ativo' já existe na tabela 'users'.")
+
+            # 5. Garantir que o ENUM 'user_types' contenha 'funcionario' (PostgreSQL apenas)
+            # No SQLite, o Enum é apenas uma restrição de CHECK que o SQLAlchemy gerencia de forma diferente
+            try:
+                # Verificar se estamos no PostgreSQL
+                check_pg_sql = text("SELECT 1 FROM pg_type WHERE typname = 'user_types';")
+                is_pg = db.session.execute(check_pg_sql).fetchone()
+                
+                if is_pg:
+                    # Tentar adicionar 'funcionario' ao ENUM. 
+                    # O PostgreSQL não permite ALTER TYPE ... ADD VALUE dentro de uma transação em algumas versões,
+                    # mas o SQLAlchemy/psycopg2 costuma lidar com isso se fizermos commit imediato.
+                    logger.info("Verificando valores do ENUM 'user_types' no PostgreSQL...")
+                    add_enum_value_sql = text("ALTER TYPE user_types ADD VALUE IF NOT EXISTS 'funcionario';")
+                    
+                    # Executar com commit automático para evitar erro de transação do Postgres
+                    connection = db.engine.raw_connection()
+                    try:
+                        cursor = connection.cursor()
+                        cursor.execute("COMMIT") # Garante que não há transação aberta
+                        cursor.execute("ALTER TYPE user_types ADD VALUE IF NOT EXISTS 'funcionario';")
+                        connection.commit()
+                        logger.info("Valor 'funcionario' garantido no ENUM 'user_types'.")
+                    finally:
+                        connection.close()
+            except Exception as e:
+                logger.warning(f"Aviso ao atualizar ENUM (pode ser SQLite ou permissão): {str(e)}")
                 
         except Exception as e:
             db.session.rollback()

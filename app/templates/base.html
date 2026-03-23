@@ -77,11 +77,13 @@ Auditoria
 Cadastros
 </a>
 <ul class="dropdown-menu">
-<li><a class="dropdown-item" href="{{ url_for('clientes.listar') }}">Clientes</a></li>
-<li><a class="dropdown-item" href="{{ url_for('equipe.listar') }}">Equipe</a></li>
-<li><a class="dropdown-item" href="{{ url_for('veiculos.listar') }}">Veículos</a></li>
-</ul>
-</li>
+	<li><a class="dropdown-item" href="{{ url_for('clientes.listar') }}">Clientes</a></li>
+	<li><a class="dropdown-item" href="{{ url_for('equipe.listar') }}">Equipe</a></li>
+	<li><a class="dropdown-item" href="{{ url_for('veiculos.listar') }}">Veículos</a></li>
+	<li><hr class="dropdown-divider"></li>
+	<li><a class="dropdown-item" href="{{ url_for('usuarios.listar') }}">Usuários</a></li>
+	</ul>
+	</li>
 
 {# ============================== #}
 {# NAVBAR FUNCIONÁRIO #}

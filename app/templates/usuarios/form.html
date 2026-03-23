@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('usuarios.listar') }}" class="text-decoration-none text-muted small">
+        <i class="fas fa-arrow-left me-1"></i> Voltar para listagem
+    </a>
+    <h2 class="fw-bold mt-2">{{ titulo }}</h2>
+</div>
+
+<div class="row">
+    <div class="col-md-8 col-lg-6">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body p-4">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="nome_exibicao" class="form-label fw-bold">Nome de Exibição</label>
+                        <input type="text" class="form-control" id="nome_exibicao" name="nome_exibicao" 
+                               value="{{ usuario.nome_exibicao if usuario else '' }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label fw-bold">E-mail (Login)</label>
+                        <input type="email" class="form-control" id="email" name="email" 
+                               value="{{ usuario.email if usuario else '' }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="tipo_usuario" class="form-label fw-bold">Tipo de Usuário</label>
+                        <select class="form-select" id="tipo_usuario" name="tipo_usuario" required onchange="toggleClienteSelect()">
+                            <option value="admin" {% if usuario and usuario.tipo_usuario == 'admin' %}selected{% endif %}>Administrador</option>
+                            <option value="funcionario" {% if usuario and usuario.tipo_usuario == 'funcionario' %}selected{% endif %}>Funcionário</option>
+                            <option value="cliente" {% if usuario and usuario.tipo_usuario == 'cliente' %}selected{% endif %}>Cliente</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3" id="cliente_select_container" style="display: {% if usuario and usuario.tipo_usuario == 'cliente' %}block{% else %}none{% endif %};">
+                        <label for="cliente_id" class="form-label fw-bold">Vincular ao Cliente</label>
+                        <select class="form-select" id="cliente_id" name="cliente_id">
+                            <option value="">Selecione um cliente...</option>
+                            {% for cliente in clientes %}
+                            <option value="{{ cliente.id }}" {% if usuario and usuario.cliente_id == cliente.id %}selected{% endif %}>
+                                {{ cliente.nome_empresa }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text text-info">
+                            <i class="fas fa-info-circle me-1"></i> Usuários do tipo Cliente só visualizam ações vinculadas a este cadastro.
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="senha" class="form-label fw-bold">Senha</label>
+                        <input type="password" class="form-control" id="senha" name="senha" 
+                               {% if not usuario %}required{% endif %} placeholder="{% if usuario %}Deixe em branco para manter a atual{% else %}Mínimo 6 caracteres{% endif %}">
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary py-2 fw-bold">
+                            <i class="fas fa-save me-2"></i> Salvar Usuário
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleClienteSelect() {
+    const tipo = document.getElementById('tipo_usuario').value;
+    const container = document.getElementById('cliente_select_container');
+    container.style.display = (tipo === 'cliente') ? 'block' : 'none';
+}
+</script>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciamento de Usuários{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="fw-bold mb-0">Gerenciamento de <span class="text-vinho">Usuários</span></h2>
+        <p class="text-muted small mb-0">Criar, editar e administrar acessos ao sistema.</p>
+    </div>
+    <div class="header-actions">
+        <a href="{{ url_for('usuarios.novo') }}" class="btn btn-primary shadow-sm">
+            <i class="fas fa-user-plus me-2"></i> Novo Usuário
+        </a>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle table-responsive-mobile">
+                <thead class="bg-light">
+                    <tr>
+                        <th>Nome</th>
+                        <th>E-mail</th>
+                        <th>Tipo</th>
+                        <th>Vínculo</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in usuarios %}
+                    <tr>
+                        <td data-label="Nome">
+                            <div class="d-flex align-items-center justify-content-end justify-content-md-start gap-2">
+                                <div class="bg-vinho text-white rounded-circle d-flex align-items-center justify-content-center" 
+                                     style="width: 40px; height: 40px; font-weight: bold; background-color: #8E0000;">
+                                    {{ user.nome_exibicao[0] | upper }}
+                                </div>
+                                <span class="fw-bold">{{ user.nome_exibicao }}</span>
+                            </div>
+                        </td>
+                        <td data-label="E-mail">
+                            <div class="text-end text-md-center text-muted">
+                                <i class="fas fa-envelope me-1 small"></i> {{ user.email }}
+                            </div>
+                        </td>
+                        <td data-label="Tipo">
+                            <div class="text-end text-md-center">
+                                <span class="badge rounded-pill px-3 
+                                    {% if user.tipo_usuario == 'admin' %}bg-danger
+                                    {% elif user.tipo_usuario == 'funcionario' %}bg-primary
+                                    {% elif user.tipo_usuario == 'cliente' %}bg-success
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ user.tipo_usuario | title }}
+                                </span>
+                            </div>
+                        </td>
+                        <td data-label="Vínculo">
+                            <div class="text-end text-md-center">
+                                {% if user.tipo_usuario == 'cliente' and user.cliente %}
+                                    <small class="text-muted">{{ user.cliente.nome_empresa }}</small>
+                                {% elif user.tipo_usuario == 'cliente' and not user.cliente %}
+                                    <small class="text-warning"><i class="fas fa-exclamation-triangle me-1"></i>Sem vínculo</small>
+                                {% else %}
+                                    <small class="text-muted">-</small>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td data-label="Ações">
+                            <div class="d-flex justify-content-end justify-content-md-center gap-2">
+                                <a href="{{ url_for('usuarios.editar', id=user.id) }}" 
+                                   class="btn btn-sm btn-warning btn-action-square" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                
+                                {% if user.id != current_user.id %}
+                                <form action="{{ url_for('usuarios.excluir', id=user.id) }}" 
+                                      method="POST" class="d-inline" 
+                                      onsubmit="return confirm('Tem certeza que deseja excluir o usuário {{ user.nome_exibicao }}?');">
+                                    <button type="submit" class="btn btn-sm btn-danger btn-action-square" title="Excluir">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                                {% else %}
+                                <button class="btn btn-sm btn-secondary btn-action-square" disabled title="Você está logado">
+                                    <i class="fas fa-user-lock"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

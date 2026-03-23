@@ -38,14 +38,8 @@ def run_auto_migrations(app):
             
             if not column_exists:
                 logger.warning("Coluna 'cliente_id' não encontrada na tabela 'users'. Iniciando migração automática...")
-                
-                # 2. Adicionar a coluna cliente_id
-                # Nota: Adicionamos como Integer e permitimos NULL inicialmente
                 add_column_sql = text("ALTER TABLE users ADD COLUMN cliente_id INTEGER;")
                 db.session.execute(add_column_sql)
-                
-                # 3. Adicionar a Foreign Key (apenas se for PostgreSQL)
-                # No SQLite, adicionar FK via ALTER TABLE é limitado, então focamos na coluna primeiro
                 try:
                     add_fk_sql = text("""
                         ALTER TABLE users 
@@ -58,11 +52,38 @@ def run_auto_migrations(app):
                     logger.info("Constraint de Foreign Key 'fk_users_cliente_id' adicionada com sucesso.")
                 except Exception as e:
                     logger.warning(f"Não foi possível adicionar a constraint de FK (pode ser SQLite): {str(e)}")
-                
                 db.session.commit()
                 logger.warning("Migração automática concluída: Coluna 'cliente_id' adicionada à tabela 'users'.")
             else:
                 logger.info("Verificação de schema: Coluna 'cliente_id' já existe na tabela 'users'.")
+
+            # 4. Verificar se a coluna 'ativo' existe na tabela 'users'
+            check_ativo_sql = text("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name='users' AND column_name='ativo';
+            """)
+            
+            ativo_exists = False
+            try:
+                result = db.session.execute(check_ativo_sql).fetchone()
+                if result:
+                    ativo_exists = True
+            except Exception:
+                result = db.session.execute(check_sqlite_sql).fetchall()
+                for row in result:
+                    if row[1] == 'ativo':
+                        ativo_exists = True
+                        break
+            
+            if not ativo_exists:
+                logger.warning("Coluna 'ativo' não encontrada na tabela 'users'. Iniciando migração automática...")
+                add_ativo_sql = text("ALTER TABLE users ADD COLUMN ativo BOOLEAN DEFAULT TRUE;")
+                db.session.execute(add_ativo_sql)
+                db.session.commit()
+                logger.warning("Migração automática concluída: Coluna 'ativo' adicionada à tabela 'users'.")
+            else:
+                logger.info("Verificação de schema: Coluna 'ativo' já existe na tabela 'users'.")
                 
         except Exception as e:
             db.session.rollback()

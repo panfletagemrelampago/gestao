@@ -107,6 +107,10 @@ def create_app(config_class=Config):
     from app.modules.vagas.routes import vagas_bp
     app.register_blueprint(vagas_bp, url_prefix="/vagas")
 
+    # USUÁRIOS
+    from app.modules.usuarios.routes import usuarios_bp
+    app.register_blueprint(usuarios_bp)
+
     # =============================
     # LOGIN MANAGER
     # =============================

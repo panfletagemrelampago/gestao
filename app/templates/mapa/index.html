@@ -268,6 +268,24 @@
         </div>
 
         <div id="painel-conteudo">
+            <!-- Filtros de Data -->
+            <div class="mb-2">
+                <label class="form-label small fw-bold mb-1"><i class="fas fa-calendar-alt me-1"></i>Data Inicial</label>
+                <input type="date" id="filtro-data-inicio" class="form-control form-control-sm rounded-3">
+            </div>
+            <div class="mb-2">
+                <label class="form-label small fw-bold mb-1"><i class="fas fa-calendar-check me-1"></i>Data Final</label>
+                <input type="date" id="filtro-data-fim" class="form-control form-control-sm rounded-3">
+            </div>
+            <button id="btn-aplicar-filtro" class="btn btn-sm btn-primary w-100 rounded-pill mb-2">
+                <i class="fas fa-search me-1"></i> Aplicar Filtro
+            </button>
+            <button id="btn-limpar-filtro" class="btn btn-sm btn-outline-secondary w-100 rounded-pill mb-2">
+                <i class="fas fa-times me-1"></i> Hoje (Padrão)
+            </button>
+
+            <div class="divisor-painel"></div>
+
             <label class="layer-toggle">
                 <input type="checkbox" id="toggle-fotos" checked>
                 <span class="cor-legenda" style="background:#FF9E0C; border-radius: 50%;"></span>
@@ -289,6 +307,9 @@
             <div class="stats-item">
                 <span><i class="fas fa-draw-polygon me-1"></i>Áreas:</span>
                 <strong id="count-areas">0</strong>
+            </div>
+            <div class="stats-item small text-muted" id="filtro-periodo-label">
+                <span><i class="fas fa-info-circle me-1"></i>Período: Hoje</span>
             </div>
         </div>
     </div>
@@ -469,9 +490,29 @@ function mostrarToast(mensagem, tipo = 'success') {
     setTimeout(() => { toast.style.display = 'none'; }, 3000);
 }
 
+// Retorna a data de hoje no formato YYYY-MM-DD (local)
+function hojeFormatado() {
+    const d = new Date();
+    const ano = d.getFullYear();
+    const mes = String(d.getMonth() + 1).padStart(2, '0');
+    const dia = String(d.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
+}
+
 async function carregarFotos() {
     try {
-        const response = await fetch('/api/mapa/fotos');
+        // Obter filtros de data do painel
+        const dataInicio = document.getElementById('filtro-data-inicio').value;
+        const dataFim = document.getElementById('filtro-data-fim').value;
+
+        // Construir URL com parâmetros de data
+        let url = '/api/mapa/fotos';
+        const params = new URLSearchParams();
+        if (dataInicio) params.append('data_inicio', dataInicio);
+        if (dataFim) params.append('data_fim', dataFim);
+        if (params.toString()) url += '?' + params.toString();
+
+        const response = await fetch(url);
         const fotos = await response.json();
         layers.fotos.clearLayers();
         const coordenadasValidas = [];
@@ -495,6 +536,16 @@ async function carregarFotos() {
         });
 
         document.getElementById("stats-fotos-count").innerText = fotos.length;
+
+        // Atualizar label do período
+        const labelPeriodo = document.getElementById('filtro-periodo-label');
+        if (dataInicio || dataFim) {
+            const di = dataInicio || '...';
+            const df = dataFim || '...';
+            labelPeriodo.innerHTML = `<span><i class="fas fa-filter me-1 text-primary"></i>Período: ${di} → ${df}</span>`;
+        } else {
+            labelPeriodo.innerHTML = `<span><i class="fas fa-info-circle me-1"></i>Período: Hoje</span>`;
+        }
 
         if (coordenadasValidas.length > 0) {
             map.fitBounds(L.latLngBounds(coordenadasValidas), { padding: [50, 50], maxZoom: 16 });
@@ -609,6 +660,25 @@ function inicializarDrawControl() {
 }
 
 document.addEventListener("DOMContentLoaded", function() {
+    // Inicializar campos de data com o dia de hoje
+    const hoje = hojeFormatado();
+    document.getElementById('filtro-data-inicio').value = hoje;
+    document.getElementById('filtro-data-fim').value = hoje;
+
+    // Botão Aplicar Filtro
+    document.getElementById('btn-aplicar-filtro').addEventListener('click', function() {
+        mostrarToast('Carregando dados...', 'info');
+        carregarFotos();
+    });
+
+    // Botão Limpar Filtro (volta para hoje)
+    document.getElementById('btn-limpar-filtro').addEventListener('click', function() {
+        document.getElementById('filtro-data-inicio').value = hoje;
+        document.getElementById('filtro-data-fim').value = hoje;
+        mostrarToast('Exibindo dados de hoje.', 'info');
+        carregarFotos();
+    });
+
     document.getElementById("toggle-fotos").addEventListener("change", (e) => {
         e.target.checked ? map.addLayer(layers.fotos) : map.removeLayer(layers.fotos);
     });

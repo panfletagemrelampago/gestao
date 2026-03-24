@@ -6,6 +6,7 @@ from app.extensions import db
 from app.models.acao_promocional import AcaoPromocional
 from app.models.auditoria import Auditoria
 from app.models.user import User
+from sqlalchemy import inspect
 
 logger = logging.getLogger(__name__)
 
@@ -94,10 +95,17 @@ def setup_admin(app):
         admin_password = os.environ.get("ADMIN_PASSWORD", "@Zadu0204")
         admin_name = os.environ.get("ADMIN_USERNAME", "Relam")
 
-        # remove admin antigo
+        inspector = inspect(db.engine)
+        if not inspector.has_table("users"):
+            # Se a tabela 'users' não existe, o banco ainda não foi migrado.
+            # Não tentamos criar ou atualizar o admin neste momento.
+            logger.info("Tabela 'users' não encontrada. Pulando setup_admin.")
+            return
+
+        # remove admin antigo (soft delete)
         user_antigo = User.query.filter_by(email="admin@agencia.com").first()
         if user_antigo:
-            db.session.delete(user_antigo)
+            user_antigo.soft_delete()
             db.session.commit()
 
         # cria ou atualiza admin

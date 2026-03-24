@@ -116,7 +116,7 @@ def create_app(config_class=Config):
     # =============================
     @login_manager.user_loader
     def load_user(user_id):
-        return User.query.get(int(user_id))
+        return User.query.filter_by(id=int(user_id), ativo=True).first()
 
     # =============================
     # =============================

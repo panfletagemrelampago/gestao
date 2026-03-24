@@ -10,7 +10,7 @@ usuarios_bp = Blueprint('usuarios', __name__, url_prefix='/usuarios')
 @usuarios_bp.route('/')
 @perfil_required('admin')
 def listar():
-    usuarios = User.query.all()
+    usuarios = User.query.filter_by(ativo=True).all()
     return render_template('usuarios/listar.html', usuarios=usuarios)
 
 @usuarios_bp.route('/novo', methods=['GET', 'POST'])
@@ -114,7 +114,7 @@ def excluir(id):
         return redirect(url_for('usuarios.listar'))
     
     try:
-        db.session.delete(usuario)
+        usuario.soft_delete() # Chama o método soft_delete do modelo User
         db.session.commit()
         flash('Usuário excluído com sucesso!', 'success')
     except Exception as e:

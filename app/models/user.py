@@ -75,6 +75,19 @@ class User(UserMixin, db.Model):
     )
 
     # -------------------------
+    # MÉTODOS DE SOFT DELETE
+    # -------------------------
+    def soft_delete(self):
+        self.ativo = False
+        db.session.add(self)
+        db.session.commit()
+
+    def restore(self):
+        self.ativo = True
+        db.session.add(self)
+        db.session.commit()
+
+    # -------------------------
     # SENHA
     # -------------------------
     def set_password(self, password):

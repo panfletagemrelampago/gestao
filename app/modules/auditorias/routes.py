@@ -150,7 +150,9 @@ def registrar():
                 longitude=lon,
                 descricao=descricao,
                 data_hora=get_local_now(),
-                turno_id=turno_ativo.id
+                turno_id=turno_ativo.id,
+                usuario_id=current_user.id,       # 🔐 OWNERSHIP
+                cliente_id=acao.cliente_id         # 🔐 OWNERSHIP
             )
             db.session.add(nova_foto)
 

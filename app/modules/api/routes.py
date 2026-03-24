@@ -573,7 +573,9 @@ def enviar_foto():
             longitude=lon,
             descricao=descricao,
             dentro_da_area=dentro_da_area,
-            data_hora=datetime.utcnow()
+            data_hora=datetime.utcnow(),
+            usuario_id=current_user.id,                    # 🔐 OWNERSHIP
+            cliente_id=turno.acao.cliente_id if turno.acao else None  # 🔐 OWNERSHIP
         )
         db.session.add(nova_foto)
         db.session.commit()
@@ -634,57 +636,110 @@ def mapa_dados():
     """
     Retorna dados JSON consolidados para o mapa Leaflet.
     Inclui rastros GPS, fotos geolocalizadas, áreas de atuação e veículos.
-    Filtra por acao_id se fornecido via query string.
-    Clientes só vêem dados das suas próprias ações (ownership por cliente_id).
-    """
-    tempo_limite = datetime.utcnow() - timedelta(hours=24)
-    acao_id = request.args.get('acao_id', type=int)
 
-    # Filtrar por ownership para clientes (usa cliente_id, não email)
+    Parâmetros de query (opcionais):
+      - acao_id: filtrar por ação específica
+      - data_inicio: data no formato YYYY-MM-DD (padrão: hoje)
+      - data_fim: data no formato YYYY-MM-DD (padrão: hoje)
+
+    Controle de acesso por perfil (ownership):
+      - admin: vê todos os dados
+      - funcionario: vê apenas as suas próprias fotos e rastros GPS
+      - cliente: vê apenas dados das ações vinculadas ao seu cliente_id
+    """
+    acao_id = request.args.get('acao_id', type=int)
+    data_inicio_str = request.args.get('data_inicio')
+    data_fim_str = request.args.get('data_fim')
+
+    # ─── Filtro de Data: padrão = hoje (00:00 às 23:59:59) ───────────────────
+    hoje = datetime.utcnow().date()
+    try:
+        if data_inicio_str:
+            data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d')
+        else:
+            data_inicio = datetime(hoje.year, hoje.month, hoje.day, 0, 0, 0)
+
+        if data_fim_str:
+            data_fim = datetime.strptime(data_fim_str, '%Y-%m-%d') + timedelta(hours=23, minutes=59, seconds=59)
+        else:
+            data_fim = datetime(hoje.year, hoje.month, hoje.day, 23, 59, 59)
+    except ValueError:
+        return jsonify({"erro": "Formato de data inválido. Use YYYY-MM-DD."}), 400
+
+    # ─── Controle de Acesso por Perfil ────────────────────────────────────────
     if current_user.tipo_usuario == 'cliente':
         cliente_id = get_cliente_id_do_usuario(current_user)
         if not cliente_id:
             return jsonify({"veiculos": [], "fotos": [], "rastros_gps": {}, "areas": [], "auditorias_legadas": []})
+        # Cliente: apenas dados das suas ações
         filtro_acoes = [a.id for a in AcaoPromocional.query.filter_by(cliente_id=cliente_id).all()]
-    else:
+        filtro_usuario_id = None
+        filtro_cliente_id = cliente_id
+    elif current_user.tipo_usuario == 'funcionario':
+        # Funcionário: apenas os seus próprios dados
         filtro_acoes = None
-
-    # Fotos novas (FotoAuditoria via Turnos)
-    fotos_query = FotoAuditoria.query.join(Turno)
-    if acao_id:
-        fotos_query = fotos_query.filter(Turno.acao_id == acao_id)
-    elif filtro_acoes is not None:
-        fotos_query = fotos_query.filter(Turno.acao_id.in_(filtro_acoes))
+        filtro_usuario_id = current_user.id
+        filtro_cliente_id = None
     else:
-        fotos_query = fotos_query.filter(FotoAuditoria.data_hora >= tempo_limite)
+        # Admin: sem restrições
+        filtro_acoes = None
+        filtro_usuario_id = None
+        filtro_cliente_id = None
+
+    # ─── Fotos Novas (FotoAuditoria) ─────────────────────────────────────────
+    fotos_query = FotoAuditoria.query.filter(
+        FotoAuditoria.data_hora >= data_inicio,
+        FotoAuditoria.data_hora <= data_fim
+    )
+    if acao_id:
+        # Filtro por ação específica via join com Turno
+        fotos_query = fotos_query.join(Turno, FotoAuditoria.turno_id == Turno.id, isouter=True).filter(
+            Turno.acao_id == acao_id
+        )
+    elif filtro_usuario_id is not None:
+        fotos_query = fotos_query.filter(FotoAuditoria.usuario_id == filtro_usuario_id)
+    elif filtro_cliente_id is not None:
+        fotos_query = fotos_query.filter(FotoAuditoria.cliente_id == filtro_cliente_id)
     fotos = fotos_query.all()
 
-    # Fotos legadas (Auditoria)
-    aud_query = Auditoria.query
+    # ─── Fotos Legadas (Auditoria) ────────────────────────────────────────────
+    aud_query = Auditoria.query.filter(
+        Auditoria.data_hora >= data_inicio,
+        Auditoria.data_hora <= data_fim
+    )
     if acao_id:
         aud_query = aud_query.filter_by(acao_id=acao_id)
+    elif filtro_usuario_id is not None:
+        aud_query = aud_query.filter(Auditoria.user_id == filtro_usuario_id)
     elif filtro_acoes is not None:
         aud_query = aud_query.filter(Auditoria.acao_id.in_(filtro_acoes))
-    else:
-        aud_query = aud_query.filter(Auditoria.data_hora >= tempo_limite)
     auditorias_legadas = aud_query.all()
 
-    # Rastros GPS
+    # ─── Rastros GPS ─────────────────────────────────────────────────────────
     rastros_gps = {}
     if current_user.tipo_usuario != 'cliente':
-        posicoes = PosicaoGps.query.filter(
-            PosicaoGps.data_hora >= tempo_limite
-        ).order_by(PosicaoGps.data_hora.asc()).all()
+        posicoes_query = PosicaoGps.query.filter(
+            PosicaoGps.data_hora >= data_inicio,
+            PosicaoGps.data_hora <= data_fim
+        )
+        if filtro_usuario_id is not None:
+            # Funcionário vê apenas o seu próprio rastro GPS
+            posicoes_query = posicoes_query.filter(
+                PosicaoGps.device_id == str(filtro_usuario_id)
+            )
+        posicoes = posicoes_query.order_by(PosicaoGps.data_hora.asc()).all()
         for p in posicoes:
             key = str(p.device_id)
             if key not in rastros_gps:
                 rastros_gps[key] = []
             rastros_gps[key].append([p.latitude, p.longitude])
 
+    # ─── Veículos ─────────────────────────────────────────────────────────────
     veiculos = []
     if current_user.tipo_usuario != 'cliente':
         veiculos = Veiculo.query.all()
 
+    # ─── Áreas de Atuação ─────────────────────────────────────────────────────
     areas_query = AreaAtuacao.query
     if acao_id:
         areas_query = areas_query.filter_by(acao_id=acao_id)
@@ -692,7 +747,26 @@ def mapa_dados():
         areas_query = areas_query.filter(AreaAtuacao.acao_id.in_(filtro_acoes))
     areas = areas_query.all()
 
+    # ─── Overlays Persistentes do Mapa (MapaArea - admin e funcionário) ───────
+    # Funcionários devem ver os desenhos criados pelo admin
+    overlays = []
+    if current_user.tipo_usuario in ('admin', 'funcionario'):
+        overlays_query = MapaArea.query.all()
+        overlays = [
+            {
+                "id": o.id,
+                "nome": o.nome,
+                "geojson": o.get_geojson() if hasattr(o, 'get_geojson') else o.geojson
+            }
+            for o in overlays_query
+        ]
+
     return jsonify({
+        "filtro": {
+            "data_inicio": data_inicio.isoformat(),
+            "data_fim": data_fim.isoformat(),
+            "acao_id": acao_id
+        },
         "veiculos": [
             {"id": v.id, "placa": v.placa, "modelo": v.modelo, "status": v.status}
             for v in veiculos
@@ -731,7 +805,8 @@ def mapa_dados():
                 "acao_id": a.acao_id
             }
             for a in areas
-        ]
+        ],
+        "overlays": overlays
     })
 
 

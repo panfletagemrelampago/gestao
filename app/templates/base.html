@@ -18,10 +18,12 @@
 
 {% set ep = request.endpoint or '' %}
 
+{# O menu só deve aparecer se o usuário estiver autenticado e NÃO estiver na tela de login #}
+{% if current_user.is_authenticated and ep != 'auth.login' %}
 <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
 <div class="container">
 
-<a class="navbar-brand d-flex align-items-center" href="{% if current_user.is_authenticated %}{% if current_user.tipo_usuario == 'funcionario' %}{{ url_for('funcionario.dashboard') }}{% elif current_user.tipo_usuario == 'cliente' %}{{ url_for('cliente.dashboard') }}{% else %}{{ url_for('main.dashboard') }}{% endif %}{% else %}{{ url_for('auth.login') }}{% endif %}">
+<a class="navbar-brand d-flex align-items-center" href="{% if current_user.tipo_usuario == 'funcionario' %}{{ url_for('funcionario.dashboard') }}{% elif current_user.tipo_usuario == 'cliente' %}{{ url_for('cliente.dashboard') }}{% else %}{{ url_for('main.dashboard') }}{% endif %}">
 <i class="fas fa-bullhorn me-2"></i>
 <span>Auditoria<span class="d-none d-sm-inline"> Promocional</span></span>
 </a>
@@ -33,7 +35,6 @@
 <div class="collapse navbar-collapse" id="navbarNav">
 
 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-{% if current_user.is_authenticated %}
 
 {# ============================== #}
 {# NAVBAR ADMIN #}
@@ -125,11 +126,9 @@ Cadastros
 
 {% endif %}
 
-{% endif %}
 </ul>
 
 <ul class="navbar-nav align-items-lg-center">
-{% if current_user.is_authenticated %}
 <li class="nav-item dropdown">
 <a class="nav-link dropdown-toggle bg-white bg-opacity-10 rounded-pill px-3" href="#" data-bs-toggle="dropdown">
 <i class="fas fa-user-circle me-1"></i> {{ current_user.nome_exibicao }}
@@ -139,18 +138,12 @@ Cadastros
 <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">Sair</a></li>
 </ul>
 </li>
-{% else %}
-{% if ep != 'auth.login' %}
-<li class="nav-item">
-<a class="btn btn-laranja rounded-pill px-4" href="{{ url_for('auth.login') }}">Login</a>
-</li>
-{% endif %}
-{% endif %}
 </ul>
 
 </div>
 </div>
 </nav>
+{% endif %}
 
 <main class="container py-4 min-vh-100">
     <!-- Bloco de Mensagens Flash -->

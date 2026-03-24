@@ -3,18 +3,19 @@ from flask_login import login_required
 from app.models.material import Material
 from app.extensions import db
 from app.services.cloudinary_service import CloudinaryService
+from app.decorators.auth_decorators import perfil_required
 from datetime import datetime
 
 materiais_bp = Blueprint('materiais', __name__)
 
 @materiais_bp.route('/')
-@login_required
+@perfil_required("admin", "funcionario")
 def listar():
     materiais = Material.query.order_by(Material.data_cadastro.desc()).all()
     return render_template('materiais/listar.html', materiais=materiais)
 
 @materiais_bp.route('/novo', methods=['GET', 'POST'])
-@login_required
+@perfil_required("admin")
 def novo():
     if request.method == 'POST':
         try:
@@ -52,7 +53,7 @@ def novo():
     return render_template('materiais/novo.html')
 
 @materiais_bp.route('/editar/<int:id>', methods=['GET', 'POST'])
-@login_required
+@perfil_required("admin")
 def editar(id):
     material = Material.query.get_or_404(id)
 
@@ -100,7 +101,7 @@ def editar(id):
     return render_template('materiais/editar.html', material=material)
 
 @materiais_bp.route('/excluir/<int:id>', methods=['POST'])
-@login_required
+@perfil_required("admin")
 def excluir(id):
     material = Material.query.get_or_404(id)
 

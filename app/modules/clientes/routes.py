@@ -2,28 +2,22 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from app.models.cliente import Cliente
 from app.extensions import db
+from app.decorators.auth_decorators import perfil_required
 
 clientes_bp = Blueprint('clientes', __name__)
 
 # LISTAR CLIENTES
 @clientes_bp.route('/')
-@login_required
+@perfil_required("admin")
 def listar():
-    if current_user.tipo_usuario != 'admin':
-        flash('Acesso negado.', 'danger')
-        return redirect(url_for('main.dashboard'))
-
     clientes = Cliente.query.all()
     return render_template('clientes/listar.html', clientes=clientes)
 
 
 # CRIAR CLIENTE
 @clientes_bp.route('/novo', methods=['GET', 'POST'])
-@login_required
+@perfil_required("admin")
 def novo():
-    if current_user.tipo_usuario != 'admin':
-        flash('Acesso negado.', 'danger')
-        return redirect(url_for('clientes.listar'))
 
     if request.method == 'POST':
         nome_empresa = request.form.get('nome_empresa')
@@ -54,11 +48,8 @@ def novo():
 
 # EDITAR CLIENTE
 @clientes_bp.route('/editar/<int:id>', methods=['GET', 'POST'])
-@login_required
+@perfil_required("admin")
 def editar(id):
-    if current_user.tipo_usuario != 'admin':
-        flash('Acesso negado.', 'danger')
-        return redirect(url_for('clientes.listar'))
 
     cliente = Cliente.query.get_or_404(id)
 
@@ -80,11 +71,8 @@ def editar(id):
 
 # EXCLUIR CLIENTE
 @clientes_bp.route('/excluir/<int:id>', methods=['POST'])
-@login_required
+@perfil_required("admin")
 def excluir(id):
-    if current_user.tipo_usuario != 'admin':
-        flash('Acesso negado.', 'danger')
-        return redirect(url_for('clientes.listar'))
 
     cliente = Cliente.query.get_or_404(id)
 

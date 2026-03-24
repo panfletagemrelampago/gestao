@@ -3,32 +3,23 @@ from flask_login import login_required, current_user
 from app.models.equipe import Equipe
 from app.models.acao_promocional import AcaoPromocional
 from app.extensions import db
+from app.decorators.auth_decorators import perfil_required
 
 equipe_bp = Blueprint('equipe', __name__)
 
 
 # LISTAR MEMBROS
 @equipe_bp.route('/')
-@login_required
+@perfil_required("admin")
 def listar():
-
-    if current_user.tipo_usuario != 'admin':
-        flash('Acesso negado.', 'danger')
-        return redirect(url_for('main.dashboard'))
-
     equipes = Equipe.query.all()
-
     return render_template('equipe/listar.html', equipes=equipes)
 
 
 # NOVO MEMBRO
 @equipe_bp.route('/novo', methods=['GET', 'POST'])
-@login_required
+@perfil_required("admin")
 def novo():
-
-    if current_user.tipo_usuario != 'admin':
-        flash('Acesso negado.', 'danger')
-        return redirect(url_for('equipe.listar'))
 
     if request.method == 'POST':
 
@@ -59,12 +50,8 @@ def novo():
 
 # EDITAR MEMBRO
 @equipe_bp.route('/editar/<int:id>', methods=['GET', 'POST'])
-@login_required
+@perfil_required("admin")
 def editar(id):
-
-    if current_user.tipo_usuario != 'admin':
-        flash('Acesso negado.', 'danger')
-        return redirect(url_for('equipe.listar'))
 
     membro = Equipe.query.get_or_404(id)
 
@@ -85,12 +72,8 @@ def editar(id):
 
 # EXCLUIR MEMBRO (COM DESVINCULAÇÃO DAS AÇÕES)
 @equipe_bp.route('/excluir/<int:id>', methods=['POST'])
-@login_required
+@perfil_required("admin")
 def excluir(id):
-
-    if current_user.tipo_usuario != 'admin':
-        flash('Acesso negado.', 'danger')
-        return redirect(url_for('equipe.listar'))
 
     membro = Equipe.query.get_or_404(id)
 

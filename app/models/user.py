@@ -27,17 +27,28 @@ class User(UserMixin, db.Model):
         nullable=False
     )
 
-    # TIPOS DE USUÁRIO
+    # TIPOS DE USUÁRIO SIMPLIFICADOS
+    # - admin: acesso total
+    # - funcionario: unifica 'equipe' e 'motorista' (registro de fotos, materiais, etc.)
+    # - cliente: acesso restrito à visualização das suas próprias ações
     tipo_usuario = db.Column(
         db.Enum(
             "admin",
-            "diretoria",
+            "funcionario",  # Unifica 'equipe' e 'motorista'
             "cliente",
-            "motorista",
             name="user_types"
         ),
         nullable=False
     )
+
+    # VÍNCULO DIRETO COM O CLIENTE (para usuários do tipo 'cliente')
+    # Elimina a dependência do e-mail para identificar o cliente associado
+    cliente_id = db.Column(
+        db.Integer,
+        db.ForeignKey("clientes.id"),
+        nullable=True
+    )
+    cliente = db.relationship("Cliente", backref="usuarios", lazy=True)
 
     # ID DO DISPOSITIVO (caso use rastreamento)
     device_id = db.Column(

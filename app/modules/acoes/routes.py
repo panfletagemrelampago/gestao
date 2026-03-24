@@ -6,41 +6,29 @@ from app.models.equipe import Equipe
 from app.models.turno import Turno
 from app.models.foto_auditoria import FotoAuditoria
 from app.extensions import db
+from app.decorators.auth_decorators import perfil_required
+from app.utils.security_helpers import get_acoes_por_perfil
 from datetime import datetime
 
 acoes_bp = Blueprint('acoes', __name__)
 
 
 @acoes_bp.route('/')
-@login_required
+@perfil_required("admin", "funcionario", "cliente")
 def listar():
-    if current_user.tipo_usuario == 'admin':
-        acoes = AcaoPromocional.query.all()
-
-    elif current_user.tipo_usuario == 'equipe':
-        acoes = AcaoPromocional.query.filter_by(
-            lider_equipe_id=current_user.id
-        ).all()
-
-    else:
-        cliente = Cliente.query.filter_by(email=current_user.email).first()
-
-        if cliente:
-            acoes = AcaoPromocional.query.filter_by(
-                cliente_id=cliente.id
-            ).all()
-        else:
-            acoes = []
-
+    """
+    Lista ações conforme o perfil do usuário:
+    - admin: todas as ações
+    - funcionario: ações em que é líder de equipe
+    - cliente: ações vinculadas ao seu cliente_id
+    """
+    acoes = get_acoes_por_perfil()
     return render_template('acoes/listar.html', acoes=acoes)
 
 
 @acoes_bp.route('/nova', methods=['GET', 'POST'])
-@login_required
+@perfil_required("admin")
 def nova():
-    if current_user.tipo_usuario != 'admin':
-        flash('Acesso negado.', 'danger')
-        return redirect(url_for('acoes.listar'))
 
     clientes = Cliente.query.all()
     equipes = Equipe.query.all()
@@ -83,14 +71,10 @@ def nova():
 
 
 @acoes_bp.route('/<int:id>/status', methods=['POST'])
-@login_required
+@perfil_required("admin", "funcionario")
 def atualizar_status(id):
     acao = AcaoPromocional.query.get_or_404(id)
     novo_status = request.form.get('status')
-
-    if current_user.tipo_usuario not in ['admin', 'equipe']:
-        flash('Acesso negado.', 'danger')
-        return redirect(url_for('acoes.listar'))
 
     acao.status = novo_status
     db.session.commit()
@@ -104,12 +88,8 @@ def atualizar_status(id):
 
 
 @acoes_bp.route('/excluir/<int:id>', methods=['POST'])
-@login_required
+@perfil_required("admin")
 def excluir(id):
-
-    if current_user.tipo_usuario != 'admin':
-        flash('Acesso negado.', 'danger')
-        return redirect(url_for('acoes.listar'))
 
     acao = AcaoPromocional.query.get_or_404(id)
 

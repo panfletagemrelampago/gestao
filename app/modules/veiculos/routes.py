@@ -3,33 +3,23 @@ from flask_login import login_required, current_user
 from app.models.veiculo import Veiculo
 from app.models.equipe import Equipe
 from app.extensions import db
+from app.decorators.auth_decorators import perfil_required
 
 veiculos_bp = Blueprint('veiculos', __name__)
 
 
 # LISTAR VEICULOS
 @veiculos_bp.route('/')
-@login_required
+@perfil_required("admin")
 def listar():
-
-    if current_user.tipo_usuario != 'admin':
-        flash('Acesso negado.', 'danger')
-        return redirect(url_for('main.dashboard'))
-
     veiculos = Veiculo.query.all()
-
     return render_template('veiculos/listar.html', veiculos=veiculos)
-
 
 
 # NOVO VEICULO
 @veiculos_bp.route('/novo', methods=['GET', 'POST'])
-@login_required
+@perfil_required("admin")
 def novo():
-
-    if current_user.tipo_usuario != 'admin':
-        flash('Acesso negado.', 'danger')
-        return redirect(url_for('veiculos.listar'))
 
     equipes = Equipe.query.all()
 
@@ -63,12 +53,8 @@ def novo():
 
 # EDITAR VEICULO
 @veiculos_bp.route('/editar/<int:id>', methods=['GET', 'POST'])
-@login_required
+@perfil_required("admin")
 def editar(id):
-
-    if current_user.tipo_usuario != 'admin':
-        flash('Acesso negado.', 'danger')
-        return redirect(url_for('veiculos.listar'))
 
     veiculo = Veiculo.query.get_or_404(id)
 
@@ -96,12 +82,8 @@ def editar(id):
 
 # EXCLUIR VEICULO
 @veiculos_bp.route('/excluir/<int:id>', methods=['POST'])
-@login_required
+@perfil_required("admin")
 def excluir(id):
-
-    if current_user.tipo_usuario != 'admin':
-        flash('Acesso negado.', 'danger')
-        return redirect(url_for('veiculos.listar'))
 
     veiculo = Veiculo.query.get_or_404(id)
 

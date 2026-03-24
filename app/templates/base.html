@@ -21,7 +21,7 @@
 <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
 <div class="container">
 
-<a class="navbar-brand d-flex align-items-center" href="{{ url_for('main.dashboard') }}">
+<a class="navbar-brand d-flex align-items-center" href="{% if current_user.is_authenticated %}{% if current_user.tipo_usuario == 'funcionario' %}{{ url_for('funcionario.dashboard') }}{% elif current_user.tipo_usuario == 'cliente' %}{{ url_for('cliente.dashboard') }}{% else %}{{ url_for('main.dashboard') }}{% endif %}{% else %}{{ url_for('auth.login') }}{% endif %}">
 <i class="fas fa-bullhorn me-2"></i>
 <span>Auditoria<span class="d-none d-sm-inline"> Promocional</span></span>
 </a>
@@ -34,6 +34,11 @@
 
 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
 {% if current_user.is_authenticated %}
+
+{# ============================== #}
+{# NAVBAR ADMIN #}
+{# ============================== #}
+{% if current_user.tipo_usuario == 'admin' %}
 
 <li class="nav-item">
 <a class="nav-link {% if ep == 'main.dashboard' %}active{% endif %}" href="{{ url_for('main.dashboard') }}">Dashboard</a>
@@ -67,21 +72,57 @@ Auditoria
 <a class="nav-link {% if 'vagas' in ep %}active{% endif %}" href="{{ url_for('vagas.listar') }}">Vagas</a>
 </li>
 
-<li class="nav-item">
-<a class="nav-link {% if 'equipe' in ep %}active{% endif %}" href="{{ url_for('equipe.listar') }}">Equipe</a>
-</li>
-
-{% if current_user.tipo_usuario == 'admin' %}
 <li class="nav-item dropdown">
 <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
 Cadastros
 </a>
 <ul class="dropdown-menu">
-<li><a class="dropdown-item" href="{{ url_for('clientes.listar') }}">Clientes</a></li>
-<li><a class="dropdown-item" href="{{ url_for('equipe.listar') }}">Equipe</a></li>
-<li><a class="dropdown-item" href="{{ url_for('veiculos.listar') }}">Veículos</a></li>
-</ul>
+	<li><a class="dropdown-item" href="{{ url_for('clientes.listar') }}">Clientes</a></li>
+	<li><a class="dropdown-item" href="{{ url_for('equipe.listar') }}">Equipe</a></li>
+	<li><a class="dropdown-item" href="{{ url_for('veiculos.listar') }}">Veículos</a></li>
+	<li><hr class="dropdown-divider"></li>
+	<li><a class="dropdown-item" href="{{ url_for('usuarios.listar') }}">Usuários</a></li>
+	</ul>
+	</li>
+
+{# ============================== #}
+{# NAVBAR FUNCIONÁRIO #}
+{# ============================== #}
+{% elif current_user.tipo_usuario == 'funcionario' %}
+
+<li class="nav-item">
+<a class="nav-link {% if 'funcionario.dashboard' in ep %}active{% endif %}" href="{{ url_for('funcionario.dashboard') }}">Dashboard</a>
 </li>
+
+<li class="nav-item">
+<a class="nav-link {% if 'auditorias.registrar' in ep %}active{% endif %}" href="{{ url_for('auditorias.registrar') }}">Registrar Foto</a>
+</li>
+
+<li class="nav-item">
+<a class="nav-link {% if 'auditorias.listar' in ep %}active{% endif %}" href="{{ url_for('auditorias.listar') }}">Minhas Auditorias</a>
+</li>
+
+<li class="nav-item">
+<a class="nav-link {% if 'materiais' in ep %}active{% endif %}" href="{{ url_for('materiais.listar') }}">Materiais</a>
+</li>
+
+{# ============================== #}
+{# NAVBAR CLIENTE #}
+{# ============================== #}
+{% elif current_user.tipo_usuario == 'cliente' %}
+
+<li class="nav-item">
+<a class="nav-link {% if 'cliente.dashboard' in ep %}active{% endif %}" href="{{ url_for('cliente.dashboard') }}">Dashboard</a>
+</li>
+
+<li class="nav-item">
+<a class="nav-link {% if 'mapa' in ep %}active{% endif %}" href="{{ url_for('mapa.index') }}">Mapa</a>
+</li>
+
+<li class="nav-item">
+<a class="nav-link {% if 'acoes' in ep %}active{% endif %}" href="{{ url_for('acoes.listar') }}">Minhas Ações</a>
+</li>
+
 {% endif %}
 
 {% endif %}
@@ -140,7 +181,8 @@ Cadastros
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-{% if current_user.is_authenticated %}
+{# GPS apenas para admin e funcionario (campo). Clientes não enviam GPS. #}
+{% if current_user.is_authenticated and current_user.tipo_usuario in ['admin', 'funcionario'] %}
 <script>
 
 (function(){

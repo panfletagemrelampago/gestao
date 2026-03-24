@@ -119,42 +119,13 @@ def create_app(config_class=Config):
         return User.query.get(int(user_id))
 
     # =============================
-    # INIT DB + ADMIN
     # =============================
-    from app.utils.migrations import run_auto_migrations
-    run_auto_migrations(app)
+    # INIT DB
+    # =============================
+    from app.utils.migrations import run_migrations
+    run_migrations(app)
 
-    with app.app_context():
-        db.create_all()
-
-        admin_email = "sac@relampagomt.com.br"
-        admin_password = os.environ.get("ADMIN_PASSWORD", "@Zadu0204")
-        admin_name = os.environ.get("ADMIN_USERNAME", "Relam")
-
-        # remove admin antigo
-        user_antigo = User.query.filter_by(email="admin@agencia.com").first()
-        if user_antigo:
-            db.session.delete(user_antigo)
-            db.session.commit()
-
-        # cria ou atualiza admin
-        user = User.query.filter_by(email=admin_email).first()
-
-        if not user:
-            new_admin = User(
-                nome_exibicao=admin_name,
-                email=admin_email,
-                tipo_usuario="admin",
-                ativo=True
-            )
-            new_admin.set_password(admin_password)
-            db.session.add(new_admin)
-            db.session.commit()
-            print(f"ADMIN REAL CRIADO: {admin_email}")
-        else:
-            user.nome_exibicao = admin_name
-            user.set_password(admin_password)
-            db.session.commit()
-            print(f"ADMIN SINCRONIZADO: {admin_email}")
+    from app.utils.security_helpers import setup_admin
+    setup_admin(app)
 
     return app

@@ -59,7 +59,7 @@ def get_acoes_por_perfil():
     - Admin: todas as ações.
     - Funcionario: ações em que é líder de equipe.
     - Cliente: ações vinculadas ao seu cliente_id.
-    ""
+    """
     if current_user.tipo_usuario == "admin":
         return AcaoPromocional.query.all()
     elif current_user.tipo_usuario == "funcionario":
@@ -83,7 +83,7 @@ def get_cliente_id_do_usuario(user):
     Para clientes, usa diretamente o campo cliente_id do modelo User.
     Para admin/funcionario, retorna None (sem restrição de cliente).
     Substitui o padrão antigo de busca por email na tabela Cliente.
-    ""
+    """
     if user.tipo_usuario == "cliente":
         return user.cliente_id
     return None

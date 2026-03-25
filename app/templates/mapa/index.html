@@ -733,8 +733,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const layersDeletados = e.layers;
         const promises = [];
         
-        // Se o usuário clicou em "Clear All", o Leaflet.draw remove todas as layers do featureGroup
-        // e as disponibiliza em e.layers.
         layersDeletados.eachLayer(layer => {
             const areaId = layerIdToAreaId.get(layer._leaflet_id);
             if (areaId) {
@@ -762,7 +760,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 mostrarToast('❌ Erro de comunicação ao excluir áreas.', 'danger');
             }
         } else {
-            // Caso não haja IDs mapeados (ex: áreas que ainda não foram salvas)
             await carregarAreas();
         }
     });
@@ -770,15 +767,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ========== EVENTO: MODO EDIÇÃO/EXCLUSÃO ==========
     map.on(L.Draw.Event.EDITSTART, () => mostrarToast('ℹ️ Modo de edição ativado. Clique em "Save" para persistir ou "Cancel" para descartar.', 'info'));
     map.on(L.Draw.Event.EDITSTOP, async () => {
-        // O evento EDITED dispara antes do EDITSTOP se houver mudanças.
-        // Se o usuário clicar em Cancel, o EDITED não dispara.
-        // Recarregamos para garantir que o mapa reflita o estado do banco.
-        await carregarAreas();
+        // Forçar recarregamento para limpar estados visuais não salvos
+        setTimeout(async () => { await carregarAreas(); }, 100);
     });
     
     map.on(L.Draw.Event.DELETESTART, () => mostrarToast('ℹ️ Modo de exclusão ativado. Clique em "Save" para confirmar a exclusão ou "Cancel" para descartar.', 'info'));
     map.on(L.Draw.Event.DELETESTOP, async () => {
-        // Recarregamos para garantir consistência visual e do contador.
+        // Forçar recarregamento para limpar estados visuais não salvos
+        setTimeout(async () => { await carregarAreas(); }, 100);
+    });
+
+    // ========== CORREÇÃO CRÍTICA: BOTÕES SAVE/CANCEL DO CONTROLE ==========
+    // O Leaflet.draw não dispara eventos específicos para os botões Save/Cancel do toolbar,
+    // mas dispara EDITED/DELETED quando Save é clicado. 
+    // Para garantir que o contador e o mapa estejam sempre sincronizados:
+    map.on('draw:toolbarclosed', async () => {
         await carregarAreas();
     });
     {% endif %}

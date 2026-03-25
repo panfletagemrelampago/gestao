@@ -733,6 +733,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const layersDeletados = e.layers;
         const promises = [];
         
+        // Se o usuário clicou em "Clear All", o Leaflet.draw remove todas as layers do featureGroup
+        // e as disponibiliza em e.layers.
         layersDeletados.eachLayer(layer => {
             const areaId = layerIdToAreaId.get(layer._leaflet_id);
             if (areaId) {
@@ -759,14 +761,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.error("Erro ao excluir áreas:", err);
                 mostrarToast('❌ Erro de comunicação ao excluir áreas.', 'danger');
             }
+        } else {
+            // Caso não haja IDs mapeados (ex: áreas que ainda não foram salvas)
+            await carregarAreas();
         }
     });
     
     // ========== EVENTO: MODO EDIÇÃO/EXCLUSÃO ==========
-    map.on(L.Draw.Event.EDITSTART, () => mostrarToast('ℹ️ Modo de edição ativado.', 'info'));
-    map.on(L.Draw.Event.EDITSTOP, () => mostrarToast('ℹ️ Modo de edição desativado.', 'info'));
-    map.on(L.Draw.Event.DELETESTART, () => mostrarToast('ℹ️ Modo de exclusão ativado.', 'info'));
-    map.on(L.Draw.Event.DELETESTOP, () => mostrarToast('ℹ️ Modo de exclusão desativado.', 'info'));
+    map.on(L.Draw.Event.EDITSTART, () => mostrarToast('ℹ️ Modo de edição ativado. Clique em "Save" para persistir ou "Cancel" para descartar.', 'info'));
+    map.on(L.Draw.Event.EDITSTOP, async () => {
+        // O evento EDITED dispara antes do EDITSTOP se houver mudanças.
+        // Se o usuário clicar em Cancel, o EDITED não dispara.
+        // Recarregamos para garantir que o mapa reflita o estado do banco.
+        await carregarAreas();
+    });
+    
+    map.on(L.Draw.Event.DELETESTART, () => mostrarToast('ℹ️ Modo de exclusão ativado. Clique em "Save" para confirmar a exclusão ou "Cancel" para descartar.', 'info'));
+    map.on(L.Draw.Event.DELETESTOP, async () => {
+        // Recarregamos para garantir consistência visual e do contador.
+        await carregarAreas();
+    });
     {% endif %}
 });
 </script>

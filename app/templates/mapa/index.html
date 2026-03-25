@@ -659,7 +659,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             polygon: { allowIntersection: false, showArea: true },
             rectangle: { shapeOptions: { color: '#0d6efd' } }
         },
-        edit: { featureGroup: layers.areas, remove: true }
+        edit: false
     });
     map.addControl(drawControl);
 

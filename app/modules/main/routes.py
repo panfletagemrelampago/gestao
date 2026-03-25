@@ -31,7 +31,7 @@ def dashboard():
     # Dados globais para o dashboard
     acoes_dia = AcaoPromocional.query.all() # Simplificado para o MVP
     equipes_ativas = Equipe.query.filter_by(status=True).count()
-    veiculos_em_campo = Veiculo.query.filter_by(status=False).count()
+    total_veiculos = Veiculo.query.count()
     ultimas_auditorias = Auditoria.query.order_by(Auditoria.data_hora.desc()).limit(5).all()
     
     # Novos contadores
@@ -41,7 +41,7 @@ def dashboard():
     return render_template('main/dashboard.html', 
                            acoes_dia=acoes_dia, 
                            equipes_ativas=equipes_ativas,
-                           veiculos_em_campo=veiculos_em_campo,
+                           total_veiculos=total_veiculos,
                            ultimas_auditorias=ultimas_auditorias,
                            total_materiais=total_materiais,
                            total_vagas=total_vagas,

@@ -394,14 +394,17 @@ def atualizar_area_atuacao(area_id):
 @api_bp.route("/mapa/areas", methods=["GET"])
 @perfil_required("admin", "funcionario", "cliente")
 def get_mapa_areas():
-    """Retorna todas as áreas de mapa salvas."""
+    """Retorna todas as áreas de mapa salvas com todos os campos."""
     areas = MapaArea.query.all()
     return jsonify([
         {
             "id": area.id,
             "nome": area.nome,
+            "descricao": area.descricao or '',
             "geojson": area.get_geojson() if hasattr(area, 'get_geojson') else area.geojson,
-            "criado_em": area.criado_em.isoformat() if hasattr(area, 'criado_em') and area.criado_em else None
+            "cor": area.cor or '#0d6efd',
+            "criado_em": area.criado_em.isoformat() if hasattr(area, 'criado_em') and area.criado_em else None,
+            "atualizado_em": area.atualizado_em.isoformat() if hasattr(area, 'atualizado_em') and area.atualizado_em else None
         }
         for area in areas
     ])
@@ -410,13 +413,15 @@ def get_mapa_areas():
 @api_bp.route("/mapa/areas", methods=["POST"])
 @perfil_required("admin", "funcionario")
 def post_mapa_area():
-    """Recebe GeoJSON e salva uma nova área de mapa."""
+    """Recebe GeoJSON e salva uma nova área de mapa com descricao e cor."""
 
     data = request.get_json()
     if not data:
         return jsonify({"erro": "Nenhum dado recebido"}), 400
 
     nome = data.get("nome", f"Área Desenhada {datetime.now().strftime('%Y%m%d%H%M%S')}")
+    descricao = data.get("descricao", '')
+    cor = data.get("cor", '#0d6efd')
     geojson_data = data.get("geojson")
 
     if not geojson_data:
@@ -433,7 +438,7 @@ def post_mapa_area():
         return jsonify({"erro": "GeoJSON inválido"}), 400
 
     try:
-        nova_area = MapaArea(nome=nome, geojson=geojson_str)
+        nova_area = MapaArea(nome=nome, descricao=descricao, geojson=geojson_str, cor=cor)
         db.session.add(nova_area)
         db.session.commit()
 
@@ -462,7 +467,7 @@ def delete_mapa_area(area_id):
 @api_bp.route("/mapa/areas/<int:area_id>", methods=["PUT"])
 @perfil_required("admin", "funcionario")
 def update_mapa_area(area_id):
-    """Atualiza uma área de mapa existente."""
+    """Atualiza uma área de mapa existente com todos os campos."""
 
     area = MapaArea.query.get_or_404(area_id)
     data = request.get_json()
@@ -472,6 +477,10 @@ def update_mapa_area(area_id):
     try:
         if "nome" in data:
             area.nome = data["nome"]
+        if "descricao" in data:
+            area.descricao = data["descricao"]
+        if "cor" in data:
+            area.cor = data["cor"]
         if "geojson" in data:
             geojson_data = data["geojson"]
             try:

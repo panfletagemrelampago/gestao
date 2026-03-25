@@ -578,6 +578,9 @@ async function carregarAreas() {
         const areas = await response.json();
         layers.areas.clearLayers();
         Object.keys(areaLayerMap).forEach(k => delete areaLayerMap[k]);
+        if (typeof mapaAreasEditaveis !== 'undefined') {
+            Object.keys(mapaAreasEditaveis).forEach(k => delete mapaAreasEditaveis[k]);
+        }
 
         let totalAreas = 0;
         areas.forEach(area => {
@@ -587,7 +590,12 @@ async function carregarAreas() {
                 style: { color: area.cor || "#0d6efd", weight: 3, opacity: 0.8, fillOpacity: 0.15 }
             }).addTo(layers.areas);
 
-            if (area.id) areaLayerMap[area.id] = geoLayer;
+            if (area.id) {
+                areaLayerMap[area.id] = geoLayer;
+                if (typeof mapaAreasEditaveis !== 'undefined') {
+                    mapaAreasEditaveis[area.id] = geoLayer;
+                }
+            }
 
             const nomeArea = escapeHTML(area.nome) || 'Área sem nome';
             const descArea = escapeHTML(area.descricao) || 'Sem descrição';
@@ -697,14 +705,112 @@ document.addEventListener('DOMContentLoaded', async () => {
             polygon: { allowIntersection: false, showArea: true },
             rectangle: { shapeOptions: { color: '#0d6efd' } }
         },
-        edit: { featureGroup: layers.areas, remove: false }
+        edit: { featureGroup: layers.areas, remove: true }
     });
     map.addControl(drawControl);
 
+    // Variável para rastrear qual área está sendo editada
+    let mapaAreasEditaveis = {};
+    
+    // ========== EVENTO: CRIAR NOVA ÁREA ==========
     map.on(L.Draw.Event.CREATED, e => {
         const layer = e.layer;
         layers.areas.addLayer(layer);
         salvarArea(layer);
+    });
+    
+    // ========== EVENTO: EDITAR ÁREA EXISTENTE ==========
+    map.on(L.Draw.Event.EDITED, async e => {
+        const layersEditados = e.layers;
+        
+        layersEditados.eachLayer(async layer => {
+            // Encontrar qual área foi editada
+            let areaId = null;
+            for (let id in mapaAreasEditaveis) {
+                if (mapaAreasEditaveis[id] === layer) {
+                    areaId = parseInt(id);
+                    break;
+                }
+            }
+            
+            if (areaId) {
+                const novoGeoJson = layer.toGeoJSON();
+                try {
+                    mostrarToast('Salvando edições...', 'info');
+                    const response = await fetch(`/api/mapa/areas/${areaId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ geojson: novoGeoJson })
+                    });
+                    const data = await response.json();
+                    if (response.ok && data.status === 'sucesso') {
+                        mostrarToast('✅ Edições salvas com sucesso!', 'success');
+                        await carregarAreas();
+                    } else {
+                        mostrarToast('❌ Erro ao salvar edições: ' + (data.erro || 'Tente novamente.'), 'danger');
+                    }
+                } catch (err) {
+                    console.error("Erro ao salvar edições:", err);
+                    mostrarToast('❌ Erro de comunicação ao salvar edições.', 'danger');
+                }
+            }
+        });
+    });
+    
+    // ========== EVENTO: EXCLUIR ÁREA ==========
+    map.on(L.Draw.Event.DELETED, async e => {
+        const layersDeletados = e.layers;
+        
+        layersDeletados.eachLayer(async layer => {
+            // Encontrar qual área foi deletada
+            let areaId = null;
+            for (let id in mapaAreasEditaveis) {
+                if (mapaAreasEditaveis[id] === layer) {
+                    areaId = parseInt(id);
+                    break;
+                }
+            }
+            
+            if (areaId) {
+                try {
+                    mostrarToast('Excluindo área...', 'info');
+                    const response = await fetch(`/api/mapa/areas/${areaId}`, { method: 'DELETE' });
+                    const data = await response.json();
+                    if (response.ok && data.status === 'sucesso') {
+                        mostrarToast('✅ Área excluída com sucesso!', 'success');
+                        delete mapaAreasEditaveis[areaId];
+                        const countElem = document.getElementById('count-areas');
+                        countElem.textContent = parseInt(countElem.textContent) - 1;
+                        await carregarAreas();
+                    } else {
+                        mostrarToast('❌ Erro ao excluir: ' + (data.erro || 'Tente novamente.'), 'danger');
+                    }
+                } catch (err) {
+                    console.error("Erro ao excluir área:", err);
+                    mostrarToast('❌ Erro de comunicação ao excluir área.', 'danger');
+                }
+            }
+        });
+    });
+    
+    // ========== EVENTO: INICIAR EDIÇÃO ==========
+    map.on(L.Draw.Event.EDITSTART, e => {
+        mostrarToast('ℹ️ Modo de edição ativado. Clique e arraste para editar áreas.', 'info');
+    });
+    
+    // ========== EVENTO: FINALIZAR EDIÇÃO ==========
+    map.on(L.Draw.Event.EDITSTOP, e => {
+        mostrarToast('ℹ️ Modo de edição desativado.', 'info');
+    });
+    
+    // ========== EVENTO: INICIAR EXCLUSÃO ==========
+    map.on(L.Draw.Event.DELETESTART, e => {
+        mostrarToast('ℹ️ Modo de exclusão ativado. Clique em uma área para excluir.', 'info');
+    });
+    
+    // ========== EVENTO: FINALIZAR EXCLUSÃO ==========
+    map.on(L.Draw.Event.DELETESTOP, e => {
+        mostrarToast('ℹ️ Modo de exclusão desativado.', 'info');
     });
     {% endif %}
 });

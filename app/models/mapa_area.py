@@ -7,8 +7,11 @@ class MapaArea(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(150), nullable=False, default=f"Área de {datetime.utcnow().strftime('%Y-%m-%d %H:%M')}")
+    descricao = db.Column(db.Text, nullable=True, default='')
     geojson = db.Column(db.Text, nullable=False)
+    cor = db.Column(db.String(7), nullable=True, default='#0d6efd')  # Cor em formato hex
     criado_em = db.Column(db.DateTime, default=datetime.utcnow)
+    atualizado_em = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def get_geojson(self):
         try:

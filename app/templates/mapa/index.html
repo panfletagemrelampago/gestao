@@ -361,9 +361,9 @@
         } else {
             painel.classList.remove('expandido');
             painel.classList.add('retraido');
-            iconToggle.className = 'fas fa-filter'; // Mantém o ícone de filtro para ser o "quadradinho"
+            iconToggle.className = 'fas fa-filter';
         }
-        
+
         // Reajustar posição após mudar tamanho para garantir que não saia da tela
         setTimeout(() => {
             const rect = painel.getBoundingClientRect();
@@ -491,7 +491,8 @@ const layers = {
     areas: L.featureGroup().addTo(map)
 };
 
-const areaLayerMap = {};
+// Mapeamento entre Leaflet ID e Backend ID
+const layerIdToAreaId = new Map();
 
 function escapeHTML(str) {
     return str?.replace(/[&<>"']/g, m => ({
@@ -507,22 +508,11 @@ function mostrarToast(mensagem, tipo = 'success') {
     setTimeout(() => { toast.style.display = 'none'; }, 3000);
 }
 
-// Retorna a data de hoje no formato YYYY-MM-DD (local)
-function hojeFormatado() {
-    const d = new Date();
-    const ano = d.getFullYear();
-    const mes = String(d.getMonth() + 1).padStart(2, '0');
-    const dia = String(d.getDate()).padStart(2, '0');
-    return `${ano}-${mes}-${dia}`;
-}
-
 async function carregarFotos() {
     try {
-        // Obter filtros de data do painel
         const dataInicio = document.getElementById('filtro-data-inicio').value;
         const dataFim = document.getElementById('filtro-data-fim').value;
 
-        // Construir URL com parâmetros de data
         let url = '/api/mapa/fotos';
         const params = new URLSearchParams();
         if (dataInicio) params.append('data_inicio', dataInicio);
@@ -554,7 +544,6 @@ async function carregarFotos() {
 
         document.getElementById("stats-fotos-count").innerText = fotos.length;
 
-        // Atualizar label do período
         const labelPeriodo = document.getElementById('filtro-periodo-label');
         if (dataInicio || dataFim) {
             const di = dataInicio || '...';
@@ -576,48 +565,45 @@ async function carregarAreas() {
     try {
         const response = await fetch('/api/mapa/areas');
         const areas = await response.json();
+        
         layers.areas.clearLayers();
-        Object.keys(areaLayerMap).forEach(k => delete areaLayerMap[k]);
-        if (typeof mapaAreasEditaveis !== 'undefined') {
-            Object.keys(mapaAreasEditaveis).forEach(k => delete mapaAreasEditaveis[k]);
-        }
+        layerIdToAreaId.clear();
 
         let totalAreas = 0;
         areas.forEach(area => {
             if (!area.geojson) return;
             totalAreas++;
+            
             const geoLayer = L.geoJSON(area.geojson, {
                 style: { color: area.cor || "#0d6efd", weight: 3, opacity: 0.8, fillOpacity: 0.15 }
             }).addTo(layers.areas);
 
-            if (area.id) {
-                areaLayerMap[area.id] = geoLayer;
-                if (typeof mapaAreasEditaveis !== 'undefined') {
-                    mapaAreasEditaveis[area.id] = geoLayer;
-                }
-            }
+            // Mapear cada layer interna do GeoJSON para o ID do backend
+            geoLayer.eachLayer(layer => {
+                layerIdToAreaId.set(layer._leaflet_id, area.id);
+                
+                const nomeArea = escapeHTML(area.nome) || 'Área sem nome';
+                const descArea = escapeHTML(area.descricao) || 'Sem descrição';
 
-            const nomeArea = escapeHTML(area.nome) || 'Área sem nome';
-            const descArea = escapeHTML(area.descricao) || 'Sem descrição';
-
-            {% if current_user.tipo_usuario in ['admin', 'funcionario'] %}
-            geoLayer.bindPopup(`
-                <div style="min-width:180px">
-                    <h6 class="mb-1 fw-bold text-primary">${nomeArea}</h6>
-                    <p class="mb-2 small">${descArea}</p>
-                    <button onclick="excluirArea(${area.id})" class="btn btn-sm btn-danger w-100 rounded-pill">
-                        <i class="fas fa-trash me-1"></i> Excluir Área
-                    </button>
-                </div>
-            `);
-            {% else %}
-            geoLayer.bindPopup(`
-                <div style="min-width:150px">
-                    <h6 class="mb-1 fw-bold text-primary">${nomeArea}</h6>
-                    <p class="mb-0 small">${descArea}</p>
-                </div>
-            `);
-            {% endif %}
+                {% if current_user.tipo_usuario in ['admin', 'funcionario'] %}
+                layer.bindPopup(`
+                    <div style="min-width:180px">
+                        <h6 class="mb-1 fw-bold text-primary">${nomeArea}</h6>
+                        <p class="mb-2 small">${descArea}</p>
+                        <button onclick="excluirAreaIndividual(${area.id})" class="btn btn-sm btn-danger w-100 rounded-pill">
+                            <i class="fas fa-trash me-1"></i> Excluir Área
+                        </button>
+                    </div>
+                `);
+                {% else %}
+                layer.bindPopup(`
+                    <div style="min-width:150px">
+                        <h6 class="mb-1 fw-bold text-primary">${nomeArea}</h6>
+                        <p class="mb-0 small">${descArea}</p>
+                    </div>
+                `);
+                {% endif %}
+            });
         });
         document.getElementById('count-areas').textContent = totalAreas;
     } catch (err) {
@@ -625,34 +611,7 @@ async function carregarAreas() {
     }
 }
 
-async function salvarArea(layer) {
-    const geojson = layer.toGeoJSON();
-    const nome = prompt('Nome para esta área (opcional):', 'Área ' + new Date().toLocaleDateString('pt-BR'));
-    const nomeArea = (nome !== null && nome.trim() !== '') ? nome.trim() : 'Área ' + new Date().toLocaleDateString('pt-BR');
-
-    try {
-        mostrarToast('Salvando área...', 'info');
-        const response = await fetch('/api/mapa/areas', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nome: nomeArea, geojson: geojson })
-        });
-        const data = await response.json();
-        if (response.ok && data.status === 'sucesso') {
-            mostrarToast('✅ Área "' + nomeArea + '" salva com sucesso!', 'success');
-            await carregarAreas();
-        } else {
-            mostrarToast('❌ Erro ao salvar área: ' + (data.erro || 'Tente novamente.'), 'danger');
-            layers.areas.removeLayer(layer);
-        }
-    } catch (err) {
-        console.error("Erro ao salvar área:", err);
-        mostrarToast('❌ Erro de comunicação ao salvar área.', 'danger');
-        layers.areas.removeLayer(layer);
-    }
-}
-
-async function excluirArea(areaId) {
+async function excluirAreaIndividual(areaId) {
     if (!confirm('Deseja excluir esta área permanentemente?')) return;
     try {
         mostrarToast('Excluindo área...', 'info');
@@ -660,12 +619,7 @@ async function excluirArea(areaId) {
         const data = await response.json();
         if (response.ok && data.status === 'sucesso') {
             mostrarToast('✅ Área excluída com sucesso!', 'success');
-            if (areaLayerMap[areaId]) {
-                layers.areas.removeLayer(areaLayerMap[areaId]);
-                delete areaLayerMap[areaId];
-                const countElem = document.getElementById('count-areas');
-                countElem.textContent = parseInt(countElem.textContent) - 1;
-            }
+            await carregarAreas();
         } else {
             mostrarToast('❌ Erro ao excluir: ' + (data.erro || 'Tente novamente.'), 'danger');
         }
@@ -709,109 +663,110 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     map.addControl(drawControl);
 
-    // Variável para rastrear qual área está sendo editada
-    let mapaAreasEditaveis = {};
-    
     // ========== EVENTO: CRIAR NOVA ÁREA ==========
-    map.on(L.Draw.Event.CREATED, e => {
+    map.on(L.Draw.Event.CREATED, async e => {
         const layer = e.layer;
-        layers.areas.addLayer(layer);
-        salvarArea(layer);
+        const geojson = layer.toGeoJSON();
+        const nome = prompt('Nome para esta área (opcional):', 'Área ' + new Date().toLocaleDateString('pt-BR'));
+        const nomeArea = (nome !== null && nome.trim() !== '') ? nome.trim() : 'Área ' + new Date().toLocaleDateString('pt-BR');
+
+        try {
+            mostrarToast('Salvando área...', 'info');
+            const response = await fetch('/api/mapa/areas', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome: nomeArea, geojson: geojson })
+            });
+            const data = await response.json();
+            if (response.ok && data.status === 'sucesso') {
+                mostrarToast('✅ Área "' + nomeArea + '" salva com sucesso!', 'success');
+                await carregarAreas();
+            } else {
+                mostrarToast('❌ Erro ao salvar área: ' + (data.erro || 'Tente novamente.'), 'danger');
+            }
+        } catch (err) {
+            console.error("Erro ao salvar área:", err);
+            mostrarToast('❌ Erro de comunicação ao salvar área.', 'danger');
+        }
     });
     
     // ========== EVENTO: EDITAR ÁREA EXISTENTE ==========
     map.on(L.Draw.Event.EDITED, async e => {
         const layersEditados = e.layers;
+        const promises = [];
         
-        layersEditados.eachLayer(async layer => {
-            // Encontrar qual área foi editada
-            let areaId = null;
-            for (let id in mapaAreasEditaveis) {
-                if (mapaAreasEditaveis[id] === layer) {
-                    areaId = parseInt(id);
-                    break;
-                }
-            }
-            
+        layersEditados.eachLayer(layer => {
+            const areaId = layerIdToAreaId.get(layer._leaflet_id);
             if (areaId) {
                 const novoGeoJson = layer.toGeoJSON();
-                try {
-                    mostrarToast('Salvando edições...', 'info');
-                    const response = await fetch(`/api/mapa/areas/${areaId}`, {
+                promises.push(
+                    fetch(`/api/mapa/areas/${areaId}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ geojson: novoGeoJson })
-                    });
-                    const data = await response.json();
-                    if (response.ok && data.status === 'sucesso') {
-                        mostrarToast('✅ Edições salvas com sucesso!', 'success');
-                        await carregarAreas();
-                    } else {
-                        mostrarToast('❌ Erro ao salvar edições: ' + (data.erro || 'Tente novamente.'), 'danger');
-                    }
-                } catch (err) {
-                    console.error("Erro ao salvar edições:", err);
-                    mostrarToast('❌ Erro de comunicação ao salvar edições.', 'danger');
-                }
+                    }).then(res => res.json())
+                );
             }
         });
+        
+        if (promises.length > 0) {
+            try {
+                mostrarToast('Salvando edições...', 'info');
+                const results = await Promise.all(promises);
+                const errors = results.filter(r => r.status !== 'sucesso');
+                
+                if (errors.length === 0) {
+                    mostrarToast('✅ Todas as edições foram salvas!', 'success');
+                } else {
+                    mostrarToast(`⚠️ Algumas edições falharam (${errors.length}).`, 'warning');
+                }
+                await carregarAreas();
+            } catch (err) {
+                console.error("Erro ao salvar edições:", err);
+                mostrarToast('❌ Erro de comunicação ao salvar edições.', 'danger');
+            }
+        }
     });
     
-    // ========== EVENTO: EXCLUIR ÁREA ==========
+    // ========== EVENTO: EXCLUIR ÁREA (VIA CONTROLE) ==========
     map.on(L.Draw.Event.DELETED, async e => {
         const layersDeletados = e.layers;
+        const promises = [];
         
-        layersDeletados.eachLayer(async layer => {
-            // Encontrar qual área foi deletada
-            let areaId = null;
-            for (let id in mapaAreasEditaveis) {
-                if (mapaAreasEditaveis[id] === layer) {
-                    areaId = parseInt(id);
-                    break;
-                }
-            }
-            
+        layersDeletados.eachLayer(layer => {
+            const areaId = layerIdToAreaId.get(layer._leaflet_id);
             if (areaId) {
-                try {
-                    mostrarToast('Excluindo área...', 'info');
-                    const response = await fetch(`/api/mapa/areas/${areaId}`, { method: 'DELETE' });
-                    const data = await response.json();
-                    if (response.ok && data.status === 'sucesso') {
-                        mostrarToast('✅ Área excluída com sucesso!', 'success');
-                        delete mapaAreasEditaveis[areaId];
-                        const countElem = document.getElementById('count-areas');
-                        countElem.textContent = parseInt(countElem.textContent) - 1;
-                        await carregarAreas();
-                    } else {
-                        mostrarToast('❌ Erro ao excluir: ' + (data.erro || 'Tente novamente.'), 'danger');
-                    }
-                } catch (err) {
-                    console.error("Erro ao excluir área:", err);
-                    mostrarToast('❌ Erro de comunicação ao excluir área.', 'danger');
-                }
+                promises.push(
+                    fetch(`/api/mapa/areas/${areaId}`, { method: 'DELETE' })
+                    .then(res => res.json())
+                );
             }
         });
+        
+        if (promises.length > 0) {
+            try {
+                mostrarToast('Excluindo áreas...', 'info');
+                const results = await Promise.all(promises);
+                const errors = results.filter(r => r.status !== 'sucesso');
+                
+                if (errors.length === 0) {
+                    mostrarToast('✅ Áreas excluídas com sucesso!', 'success');
+                } else {
+                    mostrarToast(`⚠️ Algumas exclusões falharam (${errors.length}).`, 'warning');
+                }
+                await carregarAreas();
+            } catch (err) {
+                console.error("Erro ao excluir áreas:", err);
+                mostrarToast('❌ Erro de comunicação ao excluir áreas.', 'danger');
+            }
+        }
     });
     
-    // ========== EVENTO: INICIAR EDIÇÃO ==========
-    map.on(L.Draw.Event.EDITSTART, e => {
-        mostrarToast('ℹ️ Modo de edição ativado. Clique e arraste para editar áreas.', 'info');
-    });
-    
-    // ========== EVENTO: FINALIZAR EDIÇÃO ==========
-    map.on(L.Draw.Event.EDITSTOP, e => {
-        mostrarToast('ℹ️ Modo de edição desativado.', 'info');
-    });
-    
-    // ========== EVENTO: INICIAR EXCLUSÃO ==========
-    map.on(L.Draw.Event.DELETESTART, e => {
-        mostrarToast('ℹ️ Modo de exclusão ativado. Clique em uma área para excluir.', 'info');
-    });
-    
-    // ========== EVENTO: FINALIZAR EXCLUSÃO ==========
-    map.on(L.Draw.Event.DELETESTOP, e => {
-        mostrarToast('ℹ️ Modo de exclusão desativado.', 'info');
-    });
+    // ========== EVENTO: MODO EDIÇÃO/EXCLUSÃO ==========
+    map.on(L.Draw.Event.EDITSTART, () => mostrarToast('ℹ️ Modo de edição ativado.', 'info'));
+    map.on(L.Draw.Event.EDITSTOP, () => mostrarToast('ℹ️ Modo de edição desativado.', 'info'));
+    map.on(L.Draw.Event.DELETESTART, () => mostrarToast('ℹ️ Modo de exclusão ativado.', 'info'));
+    map.on(L.Draw.Event.DELETESTOP, () => mostrarToast('ℹ️ Modo de exclusão desativado.', 'info'));
     {% endif %}
 });
 </script>

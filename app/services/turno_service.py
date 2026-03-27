@@ -53,7 +53,7 @@ class TurnoService:
             pausas_json='[]'
         )
         
-        # Atualiza status da ação
+        # 🔥 Atualiza status da ação para 'Em Andamento'
         acao.status = 'Em Andamento'
         
         db.session.add(novo_turno)
@@ -140,6 +140,21 @@ class TurnoService:
         turno.fim = datetime.utcnow()
         if observacoes:
             turno.observacoes = observacoes
+            
+        # 🔥 Sincronizar status da Ação:
+        # Se não houver mais nenhum turno 'em andamento' ou 'pausado' para esta ação,
+        # mudamos o status da ação para 'Finalizada' (ou 'Planejada' se preferir, mas 'Finalizada' é mais comum após execução).
+        # Aqui vamos usar 'Finalizada' para indicar que o trabalho de campo acabou.
+        outros_turnos_ativos = Turno.query.filter(
+            Turno.acao_id == turno.acao_id,
+            Turno.id != turno.id,
+            Turno.status.in_(['em andamento', 'pausado'])
+        ).count()
+        
+        if outros_turnos_ativos == 0:
+            acao = AcaoPromocional.query.get(turno.acao_id)
+            if acao:
+                acao.status = 'Finalizada'
             
         db.session.commit()
         return turno

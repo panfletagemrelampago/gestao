@@ -13,6 +13,7 @@ from app.decorators.auth_decorators import perfil_required
 from app.models.acao_promocional import AcaoPromocional
 from app.models.auditoria import Auditoria
 from app.models.material import Material
+from app.models.turno import Turno
 from app.extensions import db
 
 funcionario_bp = Blueprint("funcionario", __name__, url_prefix="/funcionario")
@@ -34,15 +35,23 @@ def dashboard():
         ).filter(
             AcaoPromocional.status.in_(["Planejada", "Em Andamento"])
         ).order_by(AcaoPromocional.data.desc()).all()
+        
+        # Buscar turno ativo do funcionário (em qualquer ação)
+        turno_ativo = Turno.query.filter(
+            Turno.equipe_id == current_user.id,
+            Turno.status.in_(['em andamento', 'pausado'])
+        ).first()
     else:
         # Admin vê todas as ações ativas
         acoes_dia = AcaoPromocional.query.filter(
             AcaoPromocional.status.in_(["Planejada", "Em Andamento"])
         ).order_by(AcaoPromocional.data.desc()).all()
+        turno_ativo = None
 
     return render_template(
         "funcionario/dashboard.html",
         acoes_dia=acoes_dia,
+        turno_ativo=turno_ativo,
         hoje=hoje
     )
 

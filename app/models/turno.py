@@ -66,15 +66,31 @@ class Turno(db.Model):
         if not self.inicio:
             return 0
         
-        fim_referencia = self.fim if self.fim else datetime.utcnow()
-        total_bruto = (fim_referencia - self.inicio).total_seconds()
+        # Garantir que o início seja naive para comparação (banco salva como naive UTC)
+        inicio_naive = self.inicio.replace(tzinfo=None) if self.inicio.tzinfo else self.inicio
+        
+        # Fim de referência (agora ou fim do turno)
+        if self.fim:
+            fim_referencia = self.fim.replace(tzinfo=None) if self.fim.tzinfo else self.fim
+        else:
+            fim_referencia = datetime.utcnow()
+            
+        total_bruto = (fim_referencia - inicio_naive).total_seconds()
         
         total_pausas = 0
         pausas = self.pausas
         for p in pausas:
-            p_inicio = datetime.fromisoformat(p['inicio'])
-            p_fim = datetime.fromisoformat(p['fim']) if p.get('fim') else fim_referencia
-            total_pausas += (p_fim - p_inicio).total_seconds()
+            try:
+                p_inicio = datetime.fromisoformat(p['inicio']).replace(tzinfo=None)
+                if p.get('fim'):
+                    p_fim = datetime.fromisoformat(p['fim']).replace(tzinfo=None)
+                else:
+                    p_fim = fim_referencia
+                
+                if p_fim > p_inicio:
+                    total_pausas += (p_fim - p_inicio).total_seconds()
+            except (ValueError, TypeError):
+                continue
             
         duracao = total_bruto - total_pausas
         return max(0, int(duracao))

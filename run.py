@@ -12,6 +12,7 @@ from app.models.area_atuacao import AreaAtuacao
 from app.models.foto_auditoria import FotoAuditoria
 
 app = create_app()
+os.environ['FLASK_APP'] = 'run.py'
 
 @app.shell_context_processor
 def make_shell_context():

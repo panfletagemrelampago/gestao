@@ -18,7 +18,7 @@
 
 <!-- Cards de resumo -->
 <div class="row g-3 mb-4">
-    <div class="col-6 col-md-4">
+    <div class="col-6 col-md-3">
         <div class="card border-0 shadow-sm text-center p-3 h-100">
             <div class="card-body">
                 <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
@@ -29,7 +29,7 @@
             </div>
         </div>
     </div>
-    <div class="col-6 col-md-4">
+    <div class="col-6 col-md-3">
         <div class="card border-0 shadow-sm text-center p-3 h-100">
             <div class="card-body">
                 <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
@@ -40,7 +40,7 @@
             </div>
         </div>
     </div>
-    <div class="col-6 col-md-4">
+    <div class="col-6 col-md-3">
         <div class="card border-0 shadow-sm text-center p-3 h-100">
             <div class="card-body">
                 <div class="bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
@@ -48,6 +48,17 @@
                 </div>
                 <h3 class="fw-bold mb-0">{{ acoes|selectattr('status', 'equalto', 'Planejada')|list|length }}</h3>
                 <p class="text-muted mb-0 small">Planejadas</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm text-center p-3 h-100">
+            <div class="card-body">
+                <div class="bg-info bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
+                    <i class="fas fa-check-circle fa-lg text-info"></i>
+                </div>
+                <h3 class="fw-bold mb-0">{{ acoes|selectattr('status', 'equalto', 'Finalizada')|list|length }}</h3>
+                <p class="text-muted mb-0 small">Finalizadas</p>
             </div>
         </div>
     </div>
@@ -126,7 +137,7 @@
                             <span class="badge rounded-pill
                                 {% if acao.status == 'Em Andamento' %}bg-success
                                 {% elif acao.status == 'Planejada' %}bg-warning text-dark
-                                {% elif acao.status == 'Concluída' %}bg-primary
+                                {% elif acao.status == 'Finalizada' %}bg-info
                                 {% else %}bg-secondary{% endif %}">
                                 {{ acao.status }}
                             </span>

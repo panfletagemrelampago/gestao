@@ -151,7 +151,7 @@
                                 <th>Status</th>
                                 <th>Duração</th>
                                 <th>Fotos</th>
-                                <th>Ações</th>
+                                ${USER_TYPE !== 'cliente' ? '<th>Ações</th>' : ''}
                             </tr>
                         </thead>
                         <tbody>`;
@@ -207,7 +207,7 @@
                         <td>${statusBadge}</td>
                         <td><span class="text-muted small">${duracao}</span></td>
                         <td>${fotos}</td>
-                        <td>${acoes}</td>
+                        ${USER_TYPE !== 'cliente' ? `<td>${acoes}</td>` : ''}
                     </tr>`;
             });
 

@@ -50,18 +50,18 @@
                             <div class="text-end text-md-center">{{ acao.cliente.nome_empresa }}</div>
                         </td>
                         <td data-label="Líder">
-                            <div class="text-end text-md-center">{{ acao.lider.nome }}</div>
+                            <div class="text-end text-md-center">{{ acao.lider.nome if acao.lider else '—' }}</div>
                         </td>
                         <td data-label="Status">
                             <div class="d-flex justify-content-end justify-content-md-center">
-                                <span class="badge {% if acao.status == 'Em Andamento' %}bg-warning text-dark{% elif acao.status == 'Concluída' %}bg-success{% else %}bg-secondary{% endif %} rounded-pill px-3">
+                                <span class="badge {% if acao.status == 'Em Andamento' %}bg-warning text-dark{% elif acao.status == 'Finalizada' %}bg-success{% else %}bg-secondary{% endif %} rounded-pill px-3">
                                     {{ acao.status }}
                                 </span>
                             </div>
                         </td>
                         <td data-label="Ações">
                             <div class="d-flex justify-content-end justify-content-md-center gap-2">
-                                <a href="{{ url_for('mapa.index') }}" class="btn btn-sm btn-outline-primary btn-action-square" title="Ver no Mapa"><i class="fas fa-map-marker-alt"></i></a>
+                                <a href="{{ url_for('mapa.index') }}?acao_id={{ acao.id }}" class="btn btn-sm btn-outline-primary btn-action-square" title="Ver no Mapa"><i class="fas fa-map-marker-alt"></i></a>
                                 <a href="{{ url_for('auditorias.turnos', acao_id=acao.id) }}" class="btn btn-sm btn-action-square" style="background:white;color:#28a745;border:2px solid #28a745;" title="Turnos de Campo"><i class="fas fa-clock"></i></a>
                                 <a href="{{ url_for('auditorias.relatorio', acao_id=acao.id) }}" class="btn btn-sm btn-action-square" style="background:#8E0000;color:white;border:none;" title="Relatório"><i class="fas fa-file-alt"></i></a>
 
@@ -72,7 +72,6 @@
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </form>
-                                {% endif %}
 
                                 <div class="dropdown d-inline-block">
                                     <button class="btn btn-sm btn-outline-secondary btn-action-square" type="button" data-bs-toggle="dropdown">
@@ -88,8 +87,8 @@
                                         </li>
                                         <li>
                                             <form action="{{ url_for('acoes.atualizar_status', id=acao.id) }}" method="POST">
-                                                <input type="hidden" name="status" value="Concluída">
-                                                <button type="submit" class="dropdown-item text-success">Concluída</button>
+                                                <input type="hidden" name="status" value="Finalizada">
+                                                <button type="submit" class="dropdown-item text-success">Finalizada</button>
                                             </form>
                                         </li>
                                         <li>
@@ -100,6 +99,7 @@
                                         </li>
                                     </ul>
                                 </div>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>

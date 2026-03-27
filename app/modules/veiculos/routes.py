@@ -12,7 +12,18 @@ veiculos_bp = Blueprint('veiculos', __name__)
 @veiculos_bp.route('/')
 @perfil_required("admin")
 def listar():
-    veiculos = Veiculo.query.all()
+    query = Veiculo.query
+    
+    search = request.args.get('search')
+    if search:
+        query = query.filter(
+            (Veiculo.marca.ilike(f'%{search}%')) |
+            (Veiculo.modelo.ilike(f'%{search}%')) |
+            (Veiculo.placa.ilike(f'%{search}%')) |
+            (Veiculo.cor.ilike(f'%{search}%'))
+        )
+        
+    veiculos = query.all()
     return render_template('veiculos/listar.html', veiculos=veiculos)
 
 

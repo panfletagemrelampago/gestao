@@ -8,7 +8,20 @@
         <h2 class="fw-bold mb-0">Gerenciamento de <span class="text-vinho">Usuários</span></h2>
         <p class="text-muted small mb-0">Criar, editar e administrar acessos ao sistema.</p>
     </div>
-    <div class="header-actions">
+    <div class="header-actions d-flex gap-2">
+        <form action="{{ url_for('usuarios.listar') }}" method="GET" class="d-flex gap-2">
+            <div class="input-group">
+                <input type="text" name="search" class="form-control form-control-sm" placeholder="Buscar usuário..." value="{{ request.args.get('search', '') }}">
+                <button class="btn btn-sm btn-outline-secondary" type="submit">
+                    <i class="fas fa-search"></i>
+                </button>
+                {% if request.args.get('search') %}
+                <a href="{{ url_for('usuarios.listar') }}" class="btn btn-sm btn-outline-danger">
+                    <i class="fas fa-times"></i>
+                </a>
+                {% endif %}
+            </div>
+        </form>
         <a href="{{ url_for('usuarios.novo') }}" class="btn btn-primary shadow-sm">
             <i class="fas fa-user-plus me-2"></i> Novo Usuário
         </a>

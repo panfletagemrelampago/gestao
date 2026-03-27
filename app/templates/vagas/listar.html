@@ -9,7 +9,22 @@
         <h2 class="fw-bold mb-0">Banco de <span class="text-vinho">Candidatos</span></h2>
         <p class="text-muted small mb-0">Gerencie as candidaturas para as vagas de emprego.</p>
     </div>
-    <div class="header-actions">
+    <div class="header-actions d-flex gap-2">
+        {% if current_user.tipo_usuario == 'admin' %}
+        <form action="{{ url_for('vagas.listar') }}" method="GET" class="d-flex gap-2">
+            <div class="input-group">
+                <input type="text" name="search" class="form-control form-control-sm" placeholder="Buscar candidato..." value="{{ request.args.get('search', '') }}">
+                <button class="btn btn-sm btn-outline-secondary" type="submit">
+                    <i class="fas fa-search"></i>
+                </button>
+                {% if request.args.get('search') %}
+                <a href="{{ url_for('vagas.listar') }}" class="btn btn-sm btn-outline-danger">
+                    <i class="fas fa-times"></i>
+                </a>
+                {% endif %}
+            </div>
+        </form>
+        {% endif %}
         <a href="{{ url_for('vagas.novo') }}" class="btn btn-primary shadow-sm">
             <i class="fas fa-user-plus me-2"></i> Nova Candidatura
         </a>

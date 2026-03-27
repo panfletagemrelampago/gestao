@@ -15,7 +15,20 @@
         </p>
     </div>
 
-    <div class="header-actions">
+    <div class="header-actions d-flex gap-2">
+        <form action="{{ url_for('veiculos.listar') }}" method="GET" class="d-flex gap-2">
+            <div class="input-group">
+                <input type="text" name="search" class="form-control form-control-sm" placeholder="Buscar veículo..." value="{{ request.args.get('search', '') }}">
+                <button class="btn btn-sm btn-outline-secondary" type="submit">
+                    <i class="fas fa-search"></i>
+                </button>
+                {% if request.args.get('search') %}
+                <a href="{{ url_for('veiculos.listar') }}" class="btn btn-sm btn-outline-danger">
+                    <i class="fas fa-times"></i>
+                </a>
+                {% endif %}
+            </div>
+        </form>
         <a href="{{ url_for('veiculos.novo') }}" class="btn btn-primary shadow-sm">
             <i class="fas fa-plus me-2"></i> Novo Veículo
         </a>

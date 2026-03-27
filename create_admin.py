@@ -12,8 +12,7 @@ with app.app_context():
     user = User.query.filter_by(email=email).first()
 
     if user:
-        user.set_password(senha)
-        print("Senha do admin atualizada.")
+        print(f"Usuário {email} já existe. Nenhuma alteração aplicada.")
     else:
         user = User(
             nome_exibicao="Administrador",
@@ -23,7 +22,7 @@ with app.app_context():
         )
         user.set_password(senha)
         db.session.add(user)
-        print("Admin criado.")
+        print(f"Admin {email} criado com sucesso.")
 
     db.session.commit()
 

@@ -11,7 +11,20 @@ materiais_bp = Blueprint('materiais', __name__)
 @materiais_bp.route('/')
 @perfil_required("admin", "funcionario")
 def listar():
-    materiais = Material.query.order_by(Material.data_cadastro.desc()).all()
+    query = Material.query
+    
+    # Filtros para Admin
+    from flask_login import current_user
+    if current_user.tipo_usuario == 'admin':
+        search = request.args.get('search')
+        if search:
+            query = query.filter(
+                (Material.nome_campanha.ilike(f'%{search}%')) |
+                (Material.empresa.ilike(f'%{search}%')) |
+                (Material.responsavel.ilike(f'%{search}%'))
+            )
+            
+    materiais = query.order_by(Material.data_cadastro.desc()).all()
     return render_template('materiais/listar.html', materiais=materiais)
 
 @materiais_bp.route('/novo', methods=['GET', 'POST'])

@@ -10,7 +10,18 @@ clientes_bp = Blueprint('clientes', __name__)
 @clientes_bp.route('/')
 @perfil_required("admin")
 def listar():
-    clientes = Cliente.query.all()
+    query = Cliente.query
+    
+    search = request.args.get('search')
+    if search:
+        query = query.filter(
+            (Cliente.nome_empresa.ilike(f'%{search}%')) |
+            (Cliente.responsavel.ilike(f'%{search}%')) |
+            (Cliente.email.ilike(f'%{search}%')) |
+            (Cliente.cidade.ilike(f'%{search}%'))
+        )
+        
+    clientes = query.all()
     return render_template('clientes/listar.html', clientes=clientes)
 
 

@@ -13,7 +13,32 @@ vagas_bp = Blueprint('vagas', __name__)
 @vagas_bp.route('/')
 @perfil_required("admin", "funcionario")
 def listar():
-    vagas = Vaga.query.order_by(Vaga.data_cadastro.desc()).all()
+    query = Vaga.query
+    
+    # Filtros para Admin
+    from flask_login import current_user
+    if current_user.tipo_usuario == 'admin':
+        search = request.args.get('search')
+        if search:
+            # Como os dados estão em JSON, filtramos no Python após a query básica
+            # ou usamos filtros específicos do SQLite/MySQL se suportado.
+            # Para maior compatibilidade, faremos um filtro simples via Python
+            # ou usaremos a busca por texto bruto se o banco permitir.
+            # No SQLite, JSON_EXTRACT pode ser usado, mas vamos simplificar:
+            vagas_all = query.order_by(Vaga.data_cadastro.desc()).all()
+            vagas_filtradas = []
+            search_lower = search.lower()
+            for v in vagas_all:
+                nome = (v.dados_pessoais.get('nome_completo', '') or '').lower()
+                area = (v.dados_profissionais.get('area_atuacao', '') or '').lower()
+                email = (v.dados_contato.get('email', '') or '').lower()
+                cidade = (v.dados_contato.get('cidade', '') or '').lower()
+                
+                if search_lower in nome or search_lower in area or search_lower in email or search_lower in cidade:
+                    vagas_filtradas.append(v)
+            return render_template('vagas/listar.html', vagas=vagas_filtradas)
+            
+    vagas = query.order_by(Vaga.data_cadastro.desc()).all()
     return render_template('vagas/listar.html', vagas=vagas)
 
 

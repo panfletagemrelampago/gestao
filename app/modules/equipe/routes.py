@@ -12,7 +12,17 @@ equipe_bp = Blueprint('equipe', __name__)
 @equipe_bp.route('/')
 @perfil_required("admin")
 def listar():
-    equipes = Equipe.query.all()
+    query = Equipe.query
+    
+    search = request.args.get('search')
+    if search:
+        query = query.filter(
+            (Equipe.nome.ilike(f'%{search}%')) |
+            (Equipe.cargo.ilike(f'%{search}%')) |
+            (Equipe.telefone.ilike(f'%{search}%'))
+        )
+        
+    equipes = query.all()
     return render_template('equipe/listar.html', equipes=equipes)
 
 

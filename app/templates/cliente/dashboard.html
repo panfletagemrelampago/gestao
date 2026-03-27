@@ -105,17 +105,22 @@
                 <thead class="table-light">
                     <tr>
                         <th>Campanha</th>
-                        <th>Local</th>
+                        <th>Cliente</th>
+                        <th>Localização</th>
                         <th>Data</th>
                         <th>Status</th>
-                        <th class="text-center">Relatório</th>
+                        <th class="text-center">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for acao in acoes[:10] %}
                     <tr>
                         <td class="fw-semibold">{{ acao.nome_exibicao }}</td>
-                        <td>{{ acao.local_alvo or '—' }}</td>
+                        <td>{{ acao.cliente.nome_empresa if acao.cliente else '—' }}</td>
+                        <td>
+                            <div class="small fw-bold text-dark">{{ acao.cidade }}</div>
+                            <div class="x-small text-muted">{{ acao.bairro }}</div>
+                        </td>
                         <td>{{ acao.data.strftime('%d/%m/%Y') if acao.data else '—' }}</td>
                         <td>
                             <span class="badge rounded-pill
@@ -128,8 +133,8 @@
                         </td>
                         <td class="text-center">
                             <a href="{{ url_for('auditorias.relatorio', acao_id=acao.id) }}"
-                               class="btn btn-sm btn-outline-primary">
-                                <i class="fas fa-chart-bar me-1"></i>Relatório
+                               class="btn btn-sm btn-outline-primary shadow-sm">
+                                <i class="fas fa-chart-bar"></i> Relatório
                             </a>
                         </td>
                     </tr>

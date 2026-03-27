@@ -90,25 +90,23 @@ def get_cliente_id_do_usuario(user):
     return None
 
 def setup_admin(app):
+    """
+    Garante a existência de um usuário administrador inicial.
+    Diferente da versão anterior, esta função NÃO sobrescreve o nome ou a senha
+    se o usuário já existir, permitindo que as alterações feitas via painel persistam.
+    """
     with app.app_context():
         admin_email = "sac@relampagomt.com.br"
+        # Usamos variáveis de ambiente se disponíveis, caso contrário, valores padrão apenas para criação inicial
         admin_password = os.environ.get("ADMIN_PASSWORD", "@Zadu0204")
         admin_name = os.environ.get("ADMIN_USERNAME", "Relam")
 
         inspector = inspect(db.engine)
         if not inspector.has_table("users"):
-            # Se a tabela 'users' não existe, o banco ainda não foi migrado.
-            # Não tentamos criar ou atualizar o admin neste momento.
             logger.info("Tabela 'users' não encontrada. Pulando setup_admin.")
             return
 
-        # remove admin antigo (soft delete)
-        user_antigo = User.query.filter_by(email="admin@agencia.com").first()
-        if user_antigo:
-            user_antigo.soft_delete()
-            db.session.commit()
-
-        # cria ou atualiza admin
+        # Cria o admin apenas se ele não existir
         user = User.query.filter_by(email=admin_email).first()
 
         if not user:
@@ -121,9 +119,7 @@ def setup_admin(app):
             new_admin.set_password(admin_password)
             db.session.add(new_admin)
             db.session.commit()
-            print(f"ADMIN REAL CRIADO: {admin_email}")
+            print(f"ADMIN INICIAL CRIADO: {admin_email}")
         else:
-            user.nome_exibicao = admin_name
-            user.set_password(admin_password)
-            db.session.commit()
-            print(f"ADMIN SINCRONIZADO: {admin_email}")
+            # Se o usuário já existe, não fazemos nada para não sobrescrever alterações manuais
+            logger.info(f"Admin {admin_email} já existe. Nenhuma alteração aplicada.")

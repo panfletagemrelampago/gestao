@@ -1,6 +1,6 @@
-======================================================================
+=====================================================================
            SISTEMA DE GESTAO PROMOCIONAL E AUDITORIA
-======================================================================
+=====================================================================
 
 Sistema web profissional para auditoria de marketing promocional e 
 panfletagem, com rastreamento GPS em tempo real e prova de cobertura 

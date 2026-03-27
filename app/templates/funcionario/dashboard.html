@@ -14,9 +14,7 @@
             {{ hoje.strftime('%d/%m/%Y') }}
         </p>
     </div>
-    <a href="{{ url_for('auditorias.registrar') }}" class="btn btn-warning btn-lg shadow">
-        <i class="fas fa-camera me-2"></i>Registrar Foto
-    </a>
+
 </div>
 
 <!-- Cards de acesso rápido -->
@@ -87,7 +85,7 @@
                     <tr>
                         <th>Campanha</th>
                         <th>Cliente</th>
-                        <th>Local</th>
+                        <th>Localização</th>
                         <th>Data</th>
                         <th>Status</th>
                         <th class="text-center">Ações</th>
@@ -98,7 +96,10 @@
                     <tr>
                         <td class="fw-semibold">{{ acao.nome_exibicao }}</td>
                         <td>{{ acao.cliente.nome_empresa if acao.cliente else '—' }}</td>
-                        <td>{{ acao.local_alvo or '—' }}</td>
+                        <td>
+                            <div class="small fw-bold text-dark">{{ acao.cidade }}</div>
+                            <div class="x-small text-muted">{{ acao.bairro }}</div>
+                        </td>
                         <td>{{ acao.data.strftime('%d/%m/%Y') if acao.data else '—' }}</td>
                         <td>
                             <span class="badge rounded-pill
@@ -109,14 +110,16 @@
                             </span>
                         </td>
                         <td class="text-center">
-                            <a href="{{ url_for('auditorias.registrar') }}?acao_id={{ acao.id }}"
-                               class="btn btn-sm btn-warning">
-                                <i class="fas fa-camera me-1"></i>Registrar
-                            </a>
-                            <a href="{{ url_for('auditorias.turnos', acao_id=acao.id) }}"
-                               class="btn btn-sm btn-outline-secondary ms-1">
-                                <i class="fas fa-clock me-1"></i>Turnos
-                            </a>
+                            <div class="d-flex justify-content-center gap-2">
+                                <a href="{{ url_for('auditorias.registrar') }}?acao_id={{ acao.id }}"
+                                   class="btn btn-sm btn-warning shadow-sm">
+                                    <i class="fas fa-camera"></i> Registrar
+                                </a>
+                                <a href="{{ url_for('auditorias.turnos', acao_id=acao.id) }}"
+                                   class="btn btn-sm btn-outline-secondary shadow-sm">
+                                    <i class="fas fa-clock"></i> Turnos
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}

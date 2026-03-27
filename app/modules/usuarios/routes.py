@@ -10,7 +10,17 @@ usuarios_bp = Blueprint('usuarios', __name__, url_prefix='/usuarios')
 @usuarios_bp.route('/')
 @perfil_required('admin')
 def listar():
-    usuarios = User.query.filter_by(ativo=True).all()
+    query = User.query.filter_by(ativo=True)
+    
+    search = request.args.get('search')
+    if search:
+        query = query.filter(
+            (User.nome_exibicao.ilike(f'%{search}%')) |
+            (User.email.ilike(f'%{search}%')) |
+            (User.tipo_usuario.ilike(f'%{search}%'))
+        )
+        
+    usuarios = query.all()
     return render_template('usuarios/listar.html', usuarios=usuarios)
 
 @usuarios_bp.route('/novo', methods=['GET', 'POST'])

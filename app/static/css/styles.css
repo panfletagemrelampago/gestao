@@ -163,51 +163,99 @@ body {
 
 /* Botões */
 .btn {
-    border-radius: var(--radius-sm); /* Botões mais quadrados conforme solicitado */
-    padding: 0.6rem 1.2rem;
+    border-radius: 8px; /* Bordas levemente arredondadas para um visual moderno */
+    padding: 0.5rem 1rem;
     font-weight: 600;
+    font-size: 0.875rem; /* Tamanho de fonte mais equilibrado */
     transition: var(--transition-base);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 1px solid transparent;
+}
+
+/* Botões Grandes (LG) */
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+}
+
+/* Botões Pequenos (SM) */
+.btn-sm {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.75rem;
 }
 
 .btn-primary {
     background-color: var(--vinho-primario);
     border-color: var(--vinho-primario);
     color: white !important;
+    box-shadow: 0 2px 4px rgba(142, 0, 0, 0.2);
 }
 
 .btn-primary:hover {
     background-color: var(--vinho-escuro);
     border-color: var(--vinho-escuro);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(142, 0, 0, 0.3);
 }
 
-.btn-laranja {
+.btn-warning {
     background-color: var(--laranja-destaque);
+    border-color: var(--laranja-destaque);
+    color: white !important;
+    box-shadow: 0 2px 4px rgba(255, 158, 12, 0.2);
+}
+
+.btn-warning:hover {
+    background-color: #e68a00;
+    border-color: #e68a00;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(255, 158, 12, 0.3);
+}
+
+.btn-outline-primary {
+    color: var(--vinho-primario);
+    border-color: var(--vinho-primario);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--vinho-primario);
     color: white !important;
 }
 
-.btn-laranja:hover {
-    background-color: #e68a00;
+.btn-outline-secondary {
+    color: #6c757d;
+    border-color: #dee2e6;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #f8f9fa;
+    border-color: #ced4da;
+    color: #495057;
 }
 
 /* Botões de Ação Quadrados */
 .btn-action-square {
-    width: 34px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
     padding: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: var(--radius-sm) !important;
+    border-radius: 8px !important;
 }
 
-/* TABELAS - CENTRALIZAÇÃO GLOBAL (DESKTOP) */
-@media (min-width: 768px) {
-    .table th, .table td {
-        text-align: center !important;
-        vertical-align: middle !important;
-        padding: 1rem 0.75rem !important;
-    }
+/* TABELAS - CENTRALIZAÇÃO GLOBAL */
+.table th, .table td {
+    text-align: center !important;
+    vertical-align: middle !important;
+    padding: 1rem 0.75rem !important;
 }
+
+/* Alinhamento específico para a primeira coluna (Campanha) se desejar manter à esquerda, 
+   mas como o pedido foi centralizar tudo, manteremos o padrão acima. */
 
 .table thead th {
     background-color: #f8f9fa;
@@ -269,16 +317,46 @@ body {
         text-align: right !important;
     }
 
-    /* Botão "+ Novo" no Mobile */
+    /* Botão "+" Novo no Mobile */
     .header-actions {
         width: 100%;
         margin-top: 1rem;
+        flex-direction: column;
+        gap: 1rem !important;
     }
     
     .header-actions .btn {
         width: 100%;
         display: block;
         padding: 0.75rem;
+        font-size: 0.95rem;
+    }
+    
+    .header-actions form {
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+        gap: 0 !important;
+    }
+    
+    .header-actions .input-group {
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+    }
+    
+    .header-actions .input-group .form-control {
+        flex: 1;
+        min-width: 0;
+        font-size: 0.9rem;
+    }
+    
+    .header-actions .input-group .btn {
+        width: auto;
+        padding: 0.35rem 0.75rem;
+        font-size: 0.85rem;
+        flex-shrink: 0;
     }
 }
 

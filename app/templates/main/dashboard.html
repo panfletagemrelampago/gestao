@@ -83,39 +83,37 @@
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover mb-0 align-middle">
-                        <thead class="bg-light">
-                            <tr class="small text-muted">
-                                <th class="ps-3">CLIENTE / CAMPANHA</th>
-                                <th class="d-none d-md-table-cell">CIDADE / BAIRRO</th>
-                                <th>STATUS</th>
-                                <th class="pe-3 text-center">AÇÃO</th>
+                        <thead class="table-light">
+                            <tr>
+                                <th>Campanha</th>
+                                <th>Cliente</th>
+                                <th>Localização</th>
+                                <th>Status</th>
+                                <th>Ações</th>
                             </tr>
                         </thead>
 
                         <tbody>
                             {% for acao in acoes_dia %}
                             <tr>
-                                <td class="ps-3">
-                                    <div class="fw-bold small text-vinho">{{ acao.cliente.nome_empresa if acao.cliente else 'Sem Cliente' }}</div>
-                                    <div class="small text-dark">{{ acao.nome_exibicao }}</div>
-                                </td>
-
-                                <td class="d-none d-md-table-cell small">
-                                    <div class="text-dark">{{ acao.cidade }}</div>
-                                    <div class="text-muted x-small">{{ acao.bairro if acao.bairro else '—' }}</div>
-                                </td>
-
+                                <td class="fw-semibold">{{ acao.nome_exibicao }}</td>
+                                <td>{{ acao.cliente.nome_empresa if acao.cliente else '—' }}</td>
                                 <td>
-                                    <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill small">
+                                    <div class="small fw-bold text-dark">{{ acao.cidade }}</div>
+                                    <div class="x-small text-muted">{{ acao.bairro }}</div>
+                                </td>
+                                <td>
+                                    <span class="badge rounded-pill
+                                        {% if acao.status == 'Em Andamento' %}bg-success
+                                        {% elif acao.status == 'Planejada' %}bg-warning text-dark
+                                        {% else %}bg-secondary{% endif %}">
                                         {{ acao.status }}
                                     </span>
                                 </td>
-
                                 <td class="pe-3">
                                     <div class="d-flex justify-content-center">
                                         <a href="{{ url_for('mapa.index') }}?acao_id={{ acao.id }}" 
-                                           class="btn btn-sm btn-primary rounded-3 shadow-sm d-flex align-items-center justify-content-center" 
-                                           style="width: 36px; height: 36px; transition: 0.2s;">
+                                           class="btn btn-sm btn-primary btn-action-square shadow-sm">
                                             <i class="fas fa-location-dot"></i>
                                         </a>
                                     </div>
@@ -170,7 +168,8 @@
                             </div>
 
                             <a href="{{ url_for('auditorias.listar') }}" 
-                               class="btn btn-sm btn-light rounded-circle ms-2">
+                               class="btn btn-sm btn-light ms-2"
+                               style="width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 0;">
                                 <i class="fas fa-chevron-right"></i>
                             </a>
                         </div>
@@ -206,16 +205,6 @@
         background-color: rgba(253, 126, 20, var(--bs-bg-opacity)) !important; 
     }
 
-    /* BOTÃO */
-    .btn-primary { 
-        background-color: #0d6efd; 
-        border-color: #0d6efd; 
-    }
 
-    .btn-primary:hover { 
-        background-color: #0b5ed7; 
-        border-color: #0a58ca; 
-        transform: translateY(-1px); 
-    }
 </style>
 {% endblock %}

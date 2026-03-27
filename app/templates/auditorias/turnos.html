@@ -24,44 +24,6 @@
     </div>
 </div>
 
-<!-- SEÇÃO: INICIAR NOVO TURNO (APENAS FUNCIONÁRIO) -->
-{% if current_user.tipo_usuario == 'funcionario' %}
-<div class="card border-0 shadow-sm rounded-4 mb-4">
-    <div class="card-header text-white d-flex justify-content-between align-items-center" style="background:#8E0000;">
-        <h6 class="mb-0">Novo Turno de Campo</h6>
-        <span class="badge bg-white" style="color: #8E0000 !important;">{{ acao.status }}</span>
-    </div>
-    <div class="card-body">
-        <div class="row align-items-center">
-            <div class="col-md-8">
-                <p class="mb-1">
-                    <strong>Equipe (Líder):</strong> 
-                    {{ acao.lider.nome if acao.lider else 'Não definida' }}
-                </p>
-                <p class="mb-0 text-muted small">
-                    <strong>Veículo Vinculado:</strong>
-                    {% if veiculo_lider %}
-                        <span class="badge bg-light text-dark border">
-                            <i class="fas fa-car me-1"></i>{{ veiculo_lider.placa }} — {{ veiculo_lider.modelo }} ({{ veiculo_lider.cor }})
-                        </span>
-                    {% else %}
-                        <span class="badge bg-light text-secondary border">
-                            <i class="fas fa-walking me-1"></i> A pé
-                        </span>
-                    {% endif %}
-                </p>
-            </div>
-            <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                <form action="{{ url_for('auditorias.iniciar_turno', acao_id=acao.id) }}" method="POST">
-                    <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold">
-                        <i class="fas fa-play me-2"></i> Iniciar Turno
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
 
 <!-- SEÇÃO: HISTÓRICO DE TURNOS -->
 <div class="card border-0 shadow-sm rounded-4">

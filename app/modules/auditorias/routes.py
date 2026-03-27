@@ -14,17 +14,17 @@ from app.models.equipe import Equipe
 from app.models.veiculo import Veiculo
 from app.models.cliente import Cliente
 from app.services.cloudinary_service import CloudinaryService
+from app.services.turno_service import TurnoService
 from app.extensions import db
 from app.decorators.auth_decorators import perfil_required
 
 auditorias_bp = Blueprint('auditorias', __name__)
 
 # =============================
-# HELPER: CONVERTER PARA TIMEZONE LOCAL (GMT-3)
+# HELPER: CONVERTER PARA TIMEZONE LOCAL (GMT-4)
 # =============================
 def get_local_now():
     """Retorna datetime atual no fuso de Cuiabá (GMT-4) sem usar pytz"""
-    # UTC -> Cuiabá (GMT-4)
     return datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=-4))).replace(tzinfo=None)
 
 def to_local_tz(dt):
@@ -101,31 +101,21 @@ def registrar():
             return redirect(url_for('auditorias.registrar', acao_id=acao_id))
 
         # 🔥 TURNO ATIVO (GARANTIR EXISTÊNCIA)
-        turno_ativo = Turno.query.filter_by(
-            acao_id=acao_id,
-            status='ativo'
+        turno_ativo = Turno.query.filter(
+            Turno.acao_id == acao_id,
+            Turno.status == 'em andamento'
         ).first()
 
         if not turno_ativo:
-            # Lógica de busca de veículo robusta para criação automática
-            veiculo_vinculado = Veiculo.query.filter_by(motorista_id=acao.lider_equipe_id).first()
-            if not veiculo_vinculado and acao.lider:
-                nome_lider = acao.lider.nome.split()[0]
-                veiculo_vinculado = Veiculo.query.filter(Veiculo.modelo.ilike(f"%{nome_lider}%")).first()
-            
-            if not veiculo_vinculado:
-                veiculo_vinculado = Veiculo.query.filter_by(status=True).first()
-                
-            veiculo_id = veiculo_vinculado.id if veiculo_vinculado else None
-            
-            turno_ativo = Turno(
-                acao_id=acao_id,
-                equipe_id=acao.lider_equipe_id,
-                veiculo_id=veiculo_id,
-                status='ativo'
-            )
-            db.session.add(turno_ativo)
-            db.session.commit()
+            if current_user.tipo_usuario == 'funcionario':
+                try:
+                    turno_ativo = TurnoService.iniciar_turno(acao_id, current_user)
+                except ValueError as e:
+                    flash(str(e), 'danger')
+                    return redirect(url_for('auditorias.registrar', acao_id=acao_id))
+            else:
+                flash('Não há turno em andamento para esta ação. Peça ao funcionário para iniciar um turno.', 'warning')
+                return redirect(url_for('auditorias.registrar', acao_id=acao_id))
 
         foto_url = CloudinaryService.upload_image(foto)
         if not foto_url:
@@ -173,19 +163,14 @@ def registrar():
 # TELA DE TURNOS
 # =============================
 @auditorias_bp.route('/turnos/<int:acao_id>')
-@perfil_required("admin", "funcionario")
+@perfil_required("admin", "funcionario", "cliente")
 def turnos(acao_id):
-    acao = AcaoPromocional.query.get_or_404(acao_id)
+    from app.utils.security_helpers import get_acao_segura
+    acao = get_acao_segura(acao_id)
 
     # Forçar carregamento do líder para garantir vínculo do veículo
     if acao.lider_equipe_id and not acao.lider:
         acao.lider = Equipe.query.get(acao.lider_equipe_id)
-
-    # Funcionário só pode ver turnos de ações em que é líder
-    if current_user.tipo_usuario == 'funcionario':
-        if acao.lider_equipe_id != current_user.id:
-            flash('Acesso negado.', 'danger')
-            return redirect(url_for('auditorias.listar'))
 
     equipes = Equipe.query.filter_by(status=True).all()
     veiculos = Veiculo.query.filter_by(status=True).all()
@@ -240,69 +225,48 @@ def relatorio(acao_id):
 
 
 # =============================
-# TURNOS (CRUD)
+# TURNOS (MÁQUINA DE ESTADOS)
 # =============================
 @auditorias_bp.route('/turno/iniciar/<int:acao_id>', methods=['POST'])
-@perfil_required("admin", "funcionario")
+@perfil_required("funcionario")
 def iniciar_turno(acao_id):
-    acao = AcaoPromocional.query.get_or_404(acao_id)
-    Turno.query.filter_by(acao_id=acao_id, status='ativo').update({
-        'status': 'encerrado', 
-        'fim': get_local_now()
-    })
-
-    # Busca robusta de veículo
-    veiculo_vinculado = Veiculo.query.filter_by(motorista_id=acao.lider_equipe_id).first()
-    if not veiculo_vinculado and acao.lider:
-        nome_lider = acao.lider.nome.split()[0]
-        veiculo_vinculado = Veiculo.query.filter(Veiculo.modelo.ilike(f"%{nome_lider}%")).first()
-    if not veiculo_vinculado:
-        veiculo_vinculado = Veiculo.query.filter_by(status=True).first()
-        
-    veiculo_id = veiculo_vinculado.id if veiculo_vinculado else None
-
-    turno = Turno(
-        acao_id=acao_id,
-        equipe_id=acao.lider_equipe_id,
-        veiculo_id=veiculo_id,
-        status='ativo'
-    )
-    db.session.add(turno)
-    db.session.commit()
-    flash('Turno iniciado!', 'success')
+    try:
+        TurnoService.iniciar_turno(acao_id, current_user)
+        flash('Turno iniciado!', 'success')
+    except ValueError as e:
+        flash(str(e), 'danger')
     return redirect(url_for('auditorias.turnos', acao_id=acao_id))
 
 
-@auditorias_bp.route('/turno/encerrar/<int:turno_id>')
-@perfil_required("admin", "funcionario")
-def encerrar_turno(turno_id):
-    turno = Turno.query.get_or_404(turno_id)
-    turno.status = 'encerrado'
-    turno.fim = get_local_now()
-    db.session.commit()
-    # Retornar JSON para compatibilidade com fetch() do frontend
-    return jsonify({'status': 'sucesso', 'mensagem': 'Turno encerrado.'})
+@auditorias_bp.route('/turno/pausar/<int:turno_id>', methods=['POST'])
+@perfil_required("funcionario")
+def pausar_turno(turno_id):
+    try:
+        TurnoService.pausar_turno(turno_id, current_user)
+        return jsonify({'status': 'sucesso', 'mensagem': 'Turno pausado.'})
+    except ValueError as e:
+        return jsonify({'status': 'erro', 'mensagem': str(e)}), 400
 
 
-@auditorias_bp.route('/turno/retomar/<int:turno_id>')
-@perfil_required("admin", "funcionario")
+@auditorias_bp.route('/turno/retomar/<int:turno_id>', methods=['POST'])
+@perfil_required("funcionario")
 def retomar_turno(turno_id):
-    """Retoma um turno que estava pausado/encerrado, reativando-o."""
-    turno = Turno.query.get_or_404(turno_id)
-    acao_id = turno.acao_id
+    try:
+        TurnoService.retomar_turno(turno_id, current_user)
+        return jsonify({'status': 'sucesso', 'mensagem': 'Turno retomado.'})
+    except ValueError as e:
+        return jsonify({'status': 'erro', 'mensagem': str(e)}), 400
 
-    # Encerrar qualquer turno ativo antes de retomar este
-    Turno.query.filter_by(acao_id=acao_id, status='ativo').update({
-        'status': 'encerrado',
-        'fim': get_local_now()
-    })
 
-    # Retomar the turno selecionado
-    turno.status = 'ativo'
-    turno.fim = None  # Limpa o horário de fim ao retomar
-    db.session.commit()
-
-    return jsonify({'status': 'sucesso', 'mensagem': 'Turno retomado com sucesso.'})
+@auditorias_bp.route('/turno/encerrar/<int:turno_id>', methods=['POST'])
+@perfil_required("funcionario")
+def encerrar_turno(turno_id):
+    obs = request.form.get('observacoes')
+    try:
+        TurnoService.encerrar_turno(turno_id, current_user, obs)
+        return jsonify({'status': 'sucesso', 'mensagem': 'Turno encerrado.'})
+    except ValueError as e:
+        return jsonify({'status': 'erro', 'mensagem': str(e)}), 400
 
 
 @auditorias_bp.route('/turno/cancelar/<int:turno_id>')
@@ -334,7 +298,6 @@ def editar_turno(turno_id):
 @perfil_required("admin")
 def excluir_turno(turno_id):
     turno = Turno.query.get_or_404(turno_id)
-    acao_id = turno.acao_id
     try:
         # Excluir fotos vinculadas ao turno antes de excluir o turno
         FotoAuditoria.query.filter_by(turno_id=turno_id).delete()

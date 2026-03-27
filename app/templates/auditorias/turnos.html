@@ -24,8 +24,8 @@
     </div>
 </div>
 
-<!-- SEÇÃO: INICIAR NOVO TURNO -->
-{% if current_user.tipo_usuario in ['admin', 'funcionario'] %}
+<!-- SEÇÃO: INICIAR NOVO TURNO (APENAS FUNCIONÁRIO) -->
+{% if current_user.tipo_usuario == 'funcionario' %}
 <div class="card border-0 shadow-sm rounded-4 mb-4">
     <div class="card-header text-white d-flex justify-content-between align-items-center" style="background:#8E0000;">
         <h6 class="mb-0">Novo Turno de Campo</h6>
@@ -92,6 +92,19 @@
     }
     #lista-turnos .table tbody td { vertical-align: middle; padding: 0.75rem 1rem; }
 
+    /* ── Status badges ── */
+    .status-badge {
+        display: inline-block;
+        padding: 0.35rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    .status-em-andamento { background: #d4edda; color: #155724; }
+    .status-pausado { background: #fff3cd; color: #856404; }
+    .status-finalizado { background: #e2e3e5; color: #383d41; }
+
     /* ── Botões de ação ── */
     .btn-turno {
         display: inline-flex; align-items: center; gap: 0.4rem;
@@ -100,8 +113,9 @@
         transition: all 0.2s; white-space: nowrap; color: #fff !important;
     }
     .btn-turno:hover { opacity: 0.85; transform: translateY(-1px); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    .btn-turno-parar    { background: #dc3545; }
+    .btn-turno-pausar   { background: #ffc107; }
     .btn-turno-retomar  { background: #198754; }
+    .btn-turno-encerrar { background: #dc3545; }
     .btn-turno-editar   { background: #0d6efd; }
     .btn-turno-excluir  { background: #6c757d; }
     
@@ -110,6 +124,7 @@
 
 <script>
     const ACAO_ID = {{ acao.id }};
+    const USER_TYPE = '{{ current_user.tipo_usuario }}';
 
     async function carregarTurnos() {
         try {
@@ -142,9 +157,17 @@
                         <tbody>`;
 
             data.turnos.forEach(t => {
-                const statusBadge = t.status === 'ativo'
-                    ? '<span class="badge rounded-pill bg-success bg-opacity-10 text-success px-3">Ativo</span>'
-                    : '<span class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary px-3">Encerrado</span>';
+                // Status badge com cores consistentes
+                let statusBadge = '';
+                if (t.status === 'em andamento') {
+                    statusBadge = '<span class="status-badge status-em-andamento">Em Andamento</span>';
+                } else if (t.status === 'pausado') {
+                    statusBadge = '<span class="status-badge status-pausado">Pausado</span>';
+                } else if (t.status === 'finalizado') {
+                    statusBadge = '<span class="status-badge status-finalizado">Finalizado</span>';
+                } else {
+                    statusBadge = '<span class="status-badge">' + t.status + '</span>';
+                }
 
                 const veiculo = t.veiculo_placa
                     ? `<span class="badge bg-light text-dark border fw-normal"><i class="fas fa-car me-1"></i>${t.veiculo_placa}</span>`
@@ -154,17 +177,27 @@
                 const fotos = `<span class="badge bg-light text-dark border fw-normal"><i class="fas fa-camera me-1"></i>${t.total_fotos || 0}</span>`;
 
                 let acoes = '<div class="acoes-turno">';
-                {% if current_user.tipo_usuario in ['admin', 'funcionario'] %}
-                if (t.status === 'ativo') {
-                    // Turno ativo: mostrar Parar, Editar, Excluir
-                    acoes += `<button onclick="encerrar(${t.id})" class="btn-turno btn-turno-parar"><i class="fas fa-stop-circle"></i> Parar</button>`;
-                } else {
-                    // Turno encerrado: mostrar Retomar
-                    acoes += `<button onclick="retomar(${t.id})" class="btn-turno btn-turno-retomar"><i class="fas fa-play-circle"></i> Retomar</button>`;
+                
+                // Mostrar botões apenas para funcionários
+                if (USER_TYPE === 'funcionario') {
+                    if (t.status === 'em andamento') {
+                        // Turno em andamento: Pausar, Encerrar
+                        acoes += `<button onclick="pausar(${t.id})" class="btn-turno btn-turno-pausar"><i class="fas fa-pause-circle"></i> Pausar</button>`;
+                        acoes += `<button onclick="encerrar(${t.id})" class="btn-turno btn-turno-encerrar"><i class="fas fa-stop-circle"></i> Encerrar</button>`;
+                    } else if (t.status === 'pausado') {
+                        // Turno pausado: Retomar, Encerrar
+                        acoes += `<button onclick="retomar(${t.id})" class="btn-turno btn-turno-retomar"><i class="fas fa-play-circle"></i> Retomar</button>`;
+                        acoes += `<button onclick="encerrar(${t.id})" class="btn-turno btn-turno-encerrar"><i class="fas fa-stop-circle"></i> Encerrar</button>`;
+                    }
+                    // Turno finalizado: sem ações
                 }
-                acoes += `<button onclick="editar(${t.id})" class="btn-turno btn-turno-editar"><i class="fas fa-pen"></i> Editar</button>`;
-                acoes += `<button onclick="excluir(${t.id})" class="btn-turno btn-turno-excluir"><i class="fas fa-trash-alt"></i> Excluir</button>`;
-                {% endif %}
+                
+                // Admin pode editar e excluir
+                if (USER_TYPE === 'admin') {
+                    acoes += `<button onclick="editar(${t.id})" class="btn-turno btn-turno-editar"><i class="fas fa-pen"></i> Editar</button>`;
+                    acoes += `<button onclick="excluir(${t.id})" class="btn-turno btn-turno-excluir"><i class="fas fa-trash-alt"></i> Excluir</button>`;
+                }
+                
                 acoes += '</div>';
 
                 html += `
@@ -185,37 +218,62 @@
         }
     }
 
-    async function encerrar(id) {
-        if (confirm('Deseja encerrar este turno?')) {
+    async function pausar(id) {
+        if (confirm('Deseja pausar este turno?')) {
             try {
-                const resp = await fetch('/auditorias/turno/encerrar/' + id);
+                const resp = await fetch('/auditorias/turno/pausar/' + id, { method: 'POST' });
                 const data = await resp.json();
                 if (data.status === 'sucesso') {
                     carregarTurnos();
+                    alert('Turno pausado com sucesso!');
                 } else {
-                    alert('Erro ao encerrar turno: ' + (data.mensagem || 'Tente novamente.'));
+                    alert('Erro: ' + (data.mensagem || data.erro || 'Tente novamente.'));
                 }
             } catch (err) {
-                console.error('Erro ao encerrar turno:', err);
+                console.error('Erro ao pausar turno:', err);
                 alert('Erro de comunicação. Tente novamente.');
             }
         }
     }
 
     async function retomar(id) {
-        if (confirm('Deseja retomar este turno? O turno ativo atual (se houver) será encerrado.')) {
+        if (confirm('Deseja retomar este turno?')) {
             try {
-                const resp = await fetch('/auditorias/turno/retomar/' + id);
+                const resp = await fetch('/auditorias/turno/retomar/' + id, { method: 'POST' });
                 const data = await resp.json();
                 if (data.status === 'sucesso') {
                     carregarTurnos();
+                    alert('Turno retomado com sucesso!');
                 } else {
-                    alert('Erro ao retomar turno: ' + (data.mensagem || 'Tente novamente.'));
+                    alert('Erro: ' + (data.mensagem || data.erro || 'Tente novamente.'));
                 }
             } catch (err) {
                 console.error('Erro ao retomar turno:', err);
                 alert('Erro de comunicação. Tente novamente.');
             }
+        }
+    }
+
+    async function encerrar(id) {
+        const obs = prompt('Deseja adicionar uma observação ao encerrar?');
+        if (obs === null) return; // Cancelado
+        
+        try {
+            const resp = await fetch('/auditorias/turno/encerrar/' + id, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'observacoes=' + encodeURIComponent(obs)
+            });
+            const data = await resp.json();
+            if (data.status === 'sucesso') {
+                carregarTurnos();
+                alert('Turno encerrado com sucesso!');
+            } else {
+                alert('Erro: ' + (data.mensagem || data.erro || 'Tente novamente.'));
+            }
+        } catch (err) {
+            console.error('Erro ao encerrar turno:', err);
+            alert('Erro de comunicação. Tente novamente.');
         }
     }
 
@@ -226,6 +284,7 @@
                 const data = await resp.json();
                 if (data.status === 'sucesso') {
                     carregarTurnos();
+                    alert('Turno excluído com sucesso!');
                 } else {
                     alert('Erro ao excluir turno: ' + (data.mensagem || 'Tente novamente.'));
                 }

@@ -138,88 +138,75 @@ def historico_gps(device_id):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @api_bp.route('/turnos/iniciar', methods=['POST'])
-@perfil_required("admin", "funcionario")
+@perfil_required("funcionario")
 def iniciar_turno():
     """
     Inicia um novo turno de campo para uma ação promocional.
-    Corpo JSON: { acao_id, equipe_id, veiculo_id (opcional), observacoes (opcional) }
+    Corpo JSON: { acao_id }
     """
     data = request.get_json() or {}
     acao_id = data.get('acao_id')
-    equipe_id = data.get('equipe_id')
-    veiculo_id = data.get('veiculo_id')
-    observacoes = data.get('observacoes')
 
-    if not acao_id or not equipe_id:
-        return jsonify({"erro": "acao_id e equipe_id são obrigatórios"}), 400
-
-    acao = AcaoPromocional.query.get(acao_id)
-    if not acao:
-        return jsonify({"erro": "Ação não encontrada"}), 404
-
-    # Encerrar turnos anteriores antes de iniciar um novo
-    Turno.query.filter_by(acao_id=acao_id, status='ativo').update({'status': 'encerrado', 'fim': datetime.utcnow()})
-
-    # Se veiculo_id não foi passado, buscar o veículo vinculado à equipe
-    if not veiculo_id and equipe_id:
-        veiculo_vinculado = Veiculo.query.filter_by(
-            motorista_id=equipe_id,
-            status=True
-        ).first()
-        veiculo_id = veiculo_vinculado.id if veiculo_vinculado else None
+    if not acao_id:
+        return jsonify({"erro": "acao_id é obrigatório"}), 400
 
     try:
-        novo_turno = Turno(
-            acao_id=acao_id,
-            equipe_id=equipe_id,
-            veiculo_id=veiculo_id,
-            inicio=datetime.utcnow(),
-            status='ativo',
-            observacoes=observacoes
-        )
-        db.session.add(novo_turno)
-        db.session.commit()
-
+        from app.services.turno_service import TurnoService
+        novo_turno = TurnoService.iniciar_turno(acao_id, current_user)
         return jsonify({
             "status": "sucesso",
             "turno_id": novo_turno.id,
             "inicio": novo_turno.inicio.isoformat(),
             "mensagem": "Turno iniciado com sucesso"
         }), 201
+    except ValueError as e:
+        return jsonify({"erro": str(e)}), 400
     except Exception as e:
-        db.session.rollback()
         return jsonify({"erro": f"Erro ao iniciar turno: {str(e)}"}), 500
 
 
-@api_bp.route('/turnos/<int:turno_id>/encerrar', methods=['POST'])
-@perfil_required("admin", "funcionario")
-def encerrar_turno(turno_id):
-    """Encerra um turno ativo, registrando o horário de fim."""
-    turno = Turno.query.get_or_404(turno_id)
-
-    if turno.status == 'encerrado':
-        return jsonify({"erro": "Turno já foi encerrado"}), 400
-
-    data = request.get_json() or {}
-
+@api_bp.route('/turnos/<int:turno_id>/pausar', methods=['POST'])
+@perfil_required("funcionario")
+def pausar_turno(turno_id):
+    """Pausa um turno em andamento."""
     try:
-        turno.fim = datetime.utcnow()
-        turno.status = 'encerrado'
-        if data.get('observacoes'):
-            turno.observacoes = data.get('observacoes')
-        db.session.commit()
-
-        return jsonify({
-            "status": "sucesso",
-            "turno_id": turno.id,
-            "inicio": turno.inicio.isoformat(),
-            "fim": turno.fim.isoformat(),
-            "duracao_minutos": turno.duracao_minutos,
-            "mensagem": "Turno encerrado com sucesso"
-        })
+        from app.services.turno_service import TurnoService
+        TurnoService.pausar_turno(turno_id, current_user)
+        return jsonify({"status": "sucesso", "mensagem": "Turno pausado com sucesso"})
+    except ValueError as e:
+        return jsonify({"erro": str(e)}), 400
     except Exception as e:
-        db.session.rollback()
-        return jsonify({"erro": f"Erro ao encerrar turno: {str(e)}"}), 500
+        return jsonify({"erro": str(e)}), 500
+
+
+@api_bp.route('/turnos/<int:turno_id>/retomar', methods=['POST'])
+@perfil_required("funcionario")
+def retomar_turno(turno_id):
+    """Retoma um turno pausado."""
+    try:
+        from app.services.turno_service import TurnoService
+        TurnoService.retomar_turno(turno_id, current_user)
+        return jsonify({"status": "sucesso", "mensagem": "Turno retomado com sucesso"})
+    except ValueError as e:
+        return jsonify({"erro": str(e)}), 400
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+
+@api_bp.route('/turnos/<int:turno_id>/encerrar', methods=['POST'])
+@perfil_required("funcionario")
+def encerrar_turno(turno_id):
+    """Encerra um turno ativo ou pausado."""
+    data = request.get_json() or {}
+    obs = data.get('observacoes')
+    try:
+        from app.services.turno_service import TurnoService
+        TurnoService.encerrar_turno(turno_id, current_user, obs)
+        return jsonify({"status": "sucesso", "mensagem": "Turno encerrado com sucesso"})
+    except ValueError as e:
+        return jsonify({"erro": str(e)}), 400
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
 
 
 

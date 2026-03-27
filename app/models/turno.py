@@ -1,10 +1,10 @@
 """
 Model Turno: representa um período de trabalho de campo vinculado a uma ação
-promocional, equipe e veículo. Registra início, fim e status do turno.
+promocional, equipe e veículo. Registra início, fim, pausas e status do turno.
 """
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from app.extensions import db
-
+import json
 
 class Turno(db.Model):
     __tablename__ = 'turnos'
@@ -29,11 +29,17 @@ class Turno(db.Model):
     )
     inicio = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     fim = db.Column(db.DateTime, nullable=True)
+    
+    # Status: 'não iniciado', 'em andamento', 'pausado', 'finalizado'
     status = db.Column(
         db.String(20),
         nullable=False,
-        default='ativo'
+        default='em andamento'
     )
+    
+    # Armazena pausas como JSON: [{"inicio": "...", "fim": "..."}]
+    pausas_json = db.Column(db.Text, nullable=True, default='[]')
+    
     observacoes = db.Column(db.Text, nullable=True)
     data_criacao = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -44,12 +50,39 @@ class Turno(db.Model):
     fotos = db.relationship('FotoAuditoria', backref='turno', lazy=True, cascade='all, delete-orphan')
 
     @property
+    def pausas(self):
+        try:
+            return json.loads(self.pausas_json or '[]')
+        except:
+            return []
+
+    @pausas.setter
+    def pausas(self, value):
+        self.pausas_json = json.dumps(value)
+
+    @property
+    def duracao_total_segundos(self):
+        """Calcula a duração líquida do turno (excluindo pausas) em segundos."""
+        if not self.inicio:
+            return 0
+        
+        fim_referencia = self.fim if self.fim else datetime.utcnow()
+        total_bruto = (fim_referencia - self.inicio).total_seconds()
+        
+        total_pausas = 0
+        pausas = self.pausas
+        for p in pausas:
+            p_inicio = datetime.fromisoformat(p['inicio'])
+            p_fim = datetime.fromisoformat(p['fim']) if p.get('fim') else fim_referencia
+            total_pausas += (p_fim - p_inicio).total_seconds()
+            
+        duracao = total_bruto - total_pausas
+        return max(0, int(duracao))
+
+    @property
     def duracao_minutos(self):
-        """Calcula a duração do turno em minutos."""
-        if self.inicio and self.fim:
-            delta = self.fim - self.inicio
-            return int(delta.total_seconds() / 60)
-        return None
+        """Retorna a duração líquida em minutos."""
+        return int(self.duracao_total_segundos / 60)
 
     def __repr__(self):
         return f'<Turno {self.id} - Acao {self.acao_id} - {self.status}>'

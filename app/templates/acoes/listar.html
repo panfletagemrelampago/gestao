@@ -62,7 +62,7 @@
                         <td data-label="Ações">
                             <div class="d-flex justify-content-end justify-content-md-center gap-2">
                                 <a href="{{ url_for('mapa.index') }}" class="btn btn-sm btn-outline-primary btn-action-square" title="Ver no Mapa"><i class="fas fa-map-marker-alt"></i></a>
-                                <a href="{{ url_for('auditorias.turnos', acao_id=acao.id) }}" class="btn btn-sm btn-outline-success btn-action-square" title="Turnos de Campo"><i class="fas fa-clock"></i></a>
+                                <a href="{{ url_for('auditorias.turnos', acao_id=acao.id) }}" class="btn btn-sm btn-action-square" style="background:white;color:#28a745;border:2px solid #28a745;" title="Turnos de Campo"><i class="fas fa-clock"></i></a>
                                 <a href="{{ url_for('auditorias.relatorio', acao_id=acao.id) }}" class="btn btn-sm btn-action-square" style="background:#8E0000;color:white;border:none;" title="Relatório"><i class="fas fa-file-alt"></i></a>
 
                                 {% if current_user.tipo_usuario == 'admin' %}

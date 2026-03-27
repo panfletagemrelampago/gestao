@@ -33,25 +33,28 @@ def dashboard():
         acoes_dia = AcaoPromocional.query.filter_by(
             lider_equipe_id=current_user.id
         ).filter(
-            AcaoPromocional.status.in_(["Planejada", "Em Andamento"])
+            AcaoPromocional.status.in_(["Planejada", "Em Andamento", "Pausada"])
         ).order_by(AcaoPromocional.data.desc()).all()
         
-        # Buscar turno ativo do funcionário (em qualquer ação)
-        turno_ativo = Turno.query.filter(
-            Turno.equipe_id == current_user.id,
-            Turno.status.in_(['em andamento', 'pausado'])
-        ).first()
+        # Para cada ação, buscar se existe um turno ativo vinculado a ela
+        # Isso permite controle individual por ação no dashboard
+        for acao in acoes_dia:
+            acao.turno_ativo = Turno.query.filter(
+                Turno.acao_id == acao.id,
+                Turno.status.in_(['em andamento', 'pausado'])
+            ).first()
+            
     else:
         # Admin vê todas as ações ativas
         acoes_dia = AcaoPromocional.query.filter(
-            AcaoPromocional.status.in_(["Planejada", "Em Andamento"])
+            AcaoPromocional.status.in_(["Planejada", "Em Andamento", "Pausada"])
         ).order_by(AcaoPromocional.data.desc()).all()
-        turno_ativo = None
+        for acao in acoes_dia:
+            acao.turno_ativo = None
 
     return render_template(
         "funcionario/dashboard.html",
         acoes_dia=acoes_dia,
-        turno_ativo=turno_ativo,
         hoje=hoje
     )
 

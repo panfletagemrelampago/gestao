@@ -1,52 +1,59 @@
+"""
+Blueprint api_mapa: endpoints de mapa para fotos e áreas.
+
+REFATORAÇÃO (Passo 1 + Passo 2):
+- fotos_mapa() migrado de Auditoria (legado) para FotoAuditoria (fonte única).
+- Resposta serializada via FotoAuditoriaMapaSchema (Marshmallow).
+- Removido import de Auditoria.
+"""
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from flask import Blueprint, jsonify, request
 from flask_login import current_user
-from app.models.auditoria import Auditoria
+from app.models.foto_auditoria import FotoAuditoria
 from app.models.mapa_area import MapaArea
 from app.extensions import db
 from app.decorators.auth_decorators import perfil_required
 from app.utils.security_helpers import get_cliente_id_do_usuario
+from app.schemas import fotos_mapa_schema
 
 bp = Blueprint('api_mapa', __name__)
+
+
+def _utcnow():
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 @bp.route('/api/mapa/fotos')
 @perfil_required("admin", "funcionario", "cliente")
 def fotos_mapa():
     """
-    Retorna fotos (Auditoria legada) para o mapa.
-    Controlo de acesso por perfil:
+    Retorna fotos de campo (FotoAuditoria) para o mapa Leaflet.
+    Controle de acesso por perfil:
     - admin: todas as fotos
-    - funcionario: apenas as suas próprias (user_id == current_user.id)
+    - funcionario: apenas as suas próprias (usuario_id == current_user.id)
     - cliente: apenas fotos das ações vinculadas ao seu cliente_id
+    Resposta serializada via Marshmallow (FotoAuditoriaMapaSchema).
     """
     from app.models.acao_promocional import AcaoPromocional
 
-    query = Auditoria.query.order_by(Auditoria.data_hora.desc())
+    query = FotoAuditoria.query.order_by(FotoAuditoria.data_hora.desc())
 
     if current_user.tipo_usuario == 'funcionario':
-        query = query.filter(Auditoria.user_id == current_user.id)
+        query = query.filter(FotoAuditoria.usuario_id == current_user.id)
     elif current_user.tipo_usuario == 'cliente':
         cliente_id = get_cliente_id_do_usuario(current_user)
         if not cliente_id:
             return jsonify([])
-        acoes_ids = [a.id for a in AcaoPromocional.query.filter_by(cliente_id=cliente_id).all()]
-        query = query.filter(Auditoria.acao_id.in_(acoes_ids))
+        query = query.filter(FotoAuditoria.cliente_id == cliente_id)
     # admin: sem filtro adicional
 
-    auditorias = query.all()
-    resultado = []
-    for a in auditorias:
-        if not a.latitude or not a.longitude:
-            continue
-        periodo_turno = a.acao.turno if a.acao else "N/A"
-        resultado.append({
-            "lat": a.latitude, "lng": a.longitude, "img": a.foto_url,
-            "descricao": a.descricao, "data": a.data_hora.isoformat(),
-            "id": a.id, "turno_id": periodo_turno
-        })
-    return jsonify(resultado)
+    fotos = query.filter(
+        FotoAuditoria.latitude.isnot(None),
+        FotoAuditoria.longitude.isnot(None)
+    ).all()
+
+    return jsonify(fotos_mapa_schema.dump(fotos))
 
 
 @bp.route('/api/mapa/areas', methods=['GET'])
@@ -66,10 +73,10 @@ def areas_mapa():
         geojson = area.get_geojson()
         if geojson:
             resultado.append({
-                "id": area.id, 
-                "nome": area.nome, 
+                "id": area.id,
+                "nome": area.nome,
                 "descricao": area.descricao,
-                "geojson": geojson, 
+                "geojson": geojson,
                 "cor": area.cor or "#0d6efd"
             })
     return jsonify(resultado)
@@ -85,7 +92,7 @@ def criar_area_mapa():
 
     try:
         nova_area = MapaArea(
-            nome=data.get('nome', f"Área de {datetime.utcnow().strftime('%Y-%m-%d %H:%M')}"),
+            nome=data.get('nome', f"Área de {_utcnow().strftime('%Y-%m-%d %H:%M')}"),
             descricao=data.get('descricao', ''),
             geojson=json.dumps(data['geojson']),
             cor=data.get('cor', '#0d6efd')
@@ -104,7 +111,7 @@ def atualizar_area_mapa(area_id):
     """Atualiza uma área existente no mapa."""
     area = MapaArea.query.get_or_404(area_id)
     data = request.get_json()
-    
+
     if not data:
         return jsonify({"status": "erro", "erro": "Nenhum dado fornecido"}), 400
 
@@ -117,7 +124,7 @@ def atualizar_area_mapa(area_id):
             area.geojson = json.dumps(data['geojson'])
         if 'cor' in data:
             area.cor = data['cor']
-        
+
         db.session.commit()
         return jsonify({"status": "sucesso"}), 200
     except Exception as e:

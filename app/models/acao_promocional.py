@@ -1,9 +1,10 @@
 from datetime import datetime
 from app.extensions import db
 
+
 class AcaoPromocional(db.Model):
     __tablename__ = 'acoes_promocionais'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     cliente_id = db.Column(db.Integer, db.ForeignKey('clientes.id'), nullable=False)
     nome_campanha = db.Column(db.String(200), nullable=True)
@@ -19,7 +20,7 @@ class AcaoPromocional(db.Model):
 
     # Relacionamentos
     lider = db.relationship('Equipe', backref='acoes', lazy=True)
-    auditorias = db.relationship('Auditoria', backref='acao', lazy=True)
+    # Relação com FotoAuditoria via acao_id (declarada no modelo FotoAuditoria como backref='fotos')
 
     @property
     def nome_exibicao(self):

@@ -1,13 +1,20 @@
 """
 Blueprint da API REST do sistema de gestão promocional.
-Fornece endpoints para receber dados do GPS (Browser Geolocation), gerenciar turnos,
-áreas de atuação, fotos geolocalizadas e dados do mapa Leaflet.
+
+REFATORAÇÃO (Passo 2):
+- receber_gps() agora delega integralmente ao GpsService (filtro de ruído +
+  validação de deslocamento improvável). Sem lógica de coordenadas na rota.
+- Respostas de GPS, fotos e turnos usam Schemas Marshmallow (app/schemas.py)
+  no lugar de dicionários montados manualmente.
+- Removido import e uso do modelo legado Auditoria; mapa_dados() retorna
+  apenas FotoAuditoria (campo 'auditorias_legadas' removido).
+- Índices compostos gerados via migration (ver migrations/versions/).
 """
 import json
+from datetime import datetime, timedelta, timezone
 from flask import Blueprint, jsonify, request, current_app
 from flask_login import login_required, current_user
 from app.models.posicao_gps import PosicaoGps
-from app.models.auditoria import Auditoria
 from app.models.veiculo import Veiculo
 from app.models.acao_promocional import AcaoPromocional
 from app.models.turno import Turno
@@ -20,9 +27,19 @@ from app.extensions import db
 from app.models.mapa_area import MapaArea
 from app.decorators.auth_decorators import perfil_required
 from app.utils.security_helpers import get_cliente_id_do_usuario
-from datetime import datetime, timedelta
+from app.schemas import (
+    posicoes_gps_resumo_schema,
+    fotos_auditoria_schema,
+    fotos_mapa_schema,
+    turnos_schema,
+    turno_schema,
+)
 
 api_bp = Blueprint('api', __name__)
+
+
+def _utcnow():
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -35,6 +52,8 @@ def receber_gps():
     """
     Endpoint para receber dados GPS do navegador via Geolocation API.
     Recebe JSON: { latitude, longitude, accuracy }
+
+    Delega ao GpsService toda a lógica de filtragem (drift + impossible jump).
     """
     data = request.get_json()
     if not data:
@@ -47,17 +66,25 @@ def receber_gps():
     if lat is None or lon is None:
         return jsonify({"erro": "Latitude e longitude são obrigatórios"}), 400
 
-    # CORREÇÃO: Usar device_id (string) e data_hora conforme modelo PosicaoGps
-    # O device_id é o ID do usuário convertido para string, ou pode ser um identificador único do dispositivo
-    nova_posicao = PosicaoGps(
-        device_id=str(current_user.id),
-        latitude=float(lat),
-        longitude=float(lon),
-        accuracy=float(acc) if acc is not None else None,
-        data_hora=datetime.utcnow()
+    try:
+        lat = float(lat)
+        lon = float(lon)
+    except (ValueError, TypeError):
+        return jsonify({"erro": "Latitude e longitude devem ser números válidos"}), 400
+
+    # Delegar ao GpsService (filtro de ruído + validação de deslocamento improvável)
+    nova_posicao = GpsService.process_and_save_position(
+        device_id=current_user.id,
+        latitude=lat,
+        longitude=lon,
+        speed_knots=0.0,          # Browser Geolocation API não reporta velocidade
+        battery=None,
+        fix_time=_utcnow(),
     )
-    db.session.add(nova_posicao)
-    db.session.commit()
+
+    if nova_posicao is None:
+        # Ponto descartado por filtro (ruído ou salto impossível)
+        return jsonify({"status": "descartado", "mensagem": "Ponto filtrado (ruído ou salto impossível)"}), 200
 
     return jsonify({"status": "sucesso", "id": nova_posicao.id}), 201
 
@@ -67,11 +94,10 @@ def receber_gps():
 def gps_latest():
     """
     Retorna as últimas posições de todos os dispositivos ativos nas últimas 24 horas.
+    Resposta serializada via Marshmallow (PosicaoGpsResumoSchema).
     """
-    tempo_limite = datetime.utcnow() - timedelta(hours=24)
+    tempo_limite = _utcnow() - timedelta(hours=24)
 
-    # CORREÇÃO: Usar device_id e data_hora conforme modelo PosicaoGps
-    # Subquery para pegar a última posição de cada device
     subquery = db.session.query(
         PosicaoGps.device_id,
         db.func.max(PosicaoGps.data_hora).label('max_data_hora')
@@ -85,18 +111,7 @@ def gps_latest():
         )
     ).all()
 
-    # CORREÇÃO: Removido p.user.nome_exibicao pois PosicaoGps não tem relação com User
-    # Retornando apenas os dados disponíveis no modelo
-    return jsonify([
-        {
-            "device_id": p.device_id,
-            "latitude": p.latitude,
-            "longitude": p.longitude,
-            "accuracy": p.accuracy,
-            "data_hora": p.data_hora.isoformat() if p.data_hora else None
-        }
-        for p in ultimas_posicoes
-    ])
+    return jsonify(posicoes_gps_resumo_schema.dump(ultimas_posicoes))
 
 
 @api_bp.route('/gps/historico/<string:device_id>', methods=['GET'])
@@ -107,29 +122,21 @@ def historico_gps(device_id):
     Parâmetros: horas (padrão 24).
     """
     horas = request.args.get('horas', 24, type=int)
-    if horas <= 0 or horas > 168:  # Máximo 7 dias
+    if horas <= 0 or horas > 168:
         return jsonify({"erro": "Parâmetro 'horas' deve estar entre 1 e 168"}), 400
 
-    tempo_limite = datetime.utcnow() - timedelta(hours=horas)
+    tempo_limite = _utcnow() - timedelta(hours=horas)
 
-    # CORREÇÃO: Usar device_id (string) e data_hora conforme modelo PosicaoGps
     posicoes = PosicaoGps.query.filter(
         PosicaoGps.device_id == device_id,
         PosicaoGps.data_hora >= tempo_limite
     ).order_by(PosicaoGps.data_hora.asc()).all()
 
+    from app.schemas import posicoes_gps_schema
     return jsonify({
         "device_id": device_id,
         "total_pontos": len(posicoes),
-        "pontos": [
-            {
-                "latitude": p.latitude,
-                "longitude": p.longitude,
-                "accuracy": p.accuracy,
-                "data_hora": p.data_hora.isoformat() if p.data_hora else None
-            }
-            for p in posicoes
-        ]
+        "pontos": posicoes_gps_schema.dump(posicoes)
     })
 
 
@@ -140,10 +147,6 @@ def historico_gps(device_id):
 @api_bp.route('/turnos/iniciar', methods=['POST'])
 @perfil_required("funcionario")
 def iniciar_turno():
-    """
-    Inicia um novo turno de campo para uma ação promocional.
-    Corpo JSON: { acao_id }
-    """
     data = request.get_json() or {}
     acao_id = data.get('acao_id')
 
@@ -168,7 +171,6 @@ def iniciar_turno():
 @api_bp.route('/turnos/<int:turno_id>/pausar', methods=['POST'])
 @perfil_required("funcionario")
 def pausar_turno(turno_id):
-    """Pausa um turno em andamento."""
     try:
         from app.services.turno_service import TurnoService
         TurnoService.pausar_turno(turno_id, current_user)
@@ -182,7 +184,6 @@ def pausar_turno(turno_id):
 @api_bp.route('/turnos/<int:turno_id>/retomar', methods=['POST'])
 @perfil_required("funcionario")
 def retomar_turno(turno_id):
-    """Retoma um turno pausado."""
     try:
         from app.services.turno_service import TurnoService
         TurnoService.retomar_turno(turno_id, current_user)
@@ -196,7 +197,6 @@ def retomar_turno(turno_id):
 @api_bp.route('/turnos/<int:turno_id>/encerrar', methods=['POST'])
 @perfil_required("funcionario")
 def encerrar_turno(turno_id):
-    """Encerra um turno ativo ou pausado."""
     data = request.get_json() or {}
     obs = data.get('observacoes')
     try:
@@ -209,14 +209,10 @@ def encerrar_turno(turno_id):
         return jsonify({"erro": str(e)}), 500
 
 
-
-
-
 @api_bp.route('/turnos/acao/<int:acao_id>', methods=['GET'])
 @perfil_required("admin", "funcionario", "cliente")
 def listar_turnos_acao(acao_id):
-    """Lista todos os turnos de uma ação específica."""
-    # Verificar acesso para clientes usando cliente_id (ownership)
+    """Lista todos os turnos de uma ação específica (Marshmallow)."""
     if current_user.tipo_usuario == 'cliente':
         acao = AcaoPromocional.query.get_or_404(acao_id)
         cliente_id = get_cliente_id_do_usuario(current_user)
@@ -227,19 +223,7 @@ def listar_turnos_acao(acao_id):
     return jsonify({
         "acao_id": acao_id,
         "total": len(turnos),
-        "turnos": [
-            {
-                "id": t.id,
-                "equipe_nome": t.equipe.nome if t.equipe else None,
-                "veiculo_placa": t.veiculo.placa if t.veiculo else None,
-                "inicio": t.inicio.isoformat() if t.inicio else None,
-                "fim": t.fim.isoformat() if t.fim else None,
-                "status": t.status,
-                "duracao_minutos": t.duracao_minutos,
-                "total_fotos": len(t.fotos) if hasattr(t, 'fotos') else 0
-            }
-            for t in turnos
-        ]
+        "turnos": turnos_schema.dump(turnos)
     })
 
 
@@ -250,10 +234,8 @@ def listar_turnos_acao(acao_id):
 @api_bp.route('/areas/<int:acao_id>', methods=['GET'])
 @perfil_required("admin", "funcionario", "cliente")
 def listar_areas(acao_id):
-    """Retorna todas as áreas de atuação de uma ação."""
     acao = AcaoPromocional.query.get_or_404(acao_id)
 
-    # Verificar acesso para clientes usando cliente_id (ownership)
     if current_user.tipo_usuario == 'cliente':
         cliente_id = get_cliente_id_do_usuario(current_user)
         if not cliente_id or acao.cliente_id != cliente_id:
@@ -279,13 +261,7 @@ def listar_areas(acao_id):
 @api_bp.route('/areas/<int:acao_id>', methods=['POST'])
 @perfil_required("admin", "funcionario")
 def salvar_area(acao_id):
-    """
-    Salva uma nova área de atuação para uma ação.
-    Corpo JSON: { nome, geojson, descricao (opcional), cor (opcional) }
-    """
-
     acao = AcaoPromocional.query.get_or_404(acao_id)
-
     data = request.get_json() or {}
     nome = data.get('nome', 'Área Principal')
     geojson = data.get('geojson')
@@ -295,12 +271,10 @@ def salvar_area(acao_id):
     if not geojson:
         return jsonify({"erro": "GeoJSON é obrigatório"}), 400
 
-    # Validar e normalizar GeoJSON
     if isinstance(geojson, dict):
         geojson_str = json.dumps(geojson)
     else:
         try:
-            # Validar se é um JSON válido
             json.loads(geojson)
             geojson_str = geojson
         except (json.JSONDecodeError, TypeError):
@@ -308,20 +282,13 @@ def salvar_area(acao_id):
 
     try:
         nova_area = AreaAtuacao(
-            acao_id=acao_id,
-            nome=nome,
-            descricao=descricao,
-            geojson=geojson_str,
-            cor=cor
+            acao_id=acao_id, nome=nome, descricao=descricao,
+            geojson=geojson_str, cor=cor
         )
         db.session.add(nova_area)
         db.session.commit()
-
-        return jsonify({
-            "status": "sucesso",
-            "area_id": nova_area.id,
-            "mensagem": f"Área '{nome}' salva com sucesso"
-        }), 201
+        return jsonify({"status": "sucesso", "area_id": nova_area.id,
+                        "mensagem": f"Área '{nome}' salva com sucesso"}), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({"erro": f"Erro ao salvar área: {str(e)}"}), 500
@@ -330,10 +297,7 @@ def salvar_area(acao_id):
 @api_bp.route('/areas/item/<int:area_id>', methods=['DELETE'])
 @perfil_required("admin")
 def deletar_area(area_id):
-    """Remove uma área de atuação."""
-
     area = AreaAtuacao.query.get_or_404(area_id)
-
     try:
         db.session.delete(area)
         db.session.commit()
@@ -346,16 +310,12 @@ def deletar_area(area_id):
 @api_bp.route("/areas/item/<int:area_id>", methods=["PUT"])
 @perfil_required("admin", "funcionario")
 def atualizar_area_atuacao(area_id):
-    """Atualiza os dados de uma área de atuação existente."""
-
     area = AreaAtuacao.query.get_or_404(area_id)
     data = request.get_json() or {}
-
     try:
         area.nome = data.get("nome", area.nome)
         area.descricao = data.get("descricao", area.descricao)
         area.cor = data.get("cor", area.cor)
-
         if "geojson" in data:
             new_geojson = data.get("geojson")
             if isinstance(new_geojson, dict):
@@ -366,7 +326,6 @@ def atualizar_area_atuacao(area_id):
                     area.geojson = new_geojson
                 except (json.JSONDecodeError, TypeError):
                     return jsonify({"erro": "GeoJSON inválido"}), 400
-
         db.session.commit()
         return jsonify({"status": "sucesso", "mensagem": "Área de atuação atualizada"}), 200
     except Exception as e:
@@ -381,7 +340,6 @@ def atualizar_area_atuacao(area_id):
 @api_bp.route("/mapa/areas", methods=["GET"])
 @perfil_required("admin", "funcionario", "cliente")
 def get_mapa_areas():
-    """Retorna todas as áreas de mapa salvas com todos os campos."""
     areas = MapaArea.query.all()
     return jsonify([
         {
@@ -400,8 +358,6 @@ def get_mapa_areas():
 @api_bp.route("/mapa/areas", methods=["POST"])
 @perfil_required("admin", "funcionario")
 def post_mapa_area():
-    """Recebe GeoJSON e salva uma nova área de mapa com descricao e cor."""
-
     data = request.get_json()
     if not data:
         return jsonify({"erro": "Nenhum dado recebido"}), 400
@@ -415,12 +371,8 @@ def post_mapa_area():
         return jsonify({"erro": "GeoJSON é obrigatório"}), 400
 
     try:
-        # Valida se o geojson_data é um JSON válido
-        if isinstance(geojson_data, dict):
-            geojson_str = json.dumps(geojson_data)
-        else:
-            json.loads(geojson_data)  # Tenta carregar para validar
-            geojson_str = geojson_data
+        geojson_str = json.dumps(geojson_data) if isinstance(geojson_data, dict) else geojson_data
+        json.loads(geojson_str)
     except (json.JSONDecodeError, TypeError):
         return jsonify({"erro": "GeoJSON inválido"}), 400
 
@@ -428,8 +380,8 @@ def post_mapa_area():
         nova_area = MapaArea(nome=nome, descricao=descricao, geojson=geojson_str, cor=cor)
         db.session.add(nova_area)
         db.session.commit()
-
-        return jsonify({"status": "sucesso", "id": nova_area.id, "mensagem": "Área salva com sucesso"}), 201
+        return jsonify({"status": "sucesso", "id": nova_area.id,
+                        "mensagem": "Área salva com sucesso"}), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({"erro": f"Erro ao salvar área: {str(e)}"}), 500
@@ -438,10 +390,7 @@ def post_mapa_area():
 @api_bp.route("/mapa/areas/<int:area_id>", methods=["DELETE"])
 @perfil_required("admin", "funcionario")
 def delete_mapa_area(area_id):
-    """Remove uma área de mapa pelo ID."""
-
     area = MapaArea.query.get_or_404(area_id)
-
     try:
         db.session.delete(area)
         db.session.commit()
@@ -454,8 +403,6 @@ def delete_mapa_area(area_id):
 @api_bp.route("/mapa/areas/<int:area_id>", methods=["PUT"])
 @perfil_required("admin", "funcionario")
 def update_mapa_area(area_id):
-    """Atualiza uma área de mapa existente com todos os campos."""
-
     area = MapaArea.query.get_or_404(area_id)
     data = request.get_json()
     if not data:
@@ -471,16 +418,13 @@ def update_mapa_area(area_id):
         if "geojson" in data:
             geojson_data = data["geojson"]
             try:
-                if isinstance(geojson_data, dict):
-                    area.geojson = json.dumps(geojson_data)
-                else:
-                    json.loads(geojson_data)
-                    area.geojson = geojson_data
+                area.geojson = json.dumps(geojson_data) if isinstance(geojson_data, dict) else geojson_data
+                json.loads(area.geojson)
             except (json.JSONDecodeError, TypeError):
                 return jsonify({"erro": "GeoJSON inválido"}), 400
-
         db.session.commit()
-        return jsonify({"status": "sucesso", "id": area.id, "mensagem": "Área atualizada com sucesso"}), 200
+        return jsonify({"status": "sucesso", "id": area.id,
+                        "mensagem": "Área atualizada com sucesso"}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({"erro": f"Erro ao atualizar área: {str(e)}"}), 500
@@ -489,10 +433,6 @@ def update_mapa_area(area_id):
 @api_bp.route('/areas/verificar', methods=['POST'])
 @perfil_required("admin", "funcionario")
 def verificar_ponto_na_area():
-    """
-    Verifica se um ponto GPS está dentro de alguma área de atuação.
-    Corpo JSON: { acao_id, latitude, longitude }
-    """
     data = request.get_json() or {}
     acao_id = data.get('acao_id')
     lat = data.get('latitude')
@@ -527,7 +467,6 @@ def verificar_ponto_na_area():
 def enviar_foto():
     """
     Recebe uma foto com geolocalização e a associa a um turno.
-    Verifica se a foto está dentro da área de atuação da ação.
     Campos do formulário: turno_id, latitude, longitude, descricao (opcional), foto (arquivo).
     """
     turno_id = request.form.get('turno_id', type=int)
@@ -564,14 +503,15 @@ def enviar_foto():
 
         nova_foto = FotoAuditoria(
             turno_id=turno_id,
+            acao_id=turno.acao_id,
             url=foto_url,
             latitude=lat,
             longitude=lon,
             descricao=descricao,
             dentro_da_area=dentro_da_area,
-            data_hora=datetime.utcnow(),
-            usuario_id=current_user.id,                    # 🔐 OWNERSHIP
-            cliente_id=turno.acao.cliente_id if turno.acao else None  # 🔐 OWNERSHIP
+            data_hora=_utcnow(),
+            usuario_id=current_user.id,
+            cliente_id=turno.acao.cliente_id if turno.acao else None
         )
         db.session.add(nova_foto)
         db.session.commit()
@@ -591,10 +531,9 @@ def enviar_foto():
 @api_bp.route('/fotos/turno/<int:turno_id>', methods=['GET'])
 @perfil_required("admin", "funcionario", "cliente")
 def fotos_do_turno(turno_id):
-    """Retorna todas as fotos de um turno específico."""
+    """Retorna todas as fotos de um turno específico (Marshmallow)."""
     turno = Turno.query.get_or_404(turno_id)
 
-    # Verificar acesso para clientes usando cliente_id (ownership)
     if current_user.tipo_usuario == 'cliente':
         cliente_id = get_cliente_id_do_usuario(current_user)
         if not cliente_id or turno.acao.cliente_id != cliente_id:
@@ -607,18 +546,7 @@ def fotos_do_turno(turno_id):
     return jsonify({
         "turno_id": turno_id,
         "total_fotos": len(fotos),
-        "fotos": [
-            {
-                "id": f.id,
-                "url": f.url,
-                "latitude": f.latitude,
-                "longitude": f.longitude,
-                "descricao": f.descricao,
-                "dentro_da_area": f.dentro_da_area,
-                "data_hora": f.data_hora.isoformat() if f.data_hora else None
-            }
-            for f in fotos
-        ]
+        "fotos": fotos_auditoria_schema.dump(fotos)
     })
 
 
@@ -632,23 +560,13 @@ def mapa_dados():
     """
     Retorna dados JSON consolidados para o mapa Leaflet.
     Inclui rastros GPS, fotos geolocalizadas, áreas de atuação e veículos.
-
-    Parâmetros de query (opcionais):
-      - acao_id: filtrar por ação específica
-      - data_inicio: data no formato YYYY-MM-DD (padrão: hoje)
-      - data_fim: data no formato YYYY-MM-DD (padrão: hoje)
-
-    Controle de acesso por perfil (ownership):
-      - admin: vê todos os dados
-      - funcionario: vê apenas as suas próprias fotos e rastros GPS
-      - cliente: vê apenas dados das ações vinculadas ao seu cliente_id
+    Respostas de fotos e GPS usam Marshmallow.
     """
     acao_id = request.args.get('acao_id', type=int)
     data_inicio_str = request.args.get('data_inicio')
     data_fim_str = request.args.get('data_fim')
 
-    # ─── Filtro de Data: padrão = hoje (00:00 às 23:59:59) ───────────────────
-    hoje = datetime.utcnow().date()
+    hoje = _utcnow().date()
     try:
         if data_inicio_str:
             data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d')
@@ -662,33 +580,29 @@ def mapa_dados():
     except ValueError:
         return jsonify({"erro": "Formato de data inválido. Use YYYY-MM-DD."}), 400
 
-    # ─── Controle de Acesso por Perfil ────────────────────────────────────────
+    # Controle de acesso por perfil
     if current_user.tipo_usuario == 'cliente':
         cliente_id = get_cliente_id_do_usuario(current_user)
         if not cliente_id:
-            return jsonify({"veiculos": [], "fotos": [], "rastros_gps": {}, "areas": [], "auditorias_legadas": []})
-        # Cliente: apenas dados das suas ações
+            return jsonify({"veiculos": [], "fotos": [], "rastros_gps": {}, "areas": []})
         filtro_acoes = [a.id for a in AcaoPromocional.query.filter_by(cliente_id=cliente_id).all()]
         filtro_usuario_id = None
         filtro_cliente_id = cliente_id
     elif current_user.tipo_usuario == 'funcionario':
-        # Funcionário: apenas os seus próprios dados
         filtro_acoes = None
         filtro_usuario_id = current_user.id
         filtro_cliente_id = None
     else:
-        # Admin: sem restrições
         filtro_acoes = None
         filtro_usuario_id = None
         filtro_cliente_id = None
 
-    # ─── Fotos Novas (FotoAuditoria) ─────────────────────────────────────────
+    # Fotos (FotoAuditoria — fonte única)
     fotos_query = FotoAuditoria.query.filter(
         FotoAuditoria.data_hora >= data_inicio,
         FotoAuditoria.data_hora <= data_fim
     )
     if acao_id:
-        # Filtro por ação específica via join com Turno
         fotos_query = fotos_query.join(Turno, FotoAuditoria.turno_id == Turno.id, isouter=True).filter(
             Turno.acao_id == acao_id
         )
@@ -698,20 +612,7 @@ def mapa_dados():
         fotos_query = fotos_query.filter(FotoAuditoria.cliente_id == filtro_cliente_id)
     fotos = fotos_query.all()
 
-    # ─── Fotos Legadas (Auditoria) ────────────────────────────────────────────
-    aud_query = Auditoria.query.filter(
-        Auditoria.data_hora >= data_inicio,
-        Auditoria.data_hora <= data_fim
-    )
-    if acao_id:
-        aud_query = aud_query.filter_by(acao_id=acao_id)
-    elif filtro_usuario_id is not None:
-        aud_query = aud_query.filter(Auditoria.user_id == filtro_usuario_id)
-    elif filtro_acoes is not None:
-        aud_query = aud_query.filter(Auditoria.acao_id.in_(filtro_acoes))
-    auditorias_legadas = aud_query.all()
-
-    # ─── Rastros GPS ─────────────────────────────────────────────────────────
+    # Rastros GPS
     rastros_gps = {}
     if current_user.tipo_usuario != 'cliente':
         posicoes_query = PosicaoGps.query.filter(
@@ -719,7 +620,6 @@ def mapa_dados():
             PosicaoGps.data_hora <= data_fim
         )
         if filtro_usuario_id is not None:
-            # Funcionário vê apenas o seu próprio rastro GPS
             posicoes_query = posicoes_query.filter(
                 PosicaoGps.device_id == str(filtro_usuario_id)
             )
@@ -730,12 +630,12 @@ def mapa_dados():
                 rastros_gps[key] = []
             rastros_gps[key].append([p.latitude, p.longitude])
 
-    # ─── Veículos ─────────────────────────────────────────────────────────────
+    # Veículos
     veiculos = []
     if current_user.tipo_usuario != 'cliente':
         veiculos = Veiculo.query.all()
 
-    # ─── Áreas de Atuação ─────────────────────────────────────────────────────
+    # Áreas de Atuação
     areas_query = AreaAtuacao.query
     if acao_id:
         areas_query = areas_query.filter_by(acao_id=acao_id)
@@ -743,18 +643,16 @@ def mapa_dados():
         areas_query = areas_query.filter(AreaAtuacao.acao_id.in_(filtro_acoes))
     areas = areas_query.all()
 
-    # ─── Overlays Persistentes do Mapa (MapaArea - admin e funcionário) ───────
-    # Funcionários devem ver os desenhos criados pelo admin
+    # Overlays persistentes do mapa
     overlays = []
     if current_user.tipo_usuario in ('admin', 'funcionario'):
-        overlays_query = MapaArea.query.all()
         overlays = [
             {
                 "id": o.id,
                 "nome": o.nome,
                 "geojson": o.get_geojson() if hasattr(o, 'get_geojson') else o.geojson
             }
-            for o in overlays_query
+            for o in MapaArea.query.all()
         ]
 
     return jsonify({
@@ -767,30 +665,7 @@ def mapa_dados():
             {"id": v.id, "placa": v.placa, "modelo": v.modelo, "status": v.status}
             for v in veiculos
         ],
-        "fotos": [
-            {
-                "id": f.id,
-                "latitude": f.latitude,
-                "longitude": f.longitude,
-                "url": f.url,
-                "descricao": f.descricao,
-                "dentro_da_area": f.dentro_da_area,
-                "data_hora": f.data_hora.isoformat() if f.data_hora else None,
-                "turno_id": f.turno_id
-            }
-            for f in fotos
-        ],
-        "auditorias_legadas": [
-            {
-                "id": a.id,
-                "latitude": a.latitude,
-                "longitude": a.longitude,
-                "foto_url": a.foto_url,
-                "descricao": a.descricao,
-                "acao": a.acao.nome_exibicao if a.acao else ""
-            }
-            for a in auditorias_legadas
-        ],
+        "fotos": fotos_mapa_schema.dump(fotos),
         "rastros_gps": rastros_gps,
         "areas": [
             {
@@ -811,12 +686,9 @@ def mapa_dados():
 def mapa_dados_acao(acao_id):
     """
     Retorna dados completos do mapa para uma ação específica.
-    Inclui turnos, rastros GPS, fotos e áreas.
-    Clientes só podem acessar ações vinculadas ao seu cliente_id.
     """
     acao = AcaoPromocional.query.get_or_404(acao_id)
 
-    # Verificar acesso para clientes usando cliente_id (ownership)
     if current_user.tipo_usuario == 'cliente':
         cliente_id = get_cliente_id_do_usuario(current_user)
         if not cliente_id or acao.cliente_id != cliente_id:
@@ -826,23 +698,16 @@ def mapa_dados_acao(acao_id):
     areas = AreaAtuacao.query.filter_by(acao_id=acao_id).all()
     fotos = FotoAuditoria.query.join(Turno).filter(Turno.acao_id == acao_id).all()
 
-    # CORREÇÃO CRÍTICA: Lógica de rastros GPS por turno
-    # Buscar os usuários da equipe do turno, não qualquer usuário com device_id
     rastros_por_turno = {}
     from app.models.user import User
-    from app.models.equipe import Equipe
 
     for turno in turnos:
         if not turno.inicio:
             continue
-
-        # Buscar membros da equipe deste turno que têm device_id
         equipe = turno.equipe
         if not equipe:
             continue
 
-        # Buscar usuários membros desta equipe com device_id configurado
-        # Assumindo que há uma relação entre Equipe e User, ou que User tem equipe_id
         membros_com_device = User.query.filter(
             User.equipe_id == equipe.id,
             User.device_id.isnot(None)
@@ -850,13 +715,12 @@ def mapa_dados_acao(acao_id):
 
         pontos_turno = []
         for usuario in membros_com_device:
-            fim = turno.fim or datetime.utcnow()
+            fim = turno.fim or _utcnow()
             posicoes = PosicaoGps.query.filter(
                 PosicaoGps.device_id == usuario.device_id,
                 PosicaoGps.data_hora >= turno.inicio,
                 PosicaoGps.data_hora <= fim
             ).order_by(PosicaoGps.data_hora.asc()).all()
-
             pontos_turno.extend([[p.latitude, p.longitude] for p in posicoes])
 
         if pontos_turno:
@@ -877,32 +741,9 @@ def mapa_dados_acao(acao_id):
             "status": acao.status,
             "cliente": acao.cliente.nome_empresa if acao.cliente else None
         },
-        "turnos": [
-            {
-                "id": t.id,
-                "equipe": t.equipe.nome if t.equipe else None,
-                "veiculo": t.veiculo.placa if t.veiculo else None,
-                "inicio": t.inicio.isoformat() if t.inicio else None,
-                "fim": t.fim.isoformat() if t.fim else None,
-                "status": t.status,
-                "duracao_minutos": t.duracao_minutos
-            }
-            for t in turnos
-        ],
+        "turnos": turnos_schema.dump(turnos),
         "rastros_por_turno": rastros_por_turno,
-        "fotos": [
-            {
-                "id": f.id,
-                "latitude": f.latitude,
-                "longitude": f.longitude,
-                "url": f.url,
-                "descricao": f.descricao,
-                "dentro_da_area": f.dentro_da_area,
-                "data_hora": f.data_hora.isoformat() if f.data_hora else None,
-                "turno_id": f.turno_id
-            }
-            for f in fotos
-        ],
+        "fotos": fotos_mapa_schema.dump(fotos),
         "areas": [
             {
                 "id": a.id,

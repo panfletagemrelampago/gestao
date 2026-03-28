@@ -5,7 +5,7 @@ from app.models.veiculo import Veiculo
 from app.models.material import Material
 from app.models.movimentacao_material import MovimentacaoMaterial
 from app.models.acao_promocional import AcaoPromocional
-from app.models.auditoria import Auditoria
+# Auditoria (legado) removida do ORM — tabela preservada no banco para histórico
 from app.models.posicao_gps import PosicaoGps
 from app.models.vaga import Vaga
 # Novos models do módulo de auditoria de campo

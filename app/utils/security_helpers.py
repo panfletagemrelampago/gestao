@@ -1,14 +1,23 @@
+"""
+Utilitários de controle de acesso e bootstrap do sistema.
+
+REFATORAÇÃO (Passo 1):
+- get_auditoria_segura() migrada para operar sobre FotoAuditoria
+  (campo usuario_id no lugar de user_id).
+- Importação de Auditoria removida.
+"""
 import logging
 import os
 from flask import abort
 from flask_login import current_user
 from app.extensions import db
 from app.models.acao_promocional import AcaoPromocional
-from app.models.auditoria import Auditoria
+from app.models.foto_auditoria import FotoAuditoria
 from app.models.user import User
 from sqlalchemy import inspect
 
 logger = logging.getLogger(__name__)
+
 
 def get_acao_segura(acao_id):
     """
@@ -28,31 +37,31 @@ def get_acao_segura(acao_id):
             abort(403, description="Usuário cliente sem vínculo de cliente associado.")
         query = query.filter_by(cliente_id=current_user.cliente_id)
     elif current_user.tipo_usuario == "funcionario":
-        # Funcionário só vê ações em que é líder de equipe
         query = query.filter_by(lider_equipe_id=current_user.id)
-    # Admin não tem filtro adicional
     return query.first_or_404(description="Ação não encontrada ou acesso negado.")
 
-def get_auditoria_segura(auditoria_id):
+
+def get_auditoria_segura(foto_id):
     """
-    Retorna uma Auditoria com base no ID, aplicando filtros de ownership.
-    - Admin: vê qualquer auditoria.
-    - Funcionario: vê apenas auditorias que ele próprio registrou.
-    - Cliente: não tem acesso direto a auditorias (acessa via ações).
+    Retorna uma FotoAuditoria com base no ID, aplicando filtros de ownership.
+    - Admin: vê qualquer foto.
+    - Funcionario: vê apenas fotos que ele próprio registrou (usuario_id).
+    - Cliente: não tem acesso direto (acessa via ações).
     Retorna 404 se não encontrada, 403 se acesso negado.
+
+    REFATORAÇÃO: operava sobre Auditoria; agora opera sobre FotoAuditoria.
     """
     if current_user.tipo_usuario == "cliente":
         logger.warning(
-            f"Cliente tentou acessar auditoria {auditoria_id} diretamente: "
+            f"Cliente tentou acessar foto {foto_id} diretamente: "
             f"user={current_user.id}"
         )
-        abort(403, description="Clientes não têm acesso direto a auditorias.")
-    query = Auditoria.query.filter_by(id=auditoria_id)
+        abort(403, description="Clientes não têm acesso direto a registros de campo.")
+    query = FotoAuditoria.query.filter_by(id=foto_id)
     if current_user.tipo_usuario == "funcionario":
-        # Funcionário só vê auditorias que ele próprio registrou
-        query = query.filter_by(user_id=current_user.id)
-    # Admin não tem filtro adicional
-    return query.first_or_404(description="Auditoria não encontrada ou acesso negado.")
+        query = query.filter_by(usuario_id=current_user.id)
+    return query.first_or_404(description="Registro não encontrado ou acesso negado.")
+
 
 def get_acoes_por_perfil():
     """
@@ -78,26 +87,25 @@ def get_acoes_por_perfil():
         ).all()
     return []
 
+
 def get_cliente_id_do_usuario(user):
     """
     Retorna o cliente_id vinculado ao usuário.
     Para clientes, usa diretamente o campo cliente_id do modelo User.
     Para admin/funcionario, retorna None (sem restrição de cliente).
-    Substitui o padrão antigo de busca por email na tabela Cliente.
     """
     if user.tipo_usuario == "cliente":
         return user.cliente_id
     return None
 
+
 def setup_admin(app):
     """
     Garante a existência de um usuário administrador inicial.
-    Diferente da versão anterior, esta função NÃO sobrescreve o nome ou a senha
-    se o usuário já existir, permitindo que as alterações feitas via painel persistam.
+    Não sobrescreve nome ou senha se o usuário já existir.
     """
     with app.app_context():
         admin_email = "sac@relampagomt.com.br"
-        # Usamos variáveis de ambiente se disponíveis, caso contrário, valores padrão apenas para criação inicial
         admin_password = os.environ.get("ADMIN_PASSWORD", "@Zadu0204")
         admin_name = os.environ.get("ADMIN_USERNAME", "Relam")
 
@@ -106,7 +114,6 @@ def setup_admin(app):
             logger.info("Tabela 'users' não encontrada. Pulando setup_admin.")
             return
 
-        # Cria o admin apenas se ele não existir
         user = User.query.filter_by(email=admin_email).first()
 
         if not user:
@@ -121,5 +128,4 @@ def setup_admin(app):
             db.session.commit()
             print(f"ADMIN INICIAL CRIADO: {admin_email}")
         else:
-            # Se o usuário já existe, não fazemos nada para não sobrescrever alterações manuais
             logger.info(f"Admin {admin_email} já existe. Nenhuma alteração aplicada.")
